@@ -87,8 +87,8 @@
 | `mc_type_hierarchy` | — | 一个类的父类链和子类树，限制深度 | `ClassInheritorsSearch`、`PsiClass.getSupers` |
 | `mc_safe_delete` | `preview`、`apply` | 先报告还有哪些引用，没有才删除 | `SafeDeleteProcessor` |
 | `mc_run` | `processes`、`start`、`stop`、`restart`、`status`、`output`、`wait_ready`、`hotswap` | Run Configuration 全生命周期。`output` 支持末尾 N 行、正则过滤和游标。热替换走 IDE 自己的构建路径（`ProjectTaskManager`），所以委托给 Gradle、Maven 的项目也能用。测试结果（通过/失败数、失败堆栈）单列为第 3b 步 | `ExecutionListener`、`ProgramRunner`、`ProcessHandler`、`ProjectTaskManager`、`HotSwapManager` |
-| `mc_modules` | `graph`、`cycles`、`build` | 模块依赖图（JSON 或 Mermaid）、循环依赖、按模块编译并返回错误 | `ModuleRootManager`、`CompilerManager` |
-| `mc_sync` | — | 重新导入 Maven 或 Gradle 项目，返回结果 | `MavenProjectsManager`、`ExternalSystemUtil` |
+| `mc_modules` | `list`、`graph`、`cycles` | 只读。模块及其内容根目录和文件夹（项目目录之外的根会标出）、带作用域的依赖图（JSON）、循环依赖。不做 `build`：官方 `build_project` 已覆盖，且能给出带位置的错误 | `ModuleManager`、`ModuleRootManager` |
+| `mc_sync` | `status`、`sync` | 重新导入 Gradle（及其他 external system）和 Maven 项目，等待并返回结果；同一项目不会同时跑两次同步；Maven 只能整体同步 | `ExternalSystemUtil.refreshProject`、`MavenProjectsManager`、`MavenSyncListener` |
 
 符号定位方式：统一接受"文件路径 + 行号 + 列号"或"全限定名"两种。
 
@@ -189,7 +189,7 @@ MCP 适配层 (toolsets/)        只做参数解析、调用用例、把结果�
 | 2（已完成） | 代码导航四个工具 | fixture 项目上每个工具的正常和异常用例都通过 |
 | 3（已完成） | `mc_run` | 在普通 Java fixture 和 Gradle 委托的 fixture 上跑通启动、等待就绪、读输出、热替换、停止，全程不弹对话框。细节和已知限制见 `docs/notes-step3.md` |
 | 3b | `mc_run` 的测试结果：测试类运行配置返回通过/失败数和失败堆栈 | 所需接口在 2026.3 属于内容模块 `intellij.platform.smRunner`（插件 `com.intellij.platform.testRunner`），先在沙箱里确认哪种依赖声明可用，再实现 |
-| 4 | `mc_modules`、`mc_sync` | 多模块 fixture 上依赖图和环检测结果正确；改 pom 后同步生效 |
+| 4（已完成） | `mc_modules`、`mc_sync` | 在 JPS、Gradle（多项目加 included build）和 Maven 三个 fixture 上实测：依赖图和环检测正确；改构建文件后同步生效，写坏时返回失败原因。细节和限制见 `docs/notes-step4.md` |
 | 5 | 发布准备：README、插件描述、图标、CHANGELOG、Plugin Verifier 通过、签名 | CI 全绿；本地从磁盘安装到 IDEA 2026.3 可用 |
 | 6 | 发布到 Marketplace | 需要用户提供 Marketplace 令牌和签名证书，并明确同意发布 |
 
