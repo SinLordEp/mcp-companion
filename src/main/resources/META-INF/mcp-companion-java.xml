@@ -3,5 +3,13 @@
     <extensions defaultExtensionNs="com.github.sinlordep.mcpcompanion">
         <qualifiedNameLocator
                 implementation="com.github.sinlordep.mcpcompanion.common.symbols.java.JavaQualifiedNameLocatorProvider"/>
+        <localDeclarations
+                implementation="com.github.sinlordep.mcpcompanion.common.source.java.JvmLocalDeclarationDetector"/>
+        <safeDeleteSupport
+                implementation="com.github.sinlordep.mcpcompanion.safedelete.java.JvmSafeDeleteSupport"/>
+        <superDeclarations
+                implementation="com.github.sinlordep.mcpcompanion.navigation.implementations.java.JvmSuperDeclarationProvider"/>
+        <typeHierarchy
+                implementation="com.github.sinlordep.mcpcompanion.navigation.hierarchy.java.JvmTypeHierarchyProvider"/>
     </extensions>
 </idea-plugin>

@@ -11,8 +11,42 @@ class LayeringTest {
 
     private val root = "com.github.sinlordep.mcpcompanion"
 
-    /** Feature (use-case) packages. They must not know about each other. */
-    private val featurePackages = listOf("status", "navigation", "run", "modules", "sync")
+    /**
+     * Feature (use-case) packages. They must not know about each other. Each navigation tool is a feature of its own:
+     * its toolset may step aside alone, so nothing may tie it to another navigation tool.
+     */
+    private val featurePackages = listOf(
+        "status",
+        "navigation.usages",
+        "navigation.implementations",
+        "navigation.hierarchy",
+        "safedelete",
+        "run",
+        "modules",
+        "sync",
+    )
+
+    /** Features built in the three layers of section 5.1: use cases at the root, gateways in `psi` and `java`. */
+    private val layeredFeatures = listOf("navigation", "safedelete")
+
+    /** Sub-package names that hold platform gateways. */
+    private val gatewaySegments = setOf("psi", "java")
+
+    /** APIs of the optional Java plugin; using them outside a `java` package breaks the plugin in non-Java IDEs. */
+    private val javaPluginApis = listOf(
+        "com.intellij.psi.JavaPsiFacade",
+        "com.intellij.psi.PsiClass",
+        "com.intellij.psi.PsiMethod",
+        "com.intellij.psi.PsiField",
+        "com.intellij.psi.PsiJavaFile",
+        "com.intellij.psi.search.searches.ClassInheritorsSearch",
+        "com.intellij.psi.search.searches.DirectClassInheritorsSearch",
+        "com.intellij.psi.search.searches.OverridingMethodsSearch",
+        "com.intellij.psi.search.searches.SuperMethodsSearch",
+        "com.intellij.psi.util.InheritanceUtil",
+        "com.intellij.lang.java",
+        "org.jetbrains.uast",
+    )
 
     private val production = Konsist.scopeFromProduction()
 
@@ -23,6 +57,9 @@ class LayeringTest {
             name == packageName || name.startsWith("$packageName.")
         }
     }
+
+    private fun KoFileDeclaration.isGateway(): Boolean =
+        packagee?.name.orEmpty().split('.').any { it in gatewaySegments }
 
     private fun KoFileDeclaration.importsAny(prefixes: List<String>): Boolean =
         imports.any { import -> prefixes.any { import.name == it || import.name.startsWith("$it.") } }
@@ -55,8 +92,27 @@ class LayeringTest {
     }
 
     @Test
+    fun `use cases and their models are platform-free`() {
+        val platform = listOf("com.intellij", "org.jetbrains.uast", "org.jetbrains.kotlin.psi")
+        val useCases = layeredFeatures.flatMap(::filesIn).filterNot { it.isGateway() }
+        Assertions.assertTrue(useCases.isNotEmpty(), "no use-case files found; check layeredFeatures")
+        useCases.assertFalse { it.importsAny(platform) }
+    }
+
+    @Test
+    fun `the pure part of common is platform-free`() {
+        filesIn("common").filterNot { it.isGateway() }.assertFalse { it.importsAny(listOf("com.intellij")) }
+    }
+
+    @Test
+    fun `Java plugin APIs are used only in java packages`() {
+        production.files.filterNot { file -> file.packagee?.name.orEmpty().split('.').contains("java") }
+            .assertFalse { it.importsAny(javaPluginApis) }
+    }
+
+    @Test
     fun `common depends on no other package of the plugin`() {
-        val others = (featurePackages + listOf("toolsets", "yield", "settings")).map { "$root.$it" }
+        val others = (featurePackages + listOf("navigation", "toolsets", "yield", "settings")).map { "$root.$it" }
         filesIn("common").assertFalse { it.importsAny(others) }
     }
 

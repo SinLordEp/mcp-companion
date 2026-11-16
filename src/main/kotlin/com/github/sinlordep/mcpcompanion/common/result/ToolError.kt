@@ -21,4 +21,10 @@ enum class ErrorCode {
 
     /** This IDE cannot answer the query, e.g. a language plugin is not installed. */
     UNSUPPORTED,
+
+    /**
+     * The request conflicts with the current code, e.g. a safe delete found usages, or the code changed while the
+     * tool ran. Nothing was changed.
+     */
+    CONFLICT,
 }

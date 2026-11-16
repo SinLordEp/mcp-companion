@@ -30,6 +30,22 @@ MCP Companion complements the MCP Server bundled with JetBrains IDEs. It adds th
   the toolset has not stepped aside; whether its tools are switched on is decided on the MCP Server's tool page. MCP clients must pass `projectPath`
   (or provide roots) so that the server knows the target project.
 
+## Tools
+
+| Tool | What it does |
+|---|---|
+| `mc_status` | Plugin version, IDE build, target project and the state of every toolset. |
+| `mc_find_usages` | Every reference to a symbol, any language; scope, read/write filter, paging. |
+| `mc_find_implementations` | Implementations, inheritors and overriding methods, or (`direction=up`) the supertypes and super methods. |
+| `mc_type_hierarchy` | Supertypes and subtypes of a class as a graph, with depth and size limits (JVM languages). |
+| `mc_safe_delete` | `preview` lists what blocks deleting a declaration; `apply` deletes it only when nothing does, as one undoable command, without ever opening a dialog (fixed rules for accessors, overriding methods and parameters). |
+
+Symbols are given by path, line and column or by fully qualified name (`com.example.Foo#member`). Paths in the
+results use the form of the bundled server's own tools (relative to the project directory, `..` for content roots
+outside it, absolute for library archives), so they can be passed to `read_file` and back; every location also has
+an `origin` (`project`, `library_source`, `library_class`, `sdk`, `other`). Lists are paged with `limit`/`offset`
+in a stable order.
+
 ## Switching tools on and off
 
 Use the bundled MCP Server's tool page: <kbd>Settings</kbd> > <kbd>AI</kbd> > <kbd>MCP Server</kbd> >
@@ -44,8 +60,9 @@ state, and a link to the tool page.
 - `./gradlew check` runs the tests, detekt, ktlint and the Konsist architecture rules (`src/architectureTest`).
 - `./gradlew verifyPlugin` runs the IntelliJ Plugin Verifier against the IDE the plugin is built with.
 - `./gradlew runIdeForMcpE2e` starts a sandbox IDE with the MCP server enabled on `127.0.0.1:64399` and only a
-  throwaway project open. On a private X display add `-PmcpE2eAwtToolkit=XToolkit`.
-- Design rules: `docs/PLAN.md` section 5.1. Platform findings: `docs/spike-step0.md`, `docs/notes-step1.md`.
+  throwaway copy of `src/mcpE2eFixture` open. On a private X display add `-PmcpE2eAwtToolkit=XToolkit`.
+- Design rules: `docs/PLAN.md` section 5.1. Platform findings: `docs/spike-step0.md`, `docs/notes-step1.md`,
+  `docs/notes-step2.md`.
 
 ## Installation
 

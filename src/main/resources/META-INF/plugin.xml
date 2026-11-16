@@ -25,6 +25,18 @@
         <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.qualifiedNameLocator"
                         interface="com.github.sinlordep.mcpcompanion.common.symbols.psi.QualifiedNameLocatorProvider"
                         dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.localDeclarations"
+                        interface="com.github.sinlordep.mcpcompanion.common.source.psi.LocalDeclarationDetector"
+                        dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.safeDeleteSupport"
+                        interface="com.github.sinlordep.mcpcompanion.safedelete.psi.SafeDeleteSupport"
+                        dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.superDeclarations"
+                        interface="com.github.sinlordep.mcpcompanion.navigation.implementations.psi.SuperDeclarationProvider"
+                        dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.typeHierarchy"
+                        interface="com.github.sinlordep.mcpcompanion.navigation.hierarchy.psi.TypeHierarchyProvider"
+                        dynamic="true"/>
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
@@ -40,5 +52,9 @@
          official equivalent becomes known, and toolset.<id>.name/.description in McpCompanionBundle. -->
     <extensions defaultExtensionNs="com.intellij.mcpServer">
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.StatusToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.usages.FindUsagesToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.implementations.FindImplementationsToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.hierarchy.TypeHierarchyToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.safedelete.SafeDeleteToolset"/>
     </extensions>
 </idea-plugin>

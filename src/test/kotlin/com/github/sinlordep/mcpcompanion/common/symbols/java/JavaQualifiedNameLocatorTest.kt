@@ -2,6 +2,7 @@ package com.github.sinlordep.mcpcompanion.common.symbols.java
 
 import com.github.sinlordep.mcpcompanion.common.result.ErrorCode
 import com.github.sinlordep.mcpcompanion.common.result.ToolResult
+import com.github.sinlordep.mcpcompanion.common.symbols.FileOrigin
 import com.github.sinlordep.mcpcompanion.common.symbols.LocatedSymbol
 import com.github.sinlordep.mcpcompanion.common.symbols.SymbolLocation
 import com.github.sinlordep.mcpcompanion.common.symbols.SymbolQuery
@@ -36,7 +37,7 @@ class JavaQualifiedNameLocatorTest : BasePlatformTestCase() {
     fun testFindsClass() {
         val symbol = located("a.Shapes")
         assertEquals("a.Shapes", symbol.qualifiedName)
-        assertEquals(SymbolLocation("a/Shapes.java", 2, 14), symbol.location)
+        assertEquals(SymbolLocation("a/Shapes.java", 2, 14, FileOrigin.PROJECT), symbol.location)
     }
 
     fun testFindsNestedClassByDottedNameAndAsMember() {
@@ -45,7 +46,7 @@ class JavaQualifiedNameLocatorTest : BasePlatformTestCase() {
     }
 
     fun testFindsMethodAndField() {
-        assertEquals(SymbolLocation("a/Shapes.java", 4, 26), located("a.Shapes#area").location)
+        assertEquals(SymbolLocation("a/Shapes.java", 4, 26, FileOrigin.PROJECT), located("a.Shapes#area").location)
         assertEquals("count", located("a.Shapes#count").name)
     }
 

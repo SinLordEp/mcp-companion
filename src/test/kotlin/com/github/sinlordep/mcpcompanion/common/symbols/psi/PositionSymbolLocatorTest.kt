@@ -2,6 +2,7 @@ package com.github.sinlordep.mcpcompanion.common.symbols.psi
 
 import com.github.sinlordep.mcpcompanion.common.result.ErrorCode
 import com.github.sinlordep.mcpcompanion.common.result.ToolResult
+import com.github.sinlordep.mcpcompanion.common.symbols.FileOrigin
 import com.github.sinlordep.mcpcompanion.common.symbols.LocatedSymbol
 import com.github.sinlordep.mcpcompanion.common.symbols.SymbolLocation
 import com.github.sinlordep.mcpcompanion.common.symbols.SymbolQuery
@@ -35,14 +36,14 @@ class PositionSymbolLocatorTest : BasePlatformTestCase() {
         // line 4: `    public String twice(String n) { return greet(greet(n)); }` -- column 48 is inside `greet`
         val symbol = located("a/Greeter.java", 4, 48)
         assertEquals("greet", symbol.name)
-        assertEquals(SymbolLocation("a/Greeter.java", 3, 19), symbol.location)
+        assertEquals(SymbolLocation("a/Greeter.java", 3, 19, FileOrigin.PROJECT), symbol.location)
     }
 
     fun testDeclarationNameIsItsOwnSymbol() {
         val symbol = located("a/Greeter.java", 2, 15)
         assertEquals("Greeter", symbol.name)
         assertEquals("a.Greeter", symbol.qualifiedName)
-        assertEquals(SymbolLocation("a/Greeter.java", 2, 14), symbol.location)
+        assertEquals(SymbolLocation("a/Greeter.java", 2, 14, FileOrigin.PROJECT), symbol.location)
     }
 
     fun testHandleLeadsBackToThePlatformElement() = timeoutRunBlocking {

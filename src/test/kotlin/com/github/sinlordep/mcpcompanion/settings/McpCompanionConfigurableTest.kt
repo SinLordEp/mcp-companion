@@ -26,9 +26,17 @@ class McpCompanionConfigurableTest : BasePlatformTestCase() {
 
     fun testShowsEachToolsetWithItsStateAndIsReadOnly() = withComponent(McpCompanionConfigurable()) { component ->
         val table = UIUtil.findComponentOfType(component, TableView::class.java)!!
-        assertEquals(1, table.rowCount)
-        assertEquals("MCP Companion: Status", table.getValueAt(0, 0))
-        assertEquals("Available", table.getValueAt(0, 1))
+        assertEquals(
+            listOf(
+                "MCP Companion: Status",
+                "MCP Companion: Find Usages",
+                "MCP Companion: Find Implementations",
+                "MCP Companion: Type Hierarchy",
+                "MCP Companion: Safe Delete",
+            ),
+            (0 until table.rowCount).map { table.getValueAt(it, 0) },
+        )
+        assertEquals(setOf("Available"), (0 until table.rowCount).map { table.getValueAt(it, 1) }.toSet())
         assertFalse(table.isCellEditable(0, 1))
         assertFalse(McpCompanionConfigurable().isModified)
     }

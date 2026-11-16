@@ -1,16 +1,14 @@
 package com.github.sinlordep.mcpcompanion.common.symbols.psi
 
-import com.github.sinlordep.mcpcompanion.common.paths.ProjectPathRenderer
+import com.github.sinlordep.mcpcompanion.common.paths.psi.ProjectFiles
 import com.github.sinlordep.mcpcompanion.common.result.ErrorCode
 import com.github.sinlordep.mcpcompanion.common.result.ToolResult
+import com.github.sinlordep.mcpcompanion.common.symbols.FileOrigin
 import com.github.sinlordep.mcpcompanion.common.symbols.LocatedSymbol
 import com.github.sinlordep.mcpcompanion.common.symbols.SymbolLocator
 import com.github.sinlordep.mcpcompanion.common.symbols.SymbolQuery
 import com.intellij.openapi.application.smartReadAction
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.guessProjectDir
-import com.intellij.openapi.vfs.LocalFileSystem
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
@@ -25,7 +23,7 @@ import com.intellij.psi.util.PsiTreeUtil
  */
 class PositionSymbolLocator(
     private val project: Project,
-    private val paths: ProjectPathRenderer,
+    private val files: ProjectFiles,
     private val mapper: PsiSymbolMapper,
 ) : SymbolLocator<SymbolQuery.AtPosition> {
 
@@ -33,12 +31,22 @@ class PositionSymbolLocator(
         smartReadAction(project) { locateNow(query) }
 
     private fun locateNow(query: SymbolQuery.AtPosition): ToolResult<LocatedSymbol> {
-        val file = findPsiFile(query.path)
+        val virtualFile = files.find(query.path)?.takeUnless { it.isDirectory }
             ?: return ToolResult.failure(
                 ErrorCode.NOT_FOUND,
                 "File not found: ${query.path}",
-                "Pass a path relative to the project root, or an absolute path.",
+                "Pass a path relative to the project root (.. allowed), an absolute path, an archive entry " +
+                    "(/path/x.jar!/pkg/Foo.java) or a file:// or jar:// URL.",
             )
+        if (files.originOf(virtualFile) == FileOrigin.OTHER) {
+            return ToolResult.failure(
+                ErrorCode.NOT_FOUND,
+                "${query.path} is neither in the project nor in a library or SDK of it.",
+                "Pass a file of the project's content roots, libraries or SDK.",
+            )
+        }
+        val file = PsiManager.getInstance(project).findFile(virtualFile)
+            ?: return ToolResult.failure(ErrorCode.UNSUPPORTED, "${query.path} is not a source file the IDE can parse.")
         val offset = offsetOf(file, query.line, query.column)
             ?: return ToolResult.failure(
                 ErrorCode.INVALID_ARGUMENT,
@@ -70,17 +78,6 @@ class PositionSymbolLocator(
     private fun declarationNamedAt(file: PsiFile, offset: Int): PsiElement? {
         val owner = PsiTreeUtil.getParentOfType(file.findElementAt(offset), PsiNameIdentifierOwner::class.java, false)
         return owner?.takeIf { it.nameIdentifier?.textRange?.containsOffset(offset) == true }
-    }
-
-    private fun findPsiFile(path: String): PsiFile? {
-        val absolute = paths.resolve(path)
-        // Inside the project, look up relative to the project directory, which also works for non-local file
-        // systems (e.g. the in-memory one of light tests); anything else is a local file.
-        val file: VirtualFile =
-            paths.relativize(absolute)?.let { project.guessProjectDir()?.findFileByRelativePath(it) }
-                ?: LocalFileSystem.getInstance().findFileByPath(absolute)
-                ?: return null
-        return if (file.isDirectory) null else PsiManager.getInstance(project).findFile(file)
     }
 
     private fun offsetOf(file: PsiFile, line: Int, column: Int): Int? {

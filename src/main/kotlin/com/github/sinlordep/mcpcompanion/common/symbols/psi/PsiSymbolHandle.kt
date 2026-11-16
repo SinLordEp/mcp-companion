@@ -8,3 +8,9 @@ import com.intellij.psi.SmartPsiElementPointer
 class PsiSymbolHandle(private val pointer: SmartPsiElementPointer<PsiElement>) : SymbolHandle {
     fun element(): PsiElement? = pointer.element
 }
+
+/**
+ * The PSI element behind this handle, or null when it no longer exists (or the handle is not one of ours). Call inside
+ * a read action.
+ */
+fun SymbolHandle.psiElement(): PsiElement? = (this as? PsiSymbolHandle)?.element()?.takeIf { it.isValid }

@@ -89,7 +89,8 @@ tasks.named("check") {
 // ---- Sandbox IDE for manual and end-to-end checks ------------------------------------------------------------------
 
 // The bundled MCP server is force-enabled on a fixed loopback port (no consent dialog) and only a throwaway project
-// under build/ is opened.
+// under build/ is opened: a fresh copy of src/mcpE2eFixture (a small Java module with a second content root at
+// ../mcp-e2e-sibling).
 //   ./gradlew runIdeForMcpE2e [-PmcpE2ePort=64399] [-PmcpE2eAwtToolkit=XToolkit]
 // Endpoints: http://127.0.0.1:<port>/sse (SSE) and http://127.0.0.1:<port>/stream (Streamable HTTP).
 // mcpE2eAwtToolkit=XToolkit keeps the IDE on $DISPLAY (e.g. a private Xvfb): JBR 25 otherwise picks the Wayland
@@ -97,6 +98,8 @@ tasks.named("check") {
 val mcpE2ePort = providers.gradleProperty("mcpE2ePort").orElse("64399")
 val mcpE2eAwtToolkit = providers.gradleProperty("mcpE2eAwtToolkit").orElse("")
 val mcpE2eFixture = layout.buildDirectory.dir("mcp-e2e-fixture")
+val mcpE2eSibling = layout.buildDirectory.dir("mcp-e2e-sibling")
+val mcpE2eFixtureSource = layout.projectDirectory.dir("src/mcpE2eFixture")
 
 intellijPlatformTesting {
     runIde {
@@ -113,8 +116,13 @@ intellijPlatformTesting {
                 }
                 argumentProviders += CommandLineArgumentProvider { listOf(mcpE2eFixture.get().asFile.absolutePath) }
                 doFirst {
+                    // A fresh copy on every start, so that edits of an earlier run (e.g. mc_safe_delete apply) are
+                    // gone. The sibling directory is a second content root outside the project directory.
                     val fixture = mcpE2eFixture.get().asFile
-                    fixture.mkdirs()
+                    val sibling = mcpE2eSibling.get().asFile
+                    listOf(fixture, sibling).forEach { it.deleteRecursively() }
+                    mcpE2eFixtureSource.asFile.resolve("project").copyRecursively(fixture)
+                    mcpE2eFixtureSource.asFile.resolve("sibling").copyRecursively(sibling)
                     fixture.resolve("README.md").writeText("Throwaway project opened by runIdeForMcpE2e.\n")
                 }
             }

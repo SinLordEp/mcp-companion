@@ -36,16 +36,14 @@ class StatusToolsetTest : BasePlatformTestCase() {
         assertFalse("plugin version must come from the descriptor", output.pluginVersion.isNullOrBlank())
         assertEquals(project.name, output.projectName)
         assertEquals(
-            listOf(
-                ToolsetStateOutput(
-                    "status",
-                    "MCP Companion: Status",
-                    ToolsetStateOutput.StateName.AVAILABLE,
-                    emptyList(),
-                ),
-            ),
-            output.toolsets,
+            ToolsetStateOutput("status", "MCP Companion: Status", ToolsetStateOutput.StateName.AVAILABLE, emptyList()),
+            output.toolsets.first(),
         )
+        assertEquals(
+            listOf("status", "find_usages", "find_implementations", "type_hierarchy", "safe_delete"),
+            output.toolsets.map { it.id },
+        )
+        assertTrue(output.toolsets.all { it.state == ToolsetStateOutput.StateName.AVAILABLE })
     }
 
     /** Calls the tool the way the MCP server does: through the McpTool built by the server, with JSON in and out. */
@@ -58,7 +56,7 @@ class StatusToolsetTest : BasePlatformTestCase() {
         val json = Json.parseToJsonElement(text).jsonObject
         assertEquals(ApplicationInfo.getInstance().build.asString(), json.getValue("ideBuild").jsonPrimitive.content)
         assertEquals(project.name, json.getValue("projectName").jsonPrimitive.content)
-        val toolset = json.getValue("toolsets").jsonArray.single().jsonObject
+        val toolset = json.getValue("toolsets").jsonArray.first().jsonObject
         assertEquals("status", toolset.getValue("id").jsonPrimitive.content)
         assertEquals("available", toolset.getValue("state").jsonPrimitive.content)
         assertTrue(toolset.getValue("officialTools").jsonArray.isEmpty())

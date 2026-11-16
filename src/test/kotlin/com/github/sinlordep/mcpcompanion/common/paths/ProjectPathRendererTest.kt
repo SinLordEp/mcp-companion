@@ -85,6 +85,52 @@ class ProjectPathRendererTest {
         assertNull(unc.relativize(unc.resolve("../x")))
     }
 
+    // ---- further project directories and archives ----
+
+    private val withSibling = ProjectPathRenderer(
+        "/home/dev/project",
+        caseSensitive = true,
+        projectDirectories = listOf("/home/dev/project", "/home/dev/sibling", "/opt/shared/module"),
+    )
+
+    @Test
+    fun `files in other project directories are relative to the root with dot-dot`() {
+        assertEquals("../sibling/src/Foo.java", withSibling.render("/home/dev/sibling/src/Foo.java"))
+        assertEquals("../../../opt/shared/module/A.kt", withSibling.render("/opt/shared/module/A.kt"))
+        assertEquals("src/Foo.java", withSibling.render("/home/dev/project/src/Foo.java"))
+        assertEquals("/home/dev/other/Foo.java", withSibling.render("/home/dev/other/Foo.java"))
+        assertEquals("/home/dev/sibling2/Foo.java", withSibling.render("/home/dev/sibling2/Foo.java"))
+    }
+
+    @Test
+    fun `rendered dot-dot paths resolve back to the same file`() {
+        val file = "/home/dev/sibling/src/Foo.java"
+        assertEquals(file, withSibling.resolve(withSibling.render(file)))
+    }
+
+    @Test
+    fun `archive entries stay absolute even under the project directory`() {
+        assertEquals("/home/dev/.m2/x.jar!/pkg/Foo.java", withSibling.render("/home/dev/.m2/x.jar!/pkg/Foo.java"))
+        assertEquals(
+            "/home/dev/project/lib/x.jar!/pkg/Foo.class",
+            withSibling.render("/home/dev/project/lib/x.jar!/pkg/Foo.class"),
+        )
+        assertEquals("C:/m2/x.jar!/pkg/Foo.java", windows.render("c:\\m2\\x.jar!/pkg/Foo.java"))
+    }
+
+    @Test
+    fun `archive entries resolve their archive part only`() {
+        assertEquals("/home/dev/project/lib/x.jar!/pkg/Foo.java", withSibling.resolve("lib/x.jar!/pkg/Foo.java"))
+        assertEquals("/libs/x.jar!/pkg/Foo.java", withSibling.resolve("/libs/./x.jar!/pkg/Foo.java"))
+    }
+
+    @Test
+    fun `project directories on another drive are rendered absolute`() {
+        val split =
+            ProjectPathRenderer("C:/work/project", caseSensitive = false, projectDirectories = listOf("D:/shared"))
+        assertEquals("D:/shared/Foo.java", split.render("D:/shared/Foo.java"))
+    }
+
     @Test
     fun `the root must be absolute`() {
         assertThrows(IllegalArgumentException::class.java) {
