@@ -86,7 +86,7 @@
 | `mc_find_implementations` | — | 接口或抽象方法的实现、子类、重写方法、父方法 | `DefinitionsScopedSearch`、`ClassInheritorsSearch`、`OverridingMethodsSearch` |
 | `mc_type_hierarchy` | — | 一个类的父类链和子类树，限制深度 | `ClassInheritorsSearch`、`PsiClass.getSupers` |
 | `mc_safe_delete` | `preview`、`apply` | 先报告还有哪些引用，没有才删除 | `SafeDeleteProcessor` |
-| `mc_run` | `list`、`start`、`stop`、`restart`、`status`、`output`、`wait_ready`、`hotswap` | Run Configuration 全生命周期。`output` 支持末尾 N 行和正则过滤，测试运行时带通过/失败数和失败堆栈 | `ExecutionManager`、`RunContentManager`、`ProcessHandler`、`SMTestProxy`、`HotSwapUI` |
+| `mc_run` | `processes`、`start`、`stop`、`restart`、`status`、`output`、`wait_ready`、`hotswap` | Run Configuration 全生命周期。`output` 支持末尾 N 行、正则过滤和游标。热替换走 IDE 自己的构建路径（`ProjectTaskManager`），所以委托给 Gradle、Maven 的项目也能用。测试结果（通过/失败数、失败堆栈）单列为第 3b 步 | `ExecutionListener`、`ProgramRunner`、`ProcessHandler`、`ProjectTaskManager`、`HotSwapManager` |
 | `mc_modules` | `graph`、`cycles`、`build` | 模块依赖图（JSON 或 Mermaid）、循环依赖、按模块编译并返回错误 | `ModuleRootManager`、`CompilerManager` |
 | `mc_sync` | — | 重新导入 Maven 或 Gradle 项目，返回结果 | `MavenProjectsManager`、`ExternalSystemUtil` |
 
@@ -187,7 +187,8 @@ MCP 适配层 (toolsets/)        只做参数解析、调用用例、把结果�
 | 0（已完成） | 技术验证：一个最小的 toolset，验证第 3 节末尾的两点；确定版本范围和构建配置 | 沙箱 IDE 里能从 MCP 客户端调到工具；两点有明确结论并写回本文件 |
 | 1（已完成） | 公共部分：符号定位、分页、错误模型、设置状态、设置页、让开机制；接入 detekt、ktlint 和 Konsist 架构测试 | 单元测试通过；设置页显示每个工具组的状态并能跳到官方开关页；架构测试在 CI 里生效 |
 | 2（已完成） | 代码导航四个工具 | fixture 项目上每个工具的正常和异常用例都通过 |
-| 3 | `mc_run` | 在 Maven + Spring Boot fixture 上跑通启动、等待就绪、读输出、热替换、停止 |
+| 3（已完成） | `mc_run` | 在普通 Java fixture 和 Gradle 委托的 fixture 上跑通启动、等待就绪、读输出、热替换、停止，全程不弹对话框。细节和已知限制见 `docs/notes-step3.md` |
+| 3b | `mc_run` 的测试结果：测试类运行配置返回通过/失败数和失败堆栈 | 所需接口在 2026.3 属于内容模块 `intellij.platform.smRunner`（插件 `com.intellij.platform.testRunner`），先在沙箱里确认哪种依赖声明可用，再实现 |
 | 4 | `mc_modules`、`mc_sync` | 多模块 fixture 上依赖图和环检测结果正确；改 pom 后同步生效 |
 | 5 | 发布准备：README、插件描述、图标、CHANGELOG、Plugin Verifier 通过、签名 | CI 全绿；本地从磁盘安装到 IDEA 2026.3 可用 |
 | 6 | 发布到 Marketplace | 需要用户提供 Marketplace 令牌和签名证书，并明确同意发布 |
