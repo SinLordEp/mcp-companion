@@ -1,0 +1,10 @@
+<!-- Loaded only when the Maven plugin is present (optional dependency in plugin.xml). -->
+<idea-plugin>
+    <extensions defaultExtensionNs="com.github.sinlordep.mcpcompanion">
+        <buildSystemSync implementation="com.github.sinlordep.mcpcompanion.sync.maven.MavenSyncProvider"/>
+    </extensions>
+    <applicationListeners>
+        <listener class="com.github.sinlordep.mcpcompanion.sync.maven.MavenSyncEvents"
+                  topic="org.jetbrains.idea.maven.project.MavenSyncListener"/>
+    </applicationListeners>
+</idea-plugin>

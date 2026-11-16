@@ -18,6 +18,10 @@
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.mcpServer</depends>
     <depends optional="true" config-file="mcp-companion-java.xml">com.intellij.java</depends>
+    <!-- The platform's build-system-neutral external-system support (Gradle and others): a product module with this
+         alias, so it may be missing from some IDEs. -->
+    <depends optional="true" config-file="mcp-companion-external-system.xml">com.intellij.modules.externalSystem</depends>
+    <depends optional="true" config-file="mcp-companion-maven.xml">org.jetbrains.idea.maven</depends>
 
     <resource-bundle>messages.McpCompanionBundle</resource-bundle>
 
@@ -39,6 +43,12 @@
                         dynamic="true"/>
         <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.hotSwapSupport"
                         interface="com.github.sinlordep.mcpcompanion.run.ide.HotSwapSupport"
+                        dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.moduleFacts"
+                        interface="com.github.sinlordep.mcpcompanion.modules.ide.ModuleFactsProvider"
+                        dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.buildSystemSync"
+                        interface="com.github.sinlordep.mcpcompanion.sync.ide.BuildSystemSyncProvider"
                         dynamic="true"/>
     </extensionPoints>
 
@@ -66,5 +76,7 @@
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.hierarchy.TypeHierarchyToolset"/>
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.safedelete.SafeDeleteToolset"/>
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.run.RunToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.modules.ModulesToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.sync.SyncToolset"/>
     </extensions>
 </idea-plugin>

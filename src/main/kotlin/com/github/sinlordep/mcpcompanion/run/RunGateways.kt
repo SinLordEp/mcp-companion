@@ -2,10 +2,7 @@ package com.github.sinlordep.mcpcompanion.run
 
 import com.github.sinlordep.mcpcompanion.common.result.ToolResult
 import com.github.sinlordep.mcpcompanion.run.output.ConsoleBuffer
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
-import java.time.Instant
-import kotlin.time.Duration
 
 /** A process the IDE runs or ran, with its live state and captured output. */
 interface TrackedProcess {
@@ -59,19 +56,4 @@ fun interface HotSwapGateway {
 /** Gateway boundary: whether something accepts TCP connections on a local port. */
 fun interface PortProbe {
     suspend fun isOpen(port: Int): Boolean
-}
-
-/** Time source of the use cases, replaced by a manual clock in tests. */
-interface Clock {
-    fun now(): Instant
-
-    /** Suspends for [duration]; cancellable. */
-    suspend fun sleep(duration: Duration)
-}
-
-/** The real clock. */
-object SystemClock : Clock {
-    override fun now(): Instant = Instant.now()
-
-    override suspend fun sleep(duration: Duration) = delay(duration)
 }

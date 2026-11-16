@@ -1,1 +1,6 @@
 rootProject.name = 'gradlefix'
+
+// mc_modules/mc_sync fixture: two subprojects and, like a composite of sibling repositories, an included build next
+// to the project directory (copied to ../mcp-e2e-gradle-sibling by runIdeForMcpE2e). No dependency is downloaded.
+include 'app', 'lib'
+includeBuild '../mcp-e2e-gradle-sibling'

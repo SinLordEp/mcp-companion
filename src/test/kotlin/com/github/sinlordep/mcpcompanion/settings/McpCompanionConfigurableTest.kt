@@ -34,11 +34,14 @@ class McpCompanionConfigurableTest : BasePlatformTestCase() {
                 "MCP Companion: Type Hierarchy",
                 "MCP Companion: Safe Delete",
                 "MCP Companion: Run Control",
+                "MCP Companion: Modules",
+                "MCP Companion: Build Sync",
             ),
             (0 until table.rowCount).map { table.getValueAt(it, 0) },
         )
         assertEquals(setOf("Available"), (0 until table.rowCount).map { table.getValueAt(it, 1) }.toSet())
         assertFalse(table.isCellEditable(0, 1))
+        assertEquals("every toolset is visible without scrolling", table.rowCount, table.visibleRowCount)
         assertFalse(McpCompanionConfigurable().isModified)
     }
 

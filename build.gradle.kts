@@ -26,6 +26,8 @@ dependencies {
         bundledPlugin("com.intellij.mcpServer")
         // Optional at runtime (META-INF/mcp-companion-java.xml); needed at compile time for the Java-only code.
         bundledPlugin("com.intellij.java")
+        // Optional at runtime (META-INF/mcp-companion-maven.xml); needed at compile time for mc_sync's Maven gateway.
+        bundledPlugin("org.jetbrains.idea.maven")
         testFramework(TestFrameworkType.Platform)
         testBundledPlugins("com.intellij.modules.ultimate")
         pluginVerifier()
@@ -118,6 +120,17 @@ val mcpE2eGradleFixture = layout.buildDirectory.dir("mcp-e2e-gradle")
 val mcpE2eSibling = layout.buildDirectory.dir("mcp-e2e-sibling")
 val mcpE2eFixtureSource = layout.projectDirectory.dir("src/mcpE2eFixture")
 val mcpE2eGradleFixtureSource = layout.projectDirectory.dir("src/mcpE2eFixtureGradle")
+// The Gradle fixture includes the build next to it (a composite of sibling repositories, see its settings.gradle).
+val mcpE2eGradleSibling = layout.buildDirectory.dir("mcp-e2e-gradle-sibling")
+val mcpE2eGradleSiblingSource = layout.projectDirectory.dir("src/mcpE2eFixtureGradleSibling")
+// Gradle runs by the sandbox keep their caches and daemons in a private user home, never in ~/.gradle.
+// -PmcpE2eFixture=maven opens a two-module Maven project (src/mcpE2eFixtureMaven) whose Maven settings point to a
+// private local repository under build/ (kept across runs), so nothing is read from or written to ~/.m2. The bundled
+// Maven downloads the build plugins it needs into that repository.
+val mcpE2eMavenFixture = layout.buildDirectory.dir("mcp-e2e-maven")
+val mcpE2eMavenFixtureSource = layout.projectDirectory.dir("src/mcpE2eFixtureMaven")
+val mcpE2eMavenRepository = layout.buildDirectory.dir("mcp-e2e-m2")
+val mcpE2eGradleUserHome = layout.buildDirectory.dir("mcp-e2e-gradle-user-home")
 
 intellijPlatformTesting {
     runIde {
@@ -129,11 +142,17 @@ intellijPlatformTesting {
                         "-Didea.mcp.server.force.enable=true",
                         "-Didea.mcp.server.force.port=${mcpE2ePort.get()}",
                         "-Didea.trust.all.projects=true",
+                        "-Dgradle.user.home=${mcpE2eGradleUserHome.get().asFile.absolutePath}",
                         toolkit?.let { "-Dawt.toolkit.name=$it" },
                     )
                 }
+                environment("GRADLE_USER_HOME", mcpE2eGradleUserHome.get().asFile.absolutePath)
                 argumentProviders += CommandLineArgumentProvider {
-                    val opened = if (mcpE2eFixtureKind.get() == "gradle") mcpE2eGradleFixture else mcpE2eFixture
+                    val opened = when (mcpE2eFixtureKind.get()) {
+                        "gradle" -> mcpE2eGradleFixture
+                        "maven" -> mcpE2eMavenFixture
+                        else -> mcpE2eFixture
+                    }
                     listOf(opened.get().asFile.absolutePath)
                 }
                 doFirst {
@@ -145,11 +164,49 @@ intellijPlatformTesting {
                     mcpE2eFixtureSource.asFile.resolve("project").copyRecursively(fixture)
                     mcpE2eFixtureSource.asFile.resolve("sibling").copyRecursively(sibling)
                     fixture.resolve("README.md").writeText("Throwaway project opened by runIdeForMcpE2e.\n")
+                    if (mcpE2eFixtureKind.get() == "maven") {
+                        val mavenFixture = mcpE2eMavenFixture.get().asFile
+                        val repository = mcpE2eMavenRepository.get().asFile.apply { mkdirs() }
+                        mavenFixture.deleteRecursively()
+                        sandboxSystemDirectory.get().asFile.resolve("projects").listFiles().orEmpty()
+                            .filter { it.name.startsWith("${mavenFixture.name}.") }.forEach { it.deleteRecursively() }
+                        mcpE2eMavenFixtureSource.asFile.copyRecursively(mavenFixture)
+                        val settings = mavenFixture.resolve(".idea/mcp-e2e-maven-settings.xml")
+                        settings.writeText(
+                            """
+                            |<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">
+                            |  <localRepository>${repository.absolutePath}</localRepository>
+                            |</settings>
+                            |
+                            """.trimMargin(),
+                        )
+                        // Machine-specific, so written here: the private repository and these settings, never ~/.m2.
+                        mavenFixture.resolve(".idea/workspace.xml").writeText(
+                            """
+                            |<?xml version="1.0" encoding="UTF-8"?>
+                            |<project version="4">
+                            |  <component name="MavenImportPreferences">
+                            |    <option name="generalSettings">
+                            |      <MavenGeneralSettings>
+                            |        <option name="localRepository" value="${repository.absolutePath}" />
+                            |        <option name="userSettingsFile" value="${settings.absolutePath}" />
+                            |      </MavenGeneralSettings>
+                            |    </option>
+                            |  </component>
+                            |</project>
+                            |
+                            """.trimMargin(),
+                        )
+                    }
                     if (mcpE2eFixtureKind.get() == "gradle") {
                         val gradleFixture = mcpE2eGradleFixture.get().asFile
                         val gradleHome = mcpE2eGradleHome.get()
                         check(File(gradleHome, "bin/gradle").isFile) { "no unpacked Gradle distribution: $gradleHome" }
                         gradleFixture.deleteRecursively()
+                        mcpE2eGradleSibling.get().asFile.let {
+                            it.deleteRecursively()
+                            mcpE2eGradleSiblingSource.asFile.copyRecursively(it)
+                        }
                         // Forget the sandbox's cached model of an earlier run, so the IDE imports the project afresh.
                         sandboxSystemDirectory.get().asFile.resolve("projects").listFiles().orEmpty()
                             .filter { it.name.startsWith("${gradleFixture.name}.") }.forEach { it.deleteRecursively() }

@@ -1,8 +1,8 @@
 package com.github.sinlordep.mcpcompanion.run.ide
 
+import com.github.sinlordep.mcpcompanion.common.time.SystemClock
 import com.github.sinlordep.mcpcompanion.run.PortProbe
 import com.github.sinlordep.mcpcompanion.run.RunControl
-import com.github.sinlordep.mcpcompanion.run.SystemClock
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runInterruptible

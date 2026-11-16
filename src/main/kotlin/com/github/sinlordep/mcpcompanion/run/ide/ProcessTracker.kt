@@ -1,10 +1,10 @@
 package com.github.sinlordep.mcpcompanion.run.ide
 
-import com.github.sinlordep.mcpcompanion.run.Clock
+import com.github.sinlordep.mcpcompanion.common.time.Clock
+import com.github.sinlordep.mcpcompanion.common.time.SystemClock
 import com.github.sinlordep.mcpcompanion.run.ProcessCatalog
 import com.github.sinlordep.mcpcompanion.run.ProcessId
 import com.github.sinlordep.mcpcompanion.run.ProcessSnapshot
-import com.github.sinlordep.mcpcompanion.run.SystemClock
 import com.github.sinlordep.mcpcompanion.run.TrackedProcess
 import com.intellij.execution.RunnerAndConfigurationSettings
 import com.intellij.execution.process.ProcessHandler

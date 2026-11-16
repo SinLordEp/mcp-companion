@@ -38,12 +38,13 @@ class McpCompanionConfigurable(private val toolFilterPage: ToolFilterPage = Tool
         val table = TableView(ToolsetTableModel(CompanionToolsetStates.getInstance().overview()))
         table.emptyText.text = McpCompanionBundle.message("settings.table.empty")
         table.setShowGrid(false)
-        table.visibleRowCount = VISIBLE_ROWS
+        // Every toolset without scrolling (the page has room); a scroll bar only beyond MAX_VISIBLE_ROWS.
+        table.visibleRowCount = table.rowCount.coerceIn(1, MAX_VISIBLE_ROWS)
         return ScrollPaneFactory.createScrollPane(table)
     }
 
     companion object {
         const val ID: String = "com.github.sinlordep.mcpcompanion.settings"
-        private const val VISIBLE_ROWS = 6
+        private const val MAX_VISIBLE_ROWS = 12
     }
 }

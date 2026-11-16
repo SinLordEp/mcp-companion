@@ -1,6 +1,6 @@
 package com.github.sinlordep.mcpcompanion.run.readiness
 
-import com.github.sinlordep.mcpcompanion.run.Clock
+import com.github.sinlordep.mcpcompanion.common.time.Clock
 import com.github.sinlordep.mcpcompanion.run.PortProbe
 import com.github.sinlordep.mcpcompanion.run.ProcessState
 import com.github.sinlordep.mcpcompanion.run.TrackedProcess

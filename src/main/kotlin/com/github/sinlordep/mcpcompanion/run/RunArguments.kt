@@ -1,5 +1,7 @@
 package com.github.sinlordep.mcpcompanion.run
 
+import com.github.sinlordep.mcpcompanion.common.actions.ToolArguments
+
 /** The actions of `mc_run`. */
 enum class RunAction { PROCESSES, START, STOP, RESTART, STATUS, OUTPUT, WAIT_READY, HOTSWAP }
 
@@ -33,9 +35,9 @@ data class RunArguments(
     val timeoutSeconds: Int? = null,
     val force: Boolean? = null,
     val restartOnFailure: Boolean? = null,
-) {
+) : ToolArguments<RunParameter> {
     /** The parameters the client gave. */
-    fun given(): Set<RunParameter> = buildSet {
+    override fun given(): Set<RunParameter> = buildSet {
         val values = mapOf(
             RunParameter.PROCESS to process,
             RunParameter.CONFIGURATION to configuration,

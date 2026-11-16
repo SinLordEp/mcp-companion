@@ -40,7 +40,16 @@ class StatusToolsetTest : BasePlatformTestCase() {
             output.toolsets.first(),
         )
         assertEquals(
-            listOf("status", "find_usages", "find_implementations", "type_hierarchy", "safe_delete", "run"),
+            listOf(
+                "status",
+                "find_usages",
+                "find_implementations",
+                "type_hierarchy",
+                "safe_delete",
+                "run",
+                "modules",
+                "sync",
+            ),
             output.toolsets.map { it.id },
         )
         assertTrue(output.toolsets.all { it.state == ToolsetStateOutput.StateName.AVAILABLE })

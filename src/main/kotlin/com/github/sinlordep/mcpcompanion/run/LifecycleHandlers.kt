@@ -4,6 +4,7 @@ import com.github.sinlordep.mcpcompanion.common.result.ErrorCode
 import com.github.sinlordep.mcpcompanion.common.result.ToolResult
 import com.github.sinlordep.mcpcompanion.common.result.flatMap
 import com.github.sinlordep.mcpcompanion.common.result.map
+import com.github.sinlordep.mcpcompanion.common.time.timeoutOf
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 

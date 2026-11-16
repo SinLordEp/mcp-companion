@@ -28,12 +28,25 @@ class LayeringTest {
 
     /**
      * Features built in the three layers of section 5.1: use cases at the root (and in sub-packages such as
-     * `run.output`), gateways in `psi`, `ide` and `java`.
+     * `run.output`), gateways in the [gatewaySegments] sub-packages.
      */
-    private val layeredFeatures = listOf("navigation", "safedelete", "run")
+    private val layeredFeatures = listOf("navigation", "safedelete", "run", "modules", "sync")
 
-    /** Sub-package names that hold platform gateways: `psi` for code analysis, `ide` for other IDE services. */
-    private val gatewaySegments = setOf("psi", "ide", "java")
+    /**
+     * Sub-package names that hold platform gateways: `psi` for code analysis, `ide` for other IDE services, and one
+     * per optional plugin: `java` (Java plugin), `externalsystem` (the platform's optional external-system support:
+     * Gradle and others), `maven` (Maven plugin).
+     */
+    private val gatewaySegments = setOf("psi", "ide", "java", "externalsystem", "maven")
+
+    /** Gateway segments that need an optional plugin; the neutral `ide` gateways must not depend on them. */
+    private val optionalSegments = listOf("java", "externalsystem", "maven")
+
+    /** APIs of the platform's optional external-system support; only `externalsystem` and `maven` packages use them. */
+    private val externalSystemApis = listOf("com.intellij.openapi.externalSystem")
+
+    /** APIs of the optional Maven plugin. */
+    private val mavenPluginApis = listOf("org.jetbrains.idea.maven")
 
     /** APIs of the optional Java plugin; using them outside a `java` package breaks the plugin in non-Java IDEs. */
     private val javaPluginApis = listOf(
@@ -51,6 +64,9 @@ class LayeringTest {
         "org.jetbrains.uast",
         "com.intellij.debugger",
         "com.intellij.openapi.compiler",
+        "com.intellij.java.library",
+        "com.intellij.openapi.module.LanguageLevelUtil",
+        "com.intellij.pom.java",
     )
 
     private val production = Konsist.scopeFromProduction()
@@ -105,16 +121,36 @@ class LayeringTest {
     }
 
     @Test
-    fun `run use cases depend on no platform gateway of their own feature`() {
-        val gateways = listOf("$root.run.ide", "$root.run.java")
-        val useCases = filesIn("run").filterNot { it.isGateway() }
-        Assertions.assertTrue(useCases.isNotEmpty(), "no run use-case files found")
-        useCases.assertFalse { it.importsAny(gateways) }
+    fun `use cases depend on no platform gateway of their own feature`() {
+        for (feature in listOf("run", "modules", "sync")) {
+            val gateways = gatewaySegments.map { "$root.$feature.$it" }
+            val useCases = filesIn(feature).filterNot { it.isGateway() }
+            Assertions.assertTrue(useCases.isNotEmpty(), "no $feature use-case files found")
+            useCases.assertFalse { it.importsAny(gateways) }
+        }
     }
 
     @Test
-    fun `the platform-neutral run gateways do not use the Java plugin's run code`() {
-        filesIn("run.ide").assertFalse { it.importsAny(listOf("$root.run.java")) }
+    fun `the platform-neutral gateways do not use the gateways of optional plugins`() {
+        for (feature in listOf("run", "modules", "sync")) {
+            val optional = optionalSegments.map { "$root.$feature.$it" }
+            val neutral = filesIn("$feature.ide")
+            Assertions.assertTrue(neutral.isNotEmpty(), "no $feature.ide files found")
+            neutral.assertFalse { it.importsAny(optional) }
+        }
+    }
+
+    @Test
+    fun `external-system APIs are used only in externalsystem and maven packages`() {
+        production.files.filterNot { file ->
+            file.packagee?.name.orEmpty().split('.').any { it == "externalsystem" || it == "maven" }
+        }.assertFalse { it.importsAny(externalSystemApis) }
+    }
+
+    @Test
+    fun `Maven plugin APIs are used only in maven packages`() {
+        production.files.filterNot { file -> file.packagee?.name.orEmpty().split('.').contains("maven") }
+            .assertFalse { it.importsAny(mavenPluginApis) }
     }
 
     @Test

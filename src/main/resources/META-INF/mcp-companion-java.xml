@@ -12,5 +12,6 @@
         <typeHierarchy
                 implementation="com.github.sinlordep.mcpcompanion.navigation.hierarchy.java.JvmTypeHierarchyProvider"/>
         <hotSwapSupport implementation="com.github.sinlordep.mcpcompanion.run.java.JvmHotSwapSupport"/>
+        <moduleFacts implementation="com.github.sinlordep.mcpcompanion.modules.java.JvmModuleFacts"/>
     </extensions>
 </idea-plugin>

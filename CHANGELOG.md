@@ -19,3 +19,8 @@
   captured console output (tail, regex filter, cursor), wait until they are ready (output pattern, failure pattern,
   port, end of process) and hot-swap changed classes into JVM debug sessions; also sees processes started in the IDE;
   never opens a dialog
+- `mc_modules`: read-only module model: modules with build system, SDK, language level, content roots (also those
+  next to the project directory) and folders; dependency graph with scopes and the exported flag, walks towards
+  dependencies or dependents with depth, library edges with Maven coordinates; dependency cycles
+- `mc_sync`: status of linked Gradle and Maven projects and re-import after build file changes, waiting for the result
+  (the build tool's message on failure) with a timeout; one sync at a time per project; never opens a dialog

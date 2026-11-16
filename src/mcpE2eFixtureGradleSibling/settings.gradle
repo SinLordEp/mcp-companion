@@ -1,0 +1,2 @@
+// Included build of the Gradle e2e fixture, copied next to its project directory by runIdeForMcpE2e.
+rootProject.name = 'shared'

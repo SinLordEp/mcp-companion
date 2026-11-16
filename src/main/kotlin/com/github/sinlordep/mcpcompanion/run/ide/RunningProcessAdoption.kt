@@ -1,6 +1,6 @@
 package com.github.sinlordep.mcpcompanion.run.ide
 
-import com.github.sinlordep.mcpcompanion.run.Clock
+import com.github.sinlordep.mcpcompanion.common.time.Clock
 import com.github.sinlordep.mcpcompanion.run.ConfigurationRef
 import com.github.sinlordep.mcpcompanion.run.ProcessId
 import com.github.sinlordep.mcpcompanion.run.ProcessSnapshot
