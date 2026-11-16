@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Beacon" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="runfix.Beacon" />
+    <module name="fixture" />
+    <option name="PROGRAM_PARAMETERS" value="64411" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

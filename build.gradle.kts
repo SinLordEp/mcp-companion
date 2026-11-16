@@ -97,9 +97,27 @@ tasks.named("check") {
 // toolkit and opens its windows on the desktop session even when WAYLAND_DISPLAY is unset.
 val mcpE2ePort = providers.gradleProperty("mcpE2ePort").orElse("64399")
 val mcpE2eAwtToolkit = providers.gradleProperty("mcpE2eAwtToolkit").orElse("")
+// -PmcpE2eFixture=gradle opens a Gradle project instead (build and run delegated to Gradle; src/mcpE2eFixtureGradle).
+// It uses a Gradle distribution that is already unpacked on the machine, never a download:
+// -PmcpE2eGradleHome=<dir>, by default the newest one under ~/.gradle/wrapper/dists.
+val mcpE2eFixtureKind = providers.gradleProperty("mcpE2eFixture").orElse("jps")
+val mcpE2eGradleHome = providers.gradleProperty("mcpE2eGradleHome").orElse(
+    providers.systemProperty("user.home").map { home ->
+        File(home, ".gradle/wrapper/dists").listFiles().orEmpty()
+            .filter { it.name.matches(Regex("gradle-[0-9.]+-bin")) }
+            .flatMap { dist -> dist.listFiles().orEmpty().flatMap { it.listFiles().orEmpty().toList() } }
+            .filter { it.resolve("bin/gradle").isFile }
+            .maxByOrNull {
+                it.name.removePrefix("gradle-").split('.').map(String::toInt).fold(0L) { a, n -> a * 1000 + n }
+            }
+            ?.absolutePath.orEmpty()
+    },
+)
 val mcpE2eFixture = layout.buildDirectory.dir("mcp-e2e-fixture")
+val mcpE2eGradleFixture = layout.buildDirectory.dir("mcp-e2e-gradle")
 val mcpE2eSibling = layout.buildDirectory.dir("mcp-e2e-sibling")
 val mcpE2eFixtureSource = layout.projectDirectory.dir("src/mcpE2eFixture")
+val mcpE2eGradleFixtureSource = layout.projectDirectory.dir("src/mcpE2eFixtureGradle")
 
 intellijPlatformTesting {
     runIde {
@@ -114,7 +132,10 @@ intellijPlatformTesting {
                         toolkit?.let { "-Dawt.toolkit.name=$it" },
                     )
                 }
-                argumentProviders += CommandLineArgumentProvider { listOf(mcpE2eFixture.get().asFile.absolutePath) }
+                argumentProviders += CommandLineArgumentProvider {
+                    val opened = if (mcpE2eFixtureKind.get() == "gradle") mcpE2eGradleFixture else mcpE2eFixture
+                    listOf(opened.get().asFile.absolutePath)
+                }
                 doFirst {
                     // A fresh copy on every start, so that edits of an earlier run (e.g. mc_safe_delete apply) are
                     // gone. The sibling directory is a second content root outside the project directory.
@@ -124,6 +145,79 @@ intellijPlatformTesting {
                     mcpE2eFixtureSource.asFile.resolve("project").copyRecursively(fixture)
                     mcpE2eFixtureSource.asFile.resolve("sibling").copyRecursively(sibling)
                     fixture.resolve("README.md").writeText("Throwaway project opened by runIdeForMcpE2e.\n")
+                    if (mcpE2eFixtureKind.get() == "gradle") {
+                        val gradleFixture = mcpE2eGradleFixture.get().asFile
+                        val gradleHome = mcpE2eGradleHome.get()
+                        check(File(gradleHome, "bin/gradle").isFile) { "no unpacked Gradle distribution: $gradleHome" }
+                        gradleFixture.deleteRecursively()
+                        // Forget the sandbox's cached model of an earlier run, so the IDE imports the project afresh.
+                        sandboxSystemDirectory.get().asFile.resolve("projects").listFiles().orEmpty()
+                            .filter { it.name.startsWith("${gradleFixture.name}.") }.forEach { it.deleteRecursively() }
+                        mcpE2eGradleFixtureSource.asFile.copyRecursively(gradleFixture)
+                        // Machine-specific, so written here: the local Gradle; Gradle runs on JAVA_HOME of the caller
+                        // (Gradle sync refused the sandbox JDK entry "mcp-e2e-jdk" as its JVM).
+                        gradleFixture.resolve(".idea/gradle.xml").writeText(
+                            """
+                            |<?xml version="1.0" encoding="UTF-8"?>
+                            |<project version="4">
+                            |  <component name="GradleSettings">
+                            |    <option name="linkedExternalProjectsSettings">
+                            |      <GradleProjectSettings>
+                            |        <option name="distributionType" value="LOCAL" />
+                            |        <option name="externalProjectPath" value="${'$'}PROJECT_DIR${'$'}" />
+                            |        <option name="gradleHome" value="$gradleHome" />
+                            |        <option name="gradleJvm" value="#JAVA_HOME" />
+                            |        <option name="delegatedBuild" value="true" />
+                            |        <option name="testRunner" value="GRADLE" />
+                            |      </GradleProjectSettings>
+                            |    </option>
+                            |  </component>
+                            |</project>
+                            |
+                            """.trimMargin(),
+                        )
+                    }
+                    // The fixture's project JDK "mcp-e2e-jdk" (see its .idea/misc.xml) is the runtime the sandbox IDE
+                    // runs on; it has javac and JDWP. It is defined in the sandbox's own JDK table, never the owner's:
+                    // a Java 9+ JDK with one jrt root per module, as the IDE itself would write it.
+                    val home = runtimeDirectory.get().asFile
+                    val release = home.resolve("release").readLines()
+                    fun releaseValue(key: String) =
+                        release.first { it.startsWith("$key=") }.substringAfter('=').trim('"')
+                    val modules = releaseValue("MODULES").split(' ').filter { it.isNotBlank() }
+                    // Without a version the IDE cannot tell which Java this is, and Gradle refuses it as its JVM.
+                    val version = "JetBrains Runtime version ${releaseValue("JAVA_VERSION")}"
+                    val roots = modules.joinToString("\n") {
+                        "            <root url=\"jrt://${home.absolutePath}!/$it\" type=\"simple\" />"
+                    }
+                    val table = sandboxConfigDirectory.get().asFile.resolve("options/jdk.table.xml")
+                    table.parentFile.mkdirs()
+                    table.writeText(
+                        """
+                        |<application>
+                        |  <component name="ProjectJdkTable">
+                        |    <jdk version="2">
+                        |      <name value="mcp-e2e-jdk" />
+                        |      <type value="JavaSDK" />
+                        |      <version value="$version" />
+                        |      <homePath value="${home.absolutePath}" />
+                        |      <roots>
+                        |        <annotationsPath><root type="composite" /></annotationsPath>
+                        |        <classPath>
+                        |          <root type="composite">
+                        |$roots
+                        |          </root>
+                        |        </classPath>
+                        |        <javadocPath><root type="composite" /></javadocPath>
+                        |        <sourcePath><root type="composite" /></sourcePath>
+                        |      </roots>
+                        |      <additional />
+                        |    </jdk>
+                        |  </component>
+                        |</application>
+                        |
+                        """.trimMargin(),
+                    )
                 }
             }
         }

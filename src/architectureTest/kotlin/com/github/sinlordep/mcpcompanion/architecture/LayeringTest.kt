@@ -26,11 +26,14 @@ class LayeringTest {
         "sync",
     )
 
-    /** Features built in the three layers of section 5.1: use cases at the root, gateways in `psi` and `java`. */
-    private val layeredFeatures = listOf("navigation", "safedelete")
+    /**
+     * Features built in the three layers of section 5.1: use cases at the root (and in sub-packages such as
+     * `run.output`), gateways in `psi`, `ide` and `java`.
+     */
+    private val layeredFeatures = listOf("navigation", "safedelete", "run")
 
-    /** Sub-package names that hold platform gateways. */
-    private val gatewaySegments = setOf("psi", "java")
+    /** Sub-package names that hold platform gateways: `psi` for code analysis, `ide` for other IDE services. */
+    private val gatewaySegments = setOf("psi", "ide", "java")
 
     /** APIs of the optional Java plugin; using them outside a `java` package breaks the plugin in non-Java IDEs. */
     private val javaPluginApis = listOf(
@@ -46,6 +49,8 @@ class LayeringTest {
         "com.intellij.psi.util.InheritanceUtil",
         "com.intellij.lang.java",
         "org.jetbrains.uast",
+        "com.intellij.debugger",
+        "com.intellij.openapi.compiler",
     )
 
     private val production = Konsist.scopeFromProduction()
@@ -97,6 +102,19 @@ class LayeringTest {
         val useCases = layeredFeatures.flatMap(::filesIn).filterNot { it.isGateway() }
         Assertions.assertTrue(useCases.isNotEmpty(), "no use-case files found; check layeredFeatures")
         useCases.assertFalse { it.importsAny(platform) }
+    }
+
+    @Test
+    fun `run use cases depend on no platform gateway of their own feature`() {
+        val gateways = listOf("$root.run.ide", "$root.run.java")
+        val useCases = filesIn("run").filterNot { it.isGateway() }
+        Assertions.assertTrue(useCases.isNotEmpty(), "no run use-case files found")
+        useCases.assertFalse { it.importsAny(gateways) }
+    }
+
+    @Test
+    fun `the platform-neutral run gateways do not use the Java plugin's run code`() {
+        filesIn("run.ide").assertFalse { it.importsAny(listOf("$root.run.java")) }
     }
 
     @Test

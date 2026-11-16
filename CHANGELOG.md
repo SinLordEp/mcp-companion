@@ -15,3 +15,7 @@
 - `mc_safe_delete`: preview what blocks deleting a declaration; apply deletes only without blockers, undoably and
   without any dialog; unused overriding methods go with a deleted method
 - Locations in results match the bundled MCP Server's path form (usable with `read_file`) and carry their origin
+- `mc_run`: start, stop, restart and inspect existing run configurations (run or debug) by process handle, read their
+  captured console output (tail, regex filter, cursor), wait until they are ready (output pattern, failure pattern,
+  port, end of process) and hot-swap changed classes into JVM debug sessions; also sees processes started in the IDE;
+  never opens a dialog

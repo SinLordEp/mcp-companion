@@ -39,6 +39,11 @@ MCP Companion complements the MCP Server bundled with JetBrains IDEs. It adds th
 | `mc_find_implementations` | Implementations, inheritors and overriding methods, or (`direction=up`) the supertypes and super methods. |
 | `mc_type_hierarchy` | Supertypes and subtypes of a class as a graph, with depth and size limits (JVM languages). |
 | `mc_safe_delete` | `preview` lists what blocks deleting a declaration; `apply` deletes it only when nothing does, as one undoable command, without ever opening a dialog (fixed rules for accessors, overriding methods and parameters). |
+| `mc_run` | Existing run configurations: `start` (run or debug, returns a handle at once), `stop`, `restart`, `status`, `processes` (also those started in the IDE), `output` (bounded console capture: tail, regex filter, cursor), `wait_ready` (output pattern, failure pattern, port, end of process), `hotswap` (JVM debug sessions: build the way the project builds, also with Gradle or Maven delegation, and reload changed classes, with compile errors or the JVM's reason when it refuses). Never asks the user anything. |
+
+A typical `mc_run` sequence: `start` -> `wait_ready` -> `output` -> edit code -> `hotswap` -> `stop`. Process handles
+(`p1`, `p2`, ...) stay valid until the run tab of the process is closed or reused. `mc_run` only runs existing run
+configurations, like the bundled `execute_run_configuration`, and is marked as a destructive tool for MCP clients.
 
 Symbols are given by path, line and column or by fully qualified name (`com.example.Foo#member`). Paths in the
 results use the form of the bundled server's own tools (relative to the project directory, `..` for content roots
@@ -61,8 +66,12 @@ state, and a link to the tool page.
 - `./gradlew verifyPlugin` runs the IntelliJ Plugin Verifier against the IDE the plugin is built with.
 - `./gradlew runIdeForMcpE2e` starts a sandbox IDE with the MCP server enabled on `127.0.0.1:64399` and only a
   throwaway copy of `src/mcpE2eFixture` open. On a private X display add `-PmcpE2eAwtToolkit=XToolkit`.
+- The e2e fixture has run configurations `Beacon` (prints `READY`, listens on 127.0.0.1:64411) and `Crash` (exit
+  code 3), `Prompting` (asks for its arguments, refused by `mc_run`); its JDK is the sandbox IDE's own runtime, defined
+  in the sandbox's JDK table. `-PmcpE2eFixture=gradle` opens a Gradle-delegated fixture instead
+  (`src/mcpE2eFixtureGradle`), built with an already unpacked local Gradle distribution.
 - Design rules: `docs/PLAN.md` section 5.1. Platform findings: `docs/spike-step0.md`, `docs/notes-step1.md`,
-  `docs/notes-step2.md`.
+  `docs/notes-step2.md`, `docs/notes-step3.md`.
 
 ## Installation
 

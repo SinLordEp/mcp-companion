@@ -33,6 +33,7 @@ class McpCompanionConfigurableTest : BasePlatformTestCase() {
                 "MCP Companion: Find Implementations",
                 "MCP Companion: Type Hierarchy",
                 "MCP Companion: Safe Delete",
+                "MCP Companion: Run Control",
             ),
             (0 until table.rowCount).map { table.getValueAt(it, 0) },
         )

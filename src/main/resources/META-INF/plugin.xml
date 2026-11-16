@@ -37,6 +37,9 @@
         <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.typeHierarchy"
                         interface="com.github.sinlordep.mcpcompanion.navigation.hierarchy.psi.TypeHierarchyProvider"
                         dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.hotSwapSupport"
+                        interface="com.github.sinlordep.mcpcompanion.run.ide.HotSwapSupport"
+                        dynamic="true"/>
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
@@ -48,6 +51,12 @@
                                  dynamic="true"/>
     </extensions>
 
+    <!-- mc_run: every start in the project, also those the user makes in the IDE, feeds the process tracker. -->
+    <projectListeners>
+        <listener class="com.github.sinlordep.mcpcompanion.run.ide.ExecutionEventsListener"
+                  topic="com.intellij.execution.ExecutionListener"/>
+    </projectListeners>
+
     <!-- One line per toolset. Each also needs a catalog line in mcp-companion/official-equivalents.txt when an
          official equivalent becomes known, and toolset.<id>.name/.description in McpCompanionBundle. -->
     <extensions defaultExtensionNs="com.intellij.mcpServer">
@@ -56,5 +65,6 @@
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.implementations.FindImplementationsToolset"/>
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.hierarchy.TypeHierarchyToolset"/>
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.safedelete.SafeDeleteToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.run.RunToolset"/>
     </extensions>
 </idea-plugin>
