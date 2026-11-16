@@ -1,4 +1,4 @@
-# mcp-companion
+# MCP Companion
 
 ![Build](https://github.com/SinLordEp/mcp-companion/workflows/Build/badge.svg)
 [![Version](https://img.shields.io/jetbrains/plugin/v/MARKETPLACE_ID.svg)](https://plugins.jetbrains.com/plugin/MARKETPLACE_ID)
@@ -16,13 +16,42 @@
 - [ ] Set the [Deployment Token](https://plugins.jetbrains.com/docs/marketplace/plugin-upload.html?from=IJPluginTemplate).
 - [ ] Click the <kbd>Watch</kbd> button on the top of the [IntelliJ Platform Plugin Template][template] to be notified about releases containing new features and fixes.
 
-This Fancy IntelliJ Platform Plugin is going to be your implementation of the brilliant ideas that you have.
+MCP Companion complements the MCP Server bundled with JetBrains IDEs. It adds the MCP tools AI agents need but the bundled server does not provide, without duplicating the built-in ones. Requires the bundled MCP Server plugin and IntelliJ-based IDEs 2026.3 or later.
+
+## What it does
+
+- Registers its tools on the bundled MCP Server, so every MCP client connected to the IDE sees them next to the
+  built-in tools. All MCP Companion tool names start with `mc_`.
+- Steps aside by itself: when an IDE version ships an official MCP tool with the same capability, the corresponding
+  MCP Companion toolset leaves the tool list. The decision is re-evaluated when plugins are installed, removed or
+  updated, and at IDE start.
+- `mc_status` reports the plugin version, the IDE build, the target project and each toolset's state:
+  `yielded` together with the official tools that replaced it, otherwise `available`. `available` only means that
+  the toolset has not stepped aside; whether its tools are switched on is decided on the MCP Server's tool page. MCP clients must pass `projectPath`
+  (or provide roots) so that the server knows the target project.
+
+## Switching tools on and off
+
+Use the bundled MCP Server's tool page: <kbd>Settings</kbd> > <kbd>AI</kbd> > <kbd>MCP Server</kbd> >
+<kbd>Exposed Tools</kbd>. MCP Companion's tools appear there like the built-in ones, and changes take effect
+immediately. MCP Companion keeps no on/off state of its own.
+
+<kbd>Settings</kbd> > <kbd>Tools</kbd> > <kbd>MCP Companion</kbd> is a read-only overview: every toolset with its
+state, and a link to the tool page.
+
+## Development
+
+- `./gradlew check` runs the tests, detekt, ktlint and the Konsist architecture rules (`src/architectureTest`).
+- `./gradlew verifyPlugin` runs the IntelliJ Plugin Verifier against the IDE the plugin is built with.
+- `./gradlew runIdeForMcpE2e` starts a sandbox IDE with the MCP server enabled on `127.0.0.1:64399` and only a
+  throwaway project open. On a private X display add `-PmcpE2eAwtToolkit=XToolkit`.
+- Design rules: `docs/PLAN.md` section 5.1. Platform findings: `docs/spike-step0.md`, `docs/notes-step1.md`.
 
 ## Installation
 
 - Using the IDE built-in plugin system:
 
-  <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>Marketplace</kbd> > <kbd>Search for "mcp-companion"</kbd> >
+  <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>Marketplace</kbd> > <kbd>Search for "MCP Companion"</kbd> >
   <kbd>Install</kbd>
 
 - Using JetBrains Marketplace:

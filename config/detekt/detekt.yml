@@ -1,0 +1,32 @@
+# Overrides on top of detekt's default configuration (buildUponDefaultConfig = true in build.gradle.kts).
+# Size and complexity limits follow docs/PLAN.md section 5.1: a class over ~200 lines or a function over ~40 lines
+# must be split.
+
+complexity:
+  LargeClass:
+    allowedLines: 200
+  LongMethod:
+    allowedLines: 40
+  CyclomaticComplexMethod:
+    allowedComplexity: 10
+  NestedBlockDepth:
+    allowedDepth: 3
+  TooManyFunctions:
+    excludes: ['**/test/**', '**/architectureTest/**']
+
+naming:
+  FunctionNaming:
+    # JUnit 5 tests use backticked sentences as names, as detekt already allows under **/test/**.
+    excludes: ['**/test/**', '**/architectureTest/**']
+
+style:
+  ReturnCount:
+    # `val x = ... ?: return failure(...)` guard clauses are the clearest way to report each failure case.
+    excludeGuardClauses: true
+  FunctionOnlyReturningConstant:
+    # Test probe toolsets need real @McpTool functions.
+    excludes: ['**/test/**']
+  MagicNumber:
+    excludes: ['**/test/**', '**/architectureTest/**', '**/*.kts']
+  ForbiddenComment:
+    active: true

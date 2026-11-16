@@ -1,0 +1,6 @@
+# Official MCP tools that replace an MCP Companion toolset. When any listed tool is present (enabled or not),
+# the toolset steps aside: its tools leave the MCP server's list. See docs/PLAN.md section 3.
+#
+# Format, one toolset per line:  <toolset id> = <official tool name>, <official tool name>, ...
+#
+# No official equivalent is known yet for any shipped toolset.

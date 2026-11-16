@@ -1,19 +1,44 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
     <id>com.github.sinlordep.mcpcompanion</id>
-    <name>mcp-companion</name>
+    <name>MCP Companion</name>
     <vendor>sinlordep</vendor>
     <description><![CDATA[
-        <p><b>mcp-companion</b> is a repository that provides a pure template to make it easier to create a new plugin project.</p>
-        <p>The main goal of this template is to speed up the setup phase of plugin development for both new and experienced developers by preconfiguring the project scaffold and CI, linking to the proper documentation pages, and keeping everything organized.</p>
+        <p><b>MCP Companion</b> complements the MCP Server that is bundled with JetBrains IDEs.
+        It adds MCP tools that AI agents need but the bundled server does not provide, and nothing else:
+        tools the bundled server already offers are not duplicated.</p>
+        <p>The tools are registered through the bundled MCP Server, so any MCP client connected to the IDE
+        sees them next to the built-in ones. When a later IDE version ships an official tool with the same
+        capability, the corresponding MCP Companion toolset steps aside by itself.</p>
+        <p>Switch individual tools on or off on the MCP Server's tool page in Settings.
+        <i>Settings | Tools | MCP Companion</i> shows the state of each toolset.</p>
+        <p>Requires the bundled <i>MCP Server</i> plugin to be enabled.</p>
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.mcpServer</depends>
+    <depends optional="true" config-file="mcp-companion-java.xml">com.intellij.java</depends>
 
-    <resource-bundle>messages.MyBundle</resource-bundle>
+    <resource-bundle>messages.McpCompanionBundle</resource-bundle>
+
+    <extensionPoints>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.qualifiedNameLocator"
+                        interface="com.github.sinlordep.mcpcompanion.common.symbols.psi.QualifiedNameLocatorProvider"
+                        dynamic="true"/>
+    </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.sinlordep.mcpcompanion.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
-        <postStartupActivity implementation="com.github.sinlordep.mcpcompanion.startup.MyProjectActivity" />
+        <applicationConfigurable parentId="tools"
+                                 id="com.github.sinlordep.mcpcompanion.settings"
+                                 instance="com.github.sinlordep.mcpcompanion.settings.McpCompanionConfigurable"
+                                 bundle="messages.McpCompanionBundle"
+                                 key="settings.display.name"
+                                 dynamic="true"/>
+    </extensions>
+
+    <!-- One line per toolset. Each also needs a catalog line in mcp-companion/official-equivalents.txt when an
+         official equivalent becomes known, and toolset.<id>.name/.description in McpCompanionBundle. -->
+    <extensions defaultExtensionNs="com.intellij.mcpServer">
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.StatusToolset"/>
     </extensions>
 </idea-plugin>
