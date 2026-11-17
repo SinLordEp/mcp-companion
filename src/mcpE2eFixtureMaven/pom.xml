@@ -18,5 +18,9 @@
     <modules>
         <module>core</module>
         <module>app</module>
+        <!-- mc_build/mc_diagnostics fixture: buildbad (a compile error) depends on buildok (warnings only). -->
+        <module>buildclean</module>
+        <module>buildok</module>
+        <module>buildbad</module>
     </modules>
 </project>

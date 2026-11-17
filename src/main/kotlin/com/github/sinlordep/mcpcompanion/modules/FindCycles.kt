@@ -1,5 +1,10 @@
 package com.github.sinlordep.mcpcompanion.modules
 
+import com.github.sinlordep.mcpcompanion.common.modulegraph.Dependency
+import com.github.sinlordep.mcpcompanion.common.modulegraph.DependencyGraph
+import com.github.sinlordep.mcpcompanion.common.modulegraph.DependencyScope
+import com.github.sinlordep.mcpcompanion.common.modulegraph.DependencyTarget
+import com.github.sinlordep.mcpcompanion.common.modulegraph.ProjectGraph
 import com.github.sinlordep.mcpcompanion.common.paging.page
 import com.github.sinlordep.mcpcompanion.common.result.ToolResult
 import com.github.sinlordep.mcpcompanion.common.result.map

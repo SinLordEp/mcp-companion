@@ -24,23 +24,29 @@ class LayeringTest {
         "run",
         "modules",
         "sync",
+        "build",
+        "diagnostics",
     )
 
     /**
      * Features built in the three layers of section 5.1: use cases at the root (and in sub-packages such as
      * `run.output`), gateways in the [gatewaySegments] sub-packages.
      */
-    private val layeredFeatures = listOf("navigation", "safedelete", "run", "modules", "sync")
+    private val layeredFeatures = listOf("navigation", "safedelete", "run", "modules", "sync", "build", "diagnostics")
+
+    /** Layered features whose use cases sit at the feature root and whose gateways are `ide` plus optional segments. */
+    private val gatewayFeatures = listOf("run", "modules", "sync", "build", "diagnostics")
 
     /**
      * Sub-package names that hold platform gateways: `psi` for code analysis, `ide` for other IDE services, and one
      * per optional plugin: `java` (Java plugin), `externalsystem` (the platform's optional external-system support:
-     * Gradle and others), `maven` (Maven plugin), `smrunner` (the platform's test runner plugin).
+     * Gradle and others), `maven` (Maven plugin), `smrunner` (the platform's test runner plugin), `vcs` (the platform's
+     * VCS support, which holds the batch code analysis).
      */
-    private val gatewaySegments = setOf("psi", "ide", "java", "externalsystem", "maven", "smrunner")
+    private val gatewaySegments = setOf("psi", "ide", "java", "externalsystem", "maven", "smrunner", "vcs")
 
     /** Gateway segments that need an optional plugin; the neutral `ide` gateways must not depend on them. */
-    private val optionalSegments = listOf("java", "externalsystem", "maven", "smrunner")
+    private val optionalSegments = listOf("java", "externalsystem", "maven", "smrunner", "vcs")
 
     /**
      * APIs of the optional test runner plugin (`com.intellij.platform.testRunner`: test trees, test consoles, test
@@ -128,7 +134,7 @@ class LayeringTest {
 
     @Test
     fun `use cases depend on no platform gateway of their own feature`() {
-        for (feature in listOf("run", "modules", "sync")) {
+        for (feature in gatewayFeatures) {
             val gateways = gatewaySegments.map { "$root.$feature.$it" }
             val useCases = filesIn(feature).filterNot { it.isGateway() }
             Assertions.assertTrue(useCases.isNotEmpty(), "no $feature use-case files found")
@@ -138,7 +144,7 @@ class LayeringTest {
 
     @Test
     fun `the platform-neutral gateways do not use the gateways of optional plugins`() {
-        for (feature in listOf("run", "modules", "sync")) {
+        for (feature in gatewayFeatures) {
             val optional = optionalSegments.map { "$root.$feature.$it" }
             val neutral = filesIn("$feature.ide")
             Assertions.assertTrue(neutral.isNotEmpty(), "no $feature.ide files found")

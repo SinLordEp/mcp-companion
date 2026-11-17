@@ -1,5 +1,8 @@
 package com.github.sinlordep.mcpcompanion.modules
 
+import com.github.sinlordep.mcpcompanion.common.modulegraph.DependencyScope
+import com.github.sinlordep.mcpcompanion.common.modulegraph.DependencyTarget
+import com.github.sinlordep.mcpcompanion.common.modulegraph.GraphDirection
 import com.github.sinlordep.mcpcompanion.common.result.ErrorCode
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals

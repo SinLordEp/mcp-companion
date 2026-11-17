@@ -1,18 +1,13 @@
 package com.github.sinlordep.mcpcompanion.modules
 
 import com.github.sinlordep.mcpcompanion.common.actions.ToolArguments
+import com.github.sinlordep.mcpcompanion.common.modulegraph.GraphDirection
 
 /** The actions of `mc_modules`. */
 enum class ModulesAction { LIST, GRAPH, CYCLES }
 
-/** Which way `graph` walks from its root module. */
-enum class GraphDirection {
-    /** The modules the root depends on. */
-    DEPENDENCIES,
-
-    /** The modules that depend on the root. */
-    DEPENDENTS,
-}
+/** How `graph` returns the edges: structured and paged (default), or as one Mermaid flowchart. */
+enum class GraphFormat { JSON, MERMAID }
 
 /** The optional arguments of `mc_modules`; each action accepts a subset. */
 enum class ModulesParameter(val label: String) {
@@ -21,6 +16,7 @@ enum class ModulesParameter(val label: String) {
     DEPTH("depth"),
     INCLUDE_LIBRARIES("includeLibraries"),
     IGNORE_TEST_SCOPE("ignoreTestScope"),
+    FORMAT("format"),
     LIMIT("limit"),
     OFFSET("offset"),
 }
@@ -32,6 +28,7 @@ data class ModulesArguments(
     val depth: Int? = null,
     val includeLibraries: Boolean? = null,
     val ignoreTestScope: Boolean? = null,
+    val format: GraphFormat? = null,
     val limit: Int? = null,
     val offset: Int? = null,
 ) : ToolArguments<ModulesParameter> {
@@ -42,6 +39,7 @@ data class ModulesArguments(
         if (depth != null) add(ModulesParameter.DEPTH)
         if (includeLibraries != null) add(ModulesParameter.INCLUDE_LIBRARIES)
         if (ignoreTestScope != null) add(ModulesParameter.IGNORE_TEST_SCOPE)
+        if (format != null) add(ModulesParameter.FORMAT)
         if (limit != null) add(ModulesParameter.LIMIT)
         if (offset != null) add(ModulesParameter.OFFSET)
     }

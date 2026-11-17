@@ -6,6 +6,10 @@
       <module fileurl="file://$PROJECT_DIR$/cyclea/cyclea.iml" filepath="$PROJECT_DIR$/cyclea/cyclea.iml" />
       <module fileurl="file://$PROJECT_DIR$/cycleb/cycleb.iml" filepath="$PROJECT_DIR$/cycleb/cycleb.iml" />
       <module fileurl="file://$PROJECT_DIR$/testfix/testfix.iml" filepath="$PROJECT_DIR$/testfix/testfix.iml" />
+      <module fileurl="file://$PROJECT_DIR$/buildclean/buildclean.iml" filepath="$PROJECT_DIR$/buildclean/buildclean.iml" />
+      <module fileurl="file://$PROJECT_DIR$/buildok/buildok.iml" filepath="$PROJECT_DIR$/buildok/buildok.iml" />
+      <module fileurl="file://$PROJECT_DIR$/buildbad/buildbad.iml" filepath="$PROJECT_DIR$/buildbad/buildbad.iml" />
+      <module fileurl="file://$PROJECT_DIR$/javaconly/javaconly.iml" filepath="$PROJECT_DIR$/javaconly/javaconly.iml" />
     </modules>
   </component>
 </project>

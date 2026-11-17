@@ -1,11 +1,11 @@
 package com.github.sinlordep.mcpcompanion.toolsets.modules
 
+import com.github.sinlordep.mcpcompanion.common.modulegraph.Dependency
+import com.github.sinlordep.mcpcompanion.common.modulegraph.DependencyTarget
+import com.github.sinlordep.mcpcompanion.common.modulegraph.GraphEdge
 import com.github.sinlordep.mcpcompanion.common.paging.Page
 import com.github.sinlordep.mcpcompanion.modules.ContentRoot
-import com.github.sinlordep.mcpcompanion.modules.Dependency
 import com.github.sinlordep.mcpcompanion.modules.DependencyCycle
-import com.github.sinlordep.mcpcompanion.modules.DependencyTarget
-import com.github.sinlordep.mcpcompanion.modules.GraphEdge
 import com.github.sinlordep.mcpcompanion.modules.ModuleDescription
 import com.github.sinlordep.mcpcompanion.modules.ModulesOutcome
 import com.github.sinlordep.mcpcompanion.modules.SourceFolder
@@ -23,6 +23,13 @@ data class ModulesOutput(
     val direction: String? = null,
     val reached: Int? = null,
     val edges: List<EdgeOutput>? = null,
+    /**
+     * graph with format=mermaid: the edges and modules as one flowchart; omittedEdges and omittedNodes (modules
+     * without edges) were left out to keep it bounded.
+     */
+    val mermaid: String? = null,
+    val omittedEdges: Int? = null,
+    val omittedNodes: Int? = null,
     val cycles: List<CycleOutput>? = null,
     val ignoredTestScope: Boolean? = null,
     val total: Int,
@@ -40,6 +47,18 @@ data class ModulesOutput(
                 direction = outcome.direction?.name?.lowercase(),
                 reached = outcome.reached,
                 edges = outcome.page.items.map(EdgeOutput::from),
+            )
+
+            is ModulesOutcome.Diagram -> ModulesOutput(
+                root = outcome.root,
+                direction = outcome.direction?.name?.lowercase(),
+                reached = outcome.reached,
+                mermaid = outcome.diagram.text,
+                omittedEdges = outcome.diagram.omittedEdges.takeIf { it > 0 },
+                omittedNodes = outcome.diagram.omittedNodes.takeIf { it > 0 },
+                total = outcome.diagram.edges + outcome.diagram.omittedEdges,
+                offset = 0,
+                hasMore = false,
             )
 
             is ModulesOutcome.Cycles -> paged(outcome.page, outcome.total).copy(

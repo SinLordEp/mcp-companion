@@ -1,14 +1,12 @@
 package com.github.sinlordep.mcpcompanion.modules.ide
 
+import com.github.sinlordep.mcpcompanion.common.modulegraph.ProjectGraph
+import com.github.sinlordep.mcpcompanion.common.modulegraph.ide.IdeModuleGraph
 import com.github.sinlordep.mcpcompanion.common.paths.ProjectPathRenderer
 import com.github.sinlordep.mcpcompanion.common.paths.psi.ProjectFiles
 import com.github.sinlordep.mcpcompanion.modules.ContentRoot
-import com.github.sinlordep.mcpcompanion.modules.Dependency
-import com.github.sinlordep.mcpcompanion.modules.DependencyScope
-import com.github.sinlordep.mcpcompanion.modules.DependencyTarget
 import com.github.sinlordep.mcpcompanion.modules.ModuleDescription
 import com.github.sinlordep.mcpcompanion.modules.ModulesControl
-import com.github.sinlordep.mcpcompanion.modules.ProjectGraph
 import com.github.sinlordep.mcpcompanion.modules.ProjectModelGateway
 import com.intellij.openapi.application.readAction
 import com.intellij.openapi.module.Module
@@ -17,20 +15,17 @@ import com.intellij.openapi.module.ModuleType
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ContentEntry
-import com.intellij.openapi.roots.LibraryOrderEntry
-import com.intellij.openapi.roots.ModuleOrderEntry
 import com.intellij.openapi.roots.ModuleRootManager
-import com.intellij.openapi.roots.OrderEntry
 import com.intellij.openapi.vfs.VfsUtilCore
-import com.intellij.openapi.roots.DependencyScope as IdeScope
 
 /** Wires `mc_modules` to the platform for [project]. Cheap; called once per tool call. */
 fun modulesControlFor(project: Project): ModulesControl =
     ModulesControl.create(IdeProjectModelGateway(project) { ModuleFactsProvider.EP.extensionList })
 
 /**
- * [ProjectModelGateway] over the module model (`ModuleManager`, `ModuleRootManager`). Each call reads in one
- * cancellable read action (no smart mode needed: the module model is not indexed), so its answer is consistent.
+ * [ProjectModelGateway] over the module model (`ModuleManager`, `ModuleRootManager`; the graph through the shared
+ * [IdeModuleGraph]). Each call reads in one cancellable read action (no smart mode needed: the module model is not
+ * indexed), so its answer is consistent.
  */
 internal class IdeProjectModelGateway(
     private val project: Project,
@@ -46,16 +41,10 @@ internal class IdeProjectModelGateway(
         }
     }
 
-    override suspend fun graph(includeLibraries: Boolean): ProjectGraph = readAction {
+    override suspend fun graph(includeLibraries: Boolean): ProjectGraph {
         val providers = facts()
-        val modules = ModuleManager.getInstance(project).modules
-        val dependencies = modules.flatMap { module ->
-            ProgressManager.checkCanceled()
-            ModuleRootManager.getInstance(module).orderEntries.mapNotNull {
-                dependencyOf(module.name, it, includeLibraries, providers)
-            }
-        }
-        ProjectGraph(modules.map { it.name }.toSet(), dependencies)
+        return IdeModuleGraph(project) { library -> providers.firstNotNullOfOrNull { it.coordinates(library) } }
+            .read(includeLibraries)
     }
 
     private fun describe(
@@ -83,40 +72,5 @@ internal class IdeProjectModelGateway(
             folders = folders.take(ContentFolders.MAX_PER_ROOT),
             omittedFolders = (folders.size - ContentFolders.MAX_PER_ROOT).coerceAtLeast(0),
         )
-    }
-
-    private fun dependencyOf(
-        from: String,
-        entry: OrderEntry,
-        includeLibraries: Boolean,
-        providers: List<ModuleFactsProvider>,
-    ): Dependency? = when {
-        entry is ModuleOrderEntry -> Dependency(
-            from = from,
-            target = DependencyTarget.Module(entry.moduleName, missing = entry.module == null),
-            scope = scopeOf(entry.scope),
-            exported = entry.isExported,
-        )
-
-        entry is LibraryOrderEntry && includeLibraries -> Dependency(
-            from = from,
-            target = DependencyTarget.Library(
-                name = entry.libraryName ?: entry.presentableName,
-                coordinates = entry.library?.let { library ->
-                    providers.firstNotNullOfOrNull { it.coordinates(library) }
-                },
-            ),
-            scope = scopeOf(entry.scope),
-            exported = entry.isExported,
-        )
-
-        else -> null
-    }
-
-    private fun scopeOf(scope: IdeScope): DependencyScope = when (scope) {
-        IdeScope.COMPILE -> DependencyScope.COMPILE
-        IdeScope.TEST -> DependencyScope.TEST
-        IdeScope.RUNTIME -> DependencyScope.RUNTIME
-        IdeScope.PROVIDED -> DependencyScope.PROVIDED
     }
 }

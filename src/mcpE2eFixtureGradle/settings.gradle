@@ -2,5 +2,7 @@ rootProject.name = 'gradlefix'
 
 // mc_modules/mc_sync fixture: two subprojects and, like a composite of sibling repositories, an included build next
 // to the project directory (copied to ../mcp-e2e-gradle-sibling by runIdeForMcpE2e). No dependency is downloaded.
-include 'app', 'lib'
+// mc_build/mc_diagnostics fixture: buildbad (a compile error) depends on buildok (warnings only); buildclean has no
+// problems. So building buildok succeeds while the whole build fails.
+include 'app', 'lib', 'buildclean', 'buildok', 'buildbad'
 includeBuild '../mcp-e2e-gradle-sibling'

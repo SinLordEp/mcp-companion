@@ -1,5 +1,6 @@
 package com.github.sinlordep.mcpcompanion.modules
 
+import com.github.sinlordep.mcpcompanion.common.modulegraph.DependencyScope
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

@@ -49,7 +49,8 @@ object GradleFixtureFiles {
 
 /**
  * Machine-specific project files of the Maven fixture: Maven settings and import preferences that point to a private
- * local repository under `build/`, so that nothing is read from or written to `~/.m2`.
+ * local repository under `build/`, so that nothing is read from or written to `~/.m2`. With [delegatedBuild] the IDE
+ * hands building to Maven ("Delegate IDE build/run actions to Maven"), otherwise it builds the imported modules itself.
  */
 object MavenFixtureFiles {
     fun mavenSettings(repository: File): String = """
@@ -59,9 +60,12 @@ object MavenFixtureFiles {
         |
     """.trimMargin()
 
-    fun workspace(repository: File, settings: File): String = """
+    fun workspace(repository: File, settings: File, delegatedBuild: Boolean = false): String = """
         |<?xml version="1.0" encoding="UTF-8"?>
         |<project version="4">
+        |  <component name="MavenRunner">
+        |    <option name="delegateBuildToMaven" value="$delegatedBuild" />
+        |  </component>
         |  <component name="MavenImportPreferences">
         |    <option name="generalSettings">
         |      <MavenGeneralSettings>

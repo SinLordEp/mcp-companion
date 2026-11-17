@@ -40,6 +40,8 @@ class McpCompanionConfigurableTest : BasePlatformTestCase() {
                 "MCP Companion: Run Control",
                 "MCP Companion: Modules",
                 "MCP Companion: Build Sync",
+                "MCP Companion: Diagnostics",
+                "MCP Companion: Module Build",
             ),
             (0 until table.rowCount).map { table.getValueAt(it, 0) },
         )

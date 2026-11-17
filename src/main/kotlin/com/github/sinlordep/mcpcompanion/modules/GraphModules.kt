@@ -1,6 +1,8 @@
 package com.github.sinlordep.mcpcompanion.modules
 
-import com.github.sinlordep.mcpcompanion.common.paging.PageRequest
+import com.github.sinlordep.mcpcompanion.common.modulegraph.DependencyGraph
+import com.github.sinlordep.mcpcompanion.common.modulegraph.GraphDirection
+import com.github.sinlordep.mcpcompanion.common.modulegraph.GraphEdge
 import com.github.sinlordep.mcpcompanion.common.paging.page
 import com.github.sinlordep.mcpcompanion.common.result.ErrorCode
 import com.github.sinlordep.mcpcompanion.common.result.ToolResult
@@ -19,6 +21,7 @@ class GraphModules(private val model: ProjectModelGateway) : ModulesActionHandle
         ModulesParameter.DIRECTION,
         ModulesParameter.DEPTH,
         ModulesParameter.INCLUDE_LIBRARIES,
+        ModulesParameter.FORMAT,
         ModulesParameter.LIMIT,
         ModulesParameter.OFFSET,
     )
@@ -28,33 +31,44 @@ class GraphModules(private val model: ProjectModelGateway) : ModulesActionHandle
             val graph = DependencyGraph(model.graph(includeLibraries = request.includeLibraries == true))
             val root = request.module
             when {
-                root == null -> ToolResult.success(whole(graph, pageRequest))
-                root !in graph -> unknownModule(root)
-                else -> ToolResult.success(walk(graph, root, request, pageRequest))
+                root != null && root !in graph -> unknownModule(root)
+
+                else -> {
+                    val selection = select(graph, root, request)
+                    ToolResult.success(
+                        if (request.format == GraphFormat.MERMAID) {
+                            val dependencies = selection.edges.map { it.dependency }
+                            ModulesOutcome.Diagram(
+                                root,
+                                selection.direction,
+                                selection.reached,
+                                MermaidGraph.render(dependencies, selection.nodes, root),
+                            )
+                        } else {
+                            val page = selection.edges.asSequence().page(pageRequest)
+                            ModulesOutcome.Graph(
+                                root,
+                                selection.direction,
+                                selection.reached,
+                                page,
+                                selection.edges.size,
+                            )
+                        },
+                    )
+                }
             }
         }
 
-    private fun whole(graph: DependencyGraph, pageRequest: PageRequest): ModulesOutcome.Graph {
-        val edges = graph.dependencies.map { GraphEdge(it) }
-        return ModulesOutcome.Graph(null, null, graph.modules.size, edges.asSequence().page(pageRequest), edges.size)
+    /** The edges `graph` reports, in a stable order: the whole graph, or the walk from [root]. */
+    private class Selection(val direction: GraphDirection?, val nodes: Collection<String>, val edges: List<GraphEdge>) {
+        val reached: Int get() = nodes.size
     }
 
-    private fun walk(
-        graph: DependencyGraph,
-        root: String,
-        request: ModulesArguments,
-        pageRequest: PageRequest,
-    ): ModulesOutcome.Graph {
+    private fun select(graph: DependencyGraph, root: String?, request: ModulesArguments): Selection {
+        if (root == null) return Selection(null, graph.modules, graph.dependencies.map { GraphEdge(it) })
         val direction = request.direction ?: GraphDirection.DEPENDENCIES
         val walk = graph.walk(root, direction, request.depth ?: Int.MAX_VALUE)
-        val edges = walk.edges.sortedWith(WALK_ORDER)
-        return ModulesOutcome.Graph(
-            root,
-            direction,
-            walk.reached.size,
-            edges.asSequence().page(pageRequest),
-            edges.size,
-        )
+        return Selection(direction, walk.reached, walk.edges.sortedWith(WALK_ORDER))
     }
 
     private fun validate(request: ModulesArguments): ToolResult<Unit> {
@@ -82,7 +96,20 @@ class GraphModules(private val model: ProjectModelGateway) : ModulesActionHandle
                 "Omit includeLibraries, or use direction=dependencies.",
             )
 
-            else -> ToolResult.success(Unit)
+            else -> validateFormat(request)
+        }
+    }
+
+    private fun validateFormat(request: ModulesArguments): ToolResult<Unit> {
+        val paged = request.limit != null || request.offset != null
+        return if (request.format == GraphFormat.MERMAID && paged) {
+            ToolResult.failure(
+                ErrorCode.INVALID_ARGUMENT,
+                "format=mermaid returns the whole graph as one diagram; limit and offset do not apply.",
+                "Omit limit and offset, or use format=json to page the edges.",
+            )
+        } else {
+            ToolResult.success(Unit)
         }
     }
 

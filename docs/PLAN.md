@@ -87,8 +87,10 @@
 | `mc_type_hierarchy` | — | 一个类的父类链和子类树，限制深度 | `ClassInheritorsSearch`、`PsiClass.getSupers` |
 | `mc_safe_delete` | `preview`、`apply` | 先报告还有哪些引用，没有才删除 | `SafeDeleteProcessor` |
 | `mc_run` | `processes`、`start`、`stop`、`restart`、`status`、`output`、`wait_ready`、`hotswap`、`tests` | Run Configuration 全生命周期。`output` 支持末尾 N 行、正则过滤和游标。热替换走 IDE 自己的构建路径（`ProjectTaskManager`），所以委托给 Gradle、Maven 的项目也能用。`tests`：测试运行的结论、计数和失败的测试（位置、消息、期望/实际值、截断的堆栈），运行中也能读（标为部分结果），可等待结束；`processes`、`status` 对测试运行附带摘要。Maven 运行在 263 没有结构化结果，`tests` 说明原因并指向 `output`。`start`、`restart` 和会重启的 `hotswap` 先在 IDE 里请用户确认（允许/拒绝），和官方 `execute_run_configuration` 一样由 MCP Server 的 Brave 模式决定是否询问；拒绝或 120 秒内未答返回 `DENIED` | `ExecutionListener`、`ProgramRunner`、`ProcessHandler`、`ProjectTaskManager`、`HotSwapManager`、`SMTRunnerEventsListener.TEST_STATUS`、`SMTestProxy` |
-| `mc_modules` | `list`、`graph`、`cycles` | 只读。模块及其内容根目录和文件夹（项目目录之外的根会标出）、带作用域的依赖图（JSON）、循环依赖。不做 `build`：官方 `build_project` 已覆盖，且能给出带位置的错误 | `ModuleManager`、`ModuleRootManager` |
+| `mc_modules` | `list`、`graph`、`cycles` | 只读。模块及其内容根目录和文件夹（项目目录之外的根会标出）、带作用域的依赖图（JSON，或 `format=mermaid` 输出 Mermaid 流程图，有边数和节点数上限）、循环依赖。按模块构建不放在这里，而是单独的 `mc_build`（构建会改输出目录，而 `mc_modules` 标为只读） | `ModuleManager`、`ModuleRootManager` |
 | `mc_sync` | `status`、`sync` | 重新导入 Gradle（及其他 external system）和 Maven 项目，等待并返回结果；同一项目不会同时跑两次同步；Maven 只能整体同步 | `ExternalSystemUtil.refreshProject`、`MavenProjectsManager`、`MavenSyncListener` |
+| `mc_diagnostics` | — | 只读。不构建就列出一个模块（可加上它依赖的或依赖它的模块）、一个目录或一组文件的问题：IDE 编辑器里看到的分析（语言自身的错误检查和项目启用的检查），文件不必打开；默认只列错误，可加警告；按文件分组，带行列号，按严重程度和模块汇总；每次最多分析 500 个文件，有时间上限，超时如实返回 `partial` 和继续的位置；等导入和索引完成后再分析。看不到只有真正编译才发现的问题（编译器限制、注解处理器、构建时生成的代码、构建脚本） | `CodeSmellDetector`（平台 VCS 模块，可选依赖）、`ProblemHighlightFilter`、`Observation.awaitConfiguration` |
+| `mc_build` | `build`、`status` | 只构建一个模块及其依赖（可加上依赖它的模块），走 IDE 自己的构建路径，委托给 Gradle、Maven 的项目同样适用；返回结果、包含的模块、耗时、带文件和行列号的错误（JPS 来自编译器消息，Gradle/Maven 来自构建工具控制台输出的解析）；超时后构建继续，`status` 查看结果；同一项目同时只允许一次构建，第二个请求被拒绝；不受信任的项目拒绝；不弹对话框，调试会话不会被问"是否重新加载类" | `ProjectTaskManager.createModulesBuildTask`、`CompilerTopics`、`ExecutionManager.EXECUTION_TOPIC`、`HotSwapUI` 否决监听 |
 
 符号定位方式：统一接受"文件路径 + 行号 + 列号"或"全限定名"两种。
 
@@ -107,11 +109,13 @@ src/main/kotlin/com/github/sinlordep/mcpcompanion/
   toolsets/        每个工具组一个 McpToolset 类
   navigation/      引用、实现、层级、安全删除的实现
   run/             运行控制、输出缓冲、就绪检测、热替换
-  modules/         依赖图、环检测、模块编译
+  modules/         模块列表、依赖图（JSON、Mermaid）、环检测
   sync/            Maven、Gradle 重新导入
+  diagnostics/     不构建的代码问题（mc_diagnostics）
+  build/           按模块构建（mc_build）
   yield/           官方工具对照表和检测
   settings/        设置状态和设置页
-  common/          符号定位、分页、结果模型、错误模型
+  common/          符号定位、分页、结果模型、错误模型；共用的模块图（modulegraph）和构建网关（build）
 src/main/resources/META-INF/
   plugin.xml       核心
   mcp-companion-java.xml    依赖 Java 插件的部分（可选依赖）
@@ -193,6 +197,7 @@ MCP 适配层 (toolsets/)        只做参数解析、调用用例、把结果�
 | 4b（已完成） | `mc_run` 启动确认 | 第 3 步说官方 `execute_run_configuration` 不询问，是错的。`start`、`restart`、会重启的 `hotswap` 现在先问用户（允许/拒绝，"无需确认"复选框），由官方 Brave 模式控制，设置页可改；拒绝或超时返回 `DENIED`，取消调用会关闭对话框。沙箱里中英文实测，细节和限制见 `docs/notes-consent.md` |
 | 5（已完成） | 发布准备：README、插件描述、图标、CHANGELOG、Plugin Verifier 通过、签名 | 版本 0.1.0；`check buildPlugin verifyPlugin` 全绿，Verifier 对 IU-263.7307.200 为 Compatible（下一版 EAP 尚未发布，出现后自动加入）；用一次性自签名证书验证了 `signPlugin` 和 `verifyPluginSignature`；构建好的 ZIP 从磁盘装进干净的 IDEA 2026.3（独立的配置目录，私有 Xvfb），无需重启即加载，`idea.log` 无错误，插件页、设置页、MCP 调用和启动确认在中英文下实测。`runIdeForMcpE2e` 的配置缓存问题已修（逻辑移到 `buildSrc`）。CI 只做了静态检查，推送后才能证明。细节见 `docs/notes-step5.md`，第 6 步的清单见 `docs/RELEASING.md` |
 | 6 | 发布到 Marketplace | 需要用户提供 Marketplace 令牌和签名证书，并明确同意发布 |
+| 7（已完成，待审查） | `mc_diagnostics`、`mc_build`、`mc_modules graph` 的 Mermaid 输出（替代 idea-mcp-ext 的 `get_aggregated_diagnostics` 和 `build_module_with_dependencies`），版本 0.2.0 | 第 0 步核实：官方 `build_project` 不能按模块构建，读取委托构建位置的 Build 窗口监听接口是 `@ApiStatus.Experimental`；官方 `lint_files` 用的是 `impl` 包。改用公开的 `CodeSmellDetector` 和构建工具控制台输出。构建代码（原 `run/java/ProjectBuild`）和模块图移到 `common/build`、`common/modulegraph`，热替换也因此能给出委托构建的错误位置。JPS、Gradle（多项目加 included build，另生成 20 个子项目测耗时）、Maven（IDE 构建和委托 Maven 构建）三个 fixture 实测，细节和限制见 `docs/notes-step7.md` |
 
 每一步一个分支、一个 PR。
 

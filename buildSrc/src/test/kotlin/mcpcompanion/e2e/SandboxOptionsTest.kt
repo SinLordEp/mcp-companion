@@ -87,4 +87,13 @@ class SandboxOptionsTest {
             runCatching { McpE2eFixture.parse("ant") }.exceptionOrNull()?.message,
         )
     }
+
+    @Test
+    fun `the maven workspace delegates building only when asked`() {
+        val repository = java.io.File("/w/m2")
+        val settings = java.io.File("/w/settings.xml")
+        val delegated = "<option name=\"delegateBuildToMaven\" value=\"true\" />"
+        assertEquals(true, delegated in MavenFixtureFiles.workspace(repository, settings, delegatedBuild = true))
+        assertEquals(false, delegated in MavenFixtureFiles.workspace(repository, settings))
+    }
 }

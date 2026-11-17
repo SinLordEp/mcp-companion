@@ -41,6 +41,9 @@ dependencies {
         // Optional at runtime (META-INF/mcp-companion-test-runner.xml); its content module intellij.platform.smRunner
         // holds the test tree API of mc_run's tests action.
         bundledPlugin("com.intellij.platform.testRunner")
+        // Optional at runtime (META-INF/mcp-companion-vcs.xml); its content module intellij.platform.vcs.impl holds
+        // CodeSmellDetector, the batch code analysis of mc_diagnostics.
+        bundledPlugin("com.intellij.platform.vcs")
         testFramework(TestFrameworkType.Platform)
         testBundledPlugins("com.intellij.modules.ultimate")
         pluginVerifier()
@@ -146,6 +149,7 @@ tasks.named("check") {
 // ---- Sandbox IDE for manual and end-to-end checks ------------------------------------------------------------------
 //   ./gradlew runIdeForMcpE2e [-PmcpE2ePort=64399] [-PmcpE2eAwtToolkit=XToolkit] [-PmcpE2eFixture=jps|gradle|maven]
 //                             [-PmcpE2eLaunchConfirmation=skip|ask] [-PmcpE2eGradleHome=<unpacked Gradle>]
+//                             [-PmcpE2eMavenBuild=ide|maven]
 // The bundled MCP server is force-enabled on a fixed loopback port and the sandbox opens only a throwaway copy of a
 // fixture under build/. Endpoints: http://127.0.0.1:<port>/sse (SSE) and http://127.0.0.1:<port>/stream (Streamable
 // HTTP). The logic lives in buildSrc/src/main/kotlin/mcpcompanion/e2e; see README.md, Development.
@@ -157,6 +161,10 @@ val prepareMcpE2eSandbox = tasks.register<PrepareMcpE2eSandbox>("prepareMcpE2eSa
     fixture = providers.gradleProperty("mcpE2eFixture").orElse("jps")
     launchConfirmation = providers.gradleProperty("mcpE2eLaunchConfirmation").orElse("skip")
     gradleHome = providers.gradleProperty("mcpE2eGradleHome")
+    mavenDelegatedBuild = providers.gradleProperty("mcpE2eMavenBuild").orElse("ide").map {
+        require(it == "ide" || it == "maven") { "mcpE2eMavenBuild must be ide or maven, was $it" }
+        it == "maven"
+    }
     gradleUserHome = gradle.gradleUserHomeDir
     fixtureSources = layout.projectDirectory.dir("src")
     workDirectory = layout.buildDirectory

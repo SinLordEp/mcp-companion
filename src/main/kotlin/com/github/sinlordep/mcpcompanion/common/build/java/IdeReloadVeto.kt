@@ -1,4 +1,4 @@
-package com.github.sinlordep.mcpcompanion.run.java
+package com.github.sinlordep.mcpcompanion.common.build.java
 
 import com.intellij.debugger.ui.HotSwapUI
 import com.intellij.debugger.ui.HotSwapVetoableListener
@@ -13,7 +13,7 @@ import com.intellij.task.ProjectTaskContext
  * default after a modal question (`RunHotswapDialog`). A vetoable listener (public `HotSwapUI` API) declines that for
  * the builds [declines] picks, as long as [lifetime] lasts. Settings are never changed.
  */
-internal object IdeReloadVeto {
+object IdeReloadVeto {
     fun install(project: Project, lifetime: Disposable, declines: (ProjectTaskContext) -> Boolean) {
         val hotSwap = HotSwapUI.getInstance(project)
         val veto = HotSwapVetoableListener { context -> !declines(context) }
