@@ -1,0 +1,4 @@
+// Fixture for mc_run hot swap in a project whose build and run are delegated to Gradle. No dependencies, no network.
+plugins {
+    id 'java'
+}

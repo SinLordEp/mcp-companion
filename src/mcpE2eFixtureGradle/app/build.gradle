@@ -1,0 +1,9 @@
+plugins {
+    id 'java'
+}
+
+dependencies {
+    implementation project(':lib')
+    // Resolved from the included build ../mcp-e2e-gradle-sibling, not from a repository.
+    implementation 'com.example:shared:1.0'
+}

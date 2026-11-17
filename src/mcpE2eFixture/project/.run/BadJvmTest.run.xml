@@ -1,0 +1,14 @@
+<component name="ProjectRunConfigurationManager">
+  <!-- The JVM refuses the option, so the run ends before any test starts. -->
+  <configuration default="false" name="BadJvmTest" type="JUnit" factoryName="JUnit">
+    <module name="testfix" />
+    <option name="PACKAGE_NAME" value="slowfix" />
+    <option name="MAIN_CLASS_NAME" value="slowfix.SlowTest" />
+    <option name="METHOD_NAME" value="" />
+    <option name="TEST_OBJECT" value="class" />
+    <option name="VM_PARAMETERS" value="-XX:+McpNoSuchOption" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

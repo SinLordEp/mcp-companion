@@ -1,45 +1,156 @@
-# mcp-companion
+# MCP Companion
 
 ![Build](https://github.com/SinLordEp/mcp-companion/workflows/Build/badge.svg)
-[![Version](https://img.shields.io/jetbrains/plugin/v/MARKETPLACE_ID.svg)](https://plugins.jetbrains.com/plugin/MARKETPLACE_ID)
-[![Downloads](https://img.shields.io/jetbrains/plugin/d/MARKETPLACE_ID.svg)](https://plugins.jetbrains.com/plugin/MARKETPLACE_ID)
 
-## Template ToDo list
-- [x] Create a new [IntelliJ Platform Plugin Template][template] project.
-- [ ] Get familiar with the [template documentation][template].
-- [ ] Adjust the [group](./gradle.properties), as well as the [id](./src/main/resources/META-INF/plugin.xml), [name](./src/main/resources/META-INF/plugin.xml), and [sources package](./src/main/kotlin).
-- [ ] Adjust the plugin [description](./src/main/resources/META-INF/plugin.xml) (see [Tips][docs:plugin-description]) and this README to describe what your plugin does.
-- [ ] Review the [Legal Agreements](https://plugins.jetbrains.com/docs/marketplace/legal-agreements.html?from=IJPluginTemplate).
-- [ ] [Publish a plugin manually](https://plugins.jetbrains.com/docs/intellij/publishing-plugin.html?from=IJPluginTemplate) for the first time.
-- [ ] Set the `MARKETPLACE_ID` in the above README badges. You can obtain it once the plugin is published to JetBrains Marketplace.
-- [ ] Set the [Plugin Signing](https://plugins.jetbrains.com/docs/intellij/plugin-signing.html?from=IJPluginTemplate) related [secrets](https://github.com/JetBrains/intellij-platform-plugin-template#environment-variables).
-- [ ] Set the [Deployment Token](https://plugins.jetbrains.com/docs/marketplace/plugin-upload.html?from=IJPluginTemplate).
-- [ ] Click the <kbd>Watch</kbd> button on the top of the [IntelliJ Platform Plugin Template][template] to be notified about releases containing new features and fixes.
+<!-- Marketplace version and download badges are added after the first upload, when the plugin has a Marketplace id;
+     see docs/RELEASING.md, "After the first upload". -->
 
-This Fancy IntelliJ Platform Plugin is going to be your implementation of the brilliant ideas that you have.
+MCP Companion is an IntelliJ Platform plugin that adds code navigation, safe delete, run configuration control and
+module tools for AI agents to the MCP Server that is bundled with JetBrains IDEs. It complements the bundled server:
+it never duplicates a built-in tool, and each of its tools steps aside by itself when the IDE ships an official tool
+with the same capability.
+
+## Requirements
+
+- An IntelliJ-based IDE of the latest major version, currently 2026.3 (build 263). Tested with IntelliJ IDEA 2026.3.
+- The bundled *MCP Server* plugin, enabled. MCP clients connect to the IDE through it.
+- Optional parts load only where the IDE has them: Java (type hierarchy, super declarations, hot swap, JVM module
+  facts), Gradle and other external systems, Maven, and the test runner (`mc_run tests`).
+
+Only the latest major IDE version is supported (`since-build` 263, no `until-build`). When a new major version needs
+changes, a new plugin version raises `since-build`; IDEs of earlier versions keep the last plugin version that supports
+them (JetBrains Marketplace offers each IDE the newest compatible version). See `docs/PLAN.md`, section 3.
 
 ## Installation
 
-- Using the IDE built-in plugin system:
+- **From disk (now):** download `mcp-companion-<version>.zip` from the GitHub release or build it
+  (`./gradlew buildPlugin`, output in `build/distributions/`), then <kbd>Settings</kbd> > <kbd>Plugins</kbd> >
+  <kbd>⚙</kbd> > <kbd>Install Plugin from Disk...</kbd>. The plugin loads without an IDE restart. The IDE shows
+  "Cannot update plugin" for it until it is on JetBrains Marketplace.
+- **JetBrains Marketplace (after the first release):** <kbd>Settings</kbd> > <kbd>Plugins</kbd> >
+  <kbd>Marketplace</kbd>, search for "MCP Companion".
 
-  <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>Marketplace</kbd> > <kbd>Search for "mcp-companion"</kbd> >
-  <kbd>Install</kbd>
+## Configuration
 
-- Using JetBrains Marketplace:
+- **Switching tools on and off:** on the bundled MCP Server's tool page, <kbd>Settings</kbd> > <kbd>AI</kbd> >
+  <kbd>MCP Server</kbd> > <kbd>Exposed Tools</kbd>. MCP Companion's tools appear there like the built-in ones (search
+  for `mc_`), and changes take effect immediately. MCP Companion keeps no on/off state of its own.
+- **Overview and brave mode:** <kbd>Settings</kbd> > <kbd>Tools</kbd> > <kbd>MCP Companion</kbd> lists every toolset
+  with its state (available, or provided by an official tool) and links to the tool page. Its one editable setting is
+  the MCP Server's brave mode (see [Safety](#safety)). The page is in English and Simplified Chinese.
+- **MCP clients** must pass `projectPath` (or provide roots), so that the server knows the target project.
 
-  Go to [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/MARKETPLACE_ID) and install it by clicking the <kbd>Install to ...</kbd> button in case your IDE is running.
+## Tools
 
-  You can also download the [latest release](https://plugins.jetbrains.com/plugin/MARKETPLACE_ID/versions) from JetBrains Marketplace and install it manually using
-  <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>⚙️</kbd> > <kbd>Install plugin from disk...</kbd>
+All names start with `mc_`. Each tool is its own toolset, so an official replacement makes only that one step aside.
 
-- Manually:
+| Tool | What it does |
+|---|---|
+| `mc_status` | Plugin version, IDE build, target project and the state of every toolset: `yielded` with the official tools that replaced it, otherwise `available` (whether it is switched on is decided on the tool page). |
+| `mc_find_usages` | Every reference to a symbol; scope `project` (all content roots) or also libraries, read/write filter, paging. |
+| `mc_find_implementations` | Implementations, inheritors and overriding methods, or (`direction=up`) the supertypes and super methods. |
+| `mc_type_hierarchy` | Supertypes and subtypes of a class as a graph, with depth and size limits (JVM languages). |
+| `mc_safe_delete` | `preview` lists what blocks deleting a declaration; `apply` deletes it only when nothing does, as one undoable command, without ever opening a dialog (fixed rules for accessors, overriding methods and parameters). |
+| `mc_run` | Existing run configurations: `start` (run or debug, returns a handle at once), `stop`, `restart`, `status`, `processes` (also those started in the IDE), `output` (bounded console capture: tail, regex filter, cursor), `wait_ready` (output pattern, failure pattern, port, end of process), `hotswap` (JVM debug sessions: build the way the project builds, also with Gradle delegation, and reload changed classes, with compile errors or the JVM's reason when it refuses), `tests` (results of a test run, also while it runs: verdict, counts, failed tests with location, message, expected/actual and a bounded stack trace; filter, paging, optional wait). |
+| `mc_modules` | Read-only module model: `list` (modules with build system, SDK, language level, content roots and their folders; roots outside the project directory are marked `outsideProjectDir`), `graph` (declared dependencies with scope and exported flag, whole project or a walk from one module with depth; library edges with Maven coordinates on request), `cycles` (groups of mutually dependent modules with one shortest cycle each). |
+| `mc_sync` | Re-import Gradle (and other external-system) and Maven projects after build file changes: `status` (linked projects, whether the IDE wants a reload, running syncs, the latest result) and `sync` (waits for the end with a timeout; the build tool's message on failure). |
 
-  Download the [latest release](https://github.com/SinLordEp/mcp-companion/releases/latest) and install it manually using
-  <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>⚙️</kbd> > <kbd>Install plugin from disk...</kbd>
+Symbols are given by path, line and column or by fully qualified name (`com.example.Foo#member`). Paths in results use
+the form of the bundled server's own tools (relative to the project directory, `..` for content roots outside it,
+absolute for library archives), so they can be passed to `read_file` and back; every location has an `origin`
+(`project`, `library_source`, `library_class`, `sdk`, `other`). Lists are paged with `limit`/`offset` in a stable order.
 
+A typical `mc_run` sequence: `start` -> `wait_ready` -> `output` -> edit code -> `hotswap` -> `stop`; for tests:
+`start` -> `tests` with `timeoutSeconds`. Process handles (`p1`, `p2`, ...) stay valid until the run tab of the process
+is closed or reused. Building is left to the bundled `build_project` tool, and the plain module and library lists to
+`get_project_modules` and `get_project_dependencies`.
+
+## Safety
+
+- **Confirmation before starting.** Like the bundled `execute_run_configuration`, `mc_run` asks in the IDE before
+  `start`, `restart`, or a `hotswap` with `restartOnFailure` that restarts: a dialog names the configuration, its type
+  and run or debug, with Allow and Deny. It asks once per call, after the checks that need no user. Deny, or no answer
+  within 120 s, ends the call with `DENIED` and starts nothing; cancelling the call closes the dialog.
+- **Brave mode decides whether the IDE asks.** It is the MCP Server's "Run shell commands or run configurations without
+  confirmation", off by default, the same switch for the official tools and for MCP Companion. It can be turned on in
+  the dialog, on <kbd>Settings</kbd> > <kbd>Tools</kbd> > <kbd>MCP Companion</kbd> or on the MCP Server's own page.
+  In a headless IDE nobody can be asked, so starts are refused unless brave mode is on.
+- `mc_run` only runs run configurations that exist in the project, never arbitrary commands; it is marked as a
+  destructive tool for MCP clients.
+- `mc_safe_delete` previews first and refuses targets that are still used or that lie outside the project content.
+- `mc_run` and `mc_sync` refuse untrusted projects (safe mode). No tool opens a dialog other than the start
+  confirmation.
+
+## Limits
+
+A summary; details in the `docs/notes-*.md` files named in brackets.
+
+- `isEnabled()` of a toolset is evaluated by the MCP Server at IDE start and when plugins change, not live; that is
+  why on/off switching uses the official tool page (`docs/spike-step0.md`).
+- Qualified names, `mc_type_hierarchy` and `mc_find_implementations direction=up` are for JVM languages (tested with
+  Java and Kotlin); other languages get `UNSUPPORTED` there. Methods have no read/write access filter (`notes-step2`).
+- Hot swap in delegated builds reports compile errors without file positions (the official `build_project` gives
+  them). Processes run through Gradle have no `pid`; `stop` ends them with the Gradle task's exit code. Only the Run
+  and Debug executors start; coverage and profiler processes are listed, read and stopped only (`notes-step3`).
+- Test results: errors and assertion failures are both `failed`; ignore reasons are not available; Gradle test task
+  results can arrive shortly after the process ends; Maven runs have no structured results in 263; TestNG, JUnit 5 and
+  non-JVM test runners use the same API but were not run (`notes-step3b`).
+- `mc_sync`: a failed Gradle sync leaves a partial model until the next successful one; `lastSync` covers only syncs
+  that `mc_sync` started; Maven syncs that began before the plugin loaded are not seen; no Mermaid output for `graph`
+  (`notes-step4`).
+- Confirmation: sessions of JetBrains' own agents with their own ask mode follow brave mode too (the mode is not in
+  public API); turning brave mode on also lets the bundled terminal and script tools run without confirmation; the
+  bundled `xdebug_start_debugger_session` starts the debugger without asking while `mc_run` asks
+  (`notes-consent`).
+- Tested on Linux only (IntelliJ IDEA 2026.3); not run on Windows or macOS, and not in other IntelliJ-based IDEs.
+
+## Development
+
+Requirements: JDK 25 for Gradle's toolchain (the build uses `jvmToolchain(25)`); the IntelliJ Platform Gradle Plugin
+downloads IntelliJ IDEA 2026.3.
+
+- `./gradlew check` runs the tests, detekt, ktlint and the Konsist architecture rules (`src/architectureTest`).
+  `buildSrc` has its own tests, which run whenever `buildSrc` is rebuilt.
+- `./gradlew verifyPlugin` runs the IntelliJ Plugin Verifier against IntelliJ IDEA 2026.3 and, once JetBrains publishes
+  one, the newest EAP of the next major version.
+- `./gradlew buildPlugin` writes the plugin ZIP to `build/distributions/`.
+- Architecture and design rules: `docs/PLAN.md` section 5.1 (layers: MCP adapters in `toolsets/`, use cases, platform
+  gateways; enforced by `src/architectureTest`). Platform findings: `docs/spike-step0.md` and `docs/notes-*.md`.
+
+### End-to-end sandbox
+
+`./gradlew runIdeForMcpE2e` starts a sandbox IDE with the MCP server enabled on `127.0.0.1:64399` and only a throwaway
+copy of a fixture project under `build/` open. Options:
+
+- `-PmcpE2eAwtToolkit=XToolkit` keeps the IDE on `$DISPLAY`, e.g. a private Xvfb (JBR 25 otherwise picks Wayland).
+- `-PmcpE2ePort=<port>` changes the MCP port.
+- `-PmcpE2eLaunchConfirmation=skip` (default) turns the sandbox's brave mode on, so scripted rounds start processes
+  without a question; `ask` turns it off to see and answer the confirmation dialog. Only the sandbox's
+  `options/mcpServer.xml` is written.
+- `-PmcpE2eFixture=jps` (default): `src/mcpE2eFixture`, a Java project with a second content root next to it, run
+  configurations `Beacon` (prints `READY`, listens on 127.0.0.1:64411), `Crash` (exit code 3), `Prompting` (refused by
+  `mc_run`), JUnit configurations `AllTests`, `SlowTest`, `BadJvmTest`, and modules `cyclea`/`cycleb` that depend on
+  each other. Its JDK is the sandbox IDE's own runtime, defined in the sandbox's JDK table; JUnit 4 is copied from the
+  sandbox IDE.
+- `-PmcpE2eFixture=gradle`: `src/mcpE2eFixtureGradle` (root, `app`, `lib` with JUnit tests, and the included build
+  `src/mcpE2eFixtureGradleSibling`), built with an already unpacked local Gradle (`-PmcpE2eGradleHome=<dir>`, by
+  default the newest under the build's Gradle user home) and a private Gradle user home under `build/`.
+- `-PmcpE2eFixture=maven`: `src/mcpE2eFixtureMaven` with a private local repository `build/mcp-e2e-m2`, so `~/.m2` is
+  never used.
+
+The sandbox preparation is the task `prepareMcpE2eSandbox` (in `buildSrc/src/main/kotlin/mcpcompanion/e2e`); it runs
+before every start and replaces the fixture copies, so edits of an earlier run are gone.
+
+## Release process
+
+Releases follow `docs/RELEASING.md`: the version in `gradle.properties`, user-facing entries under `[Unreleased]` in
+`CHANGELOG.md` (the plugin's change notes are generated from it), the Build workflow's release draft, and the Release
+workflow, which signs the plugin and publishes it to JetBrains Marketplace when the draft is published. The first
+upload to Marketplace is manual.
+
+## License
+
+[Apache License 2.0](LICENSE).
 
 ---
-Plugin based on the [IntelliJ Platform Plugin Template][template].
-
-[template]: https://github.com/JetBrains/intellij-platform-plugin-template
-[docs:plugin-description]: https://plugins.jetbrains.com/docs/intellij/plugin-user-experience.html#plugin-description-and-presentation
+Plugin based on the [IntelliJ Platform Plugin Template](https://github.com/JetBrains/intellij-platform-plugin-template).

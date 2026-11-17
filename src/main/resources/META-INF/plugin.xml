@@ -1,19 +1,130 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
     <id>com.github.sinlordep.mcpcompanion</id>
-    <name>mcp-companion</name>
-    <vendor>sinlordep</vendor>
+    <name>MCP Companion</name>
+    <!-- Shown in the IDE; on JetBrains Marketplace the vendor profile chosen at upload is shown (docs/RELEASING.md). -->
+    <vendor url="https://github.com/SinLordEp/mcp-companion">SinLordEp</vendor>
+    <!-- The one source of the description (the build does not take it from README.md). Marketplace shows the first
+         sentence on the plugin card: keep it a plain English summary. The change notes come from CHANGELOG.md. -->
     <description><![CDATA[
-        <p><b>mcp-companion</b> is a repository that provides a pure template to make it easier to create a new plugin project.</p>
-        <p>The main goal of this template is to speed up the setup phase of plugin development for both new and experienced developers by preconfiguring the project scaffold and CI, linking to the proper documentation pages, and keeping everything organized.</p>
-    ]]></description>
+<p>Adds code navigation, safe delete, run configuration control and module tools for AI agents to the IDE's built-in
+MCP Server.</p>
+
+<p>MCP Companion complements the bundled <i>MCP Server</i> plugin, which must be enabled. Its tools appear next to the
+built-in ones for every MCP client connected to the IDE, and their names start with <code>mc_</code>. It does not
+duplicate built-in tools: when a newer IDE ships an official tool with the same capability, the matching MCP Companion
+tool steps aside by itself (checked at IDE start and when plugins are installed, updated or removed).</p>
+
+<h3>Tools</h3>
+<ul>
+  <li><code>mc_find_usages</code>: every reference to a symbol, in the project or also in libraries, with a read/write
+    filter and paging.</li>
+  <li><code>mc_find_implementations</code>: implementations, inheritors and overriding methods, or the supertypes and
+    super methods.</li>
+  <li><code>mc_type_hierarchy</code>: supertypes and subtypes of a class, with depth and size limits (JVM
+    languages).</li>
+  <li><code>mc_safe_delete</code>: <code>preview</code> lists what still uses a declaration; <code>apply</code> deletes
+    it only when nothing does, as one undoable command.</li>
+  <li><code>mc_run</code>: start, stop and restart existing run configurations (run or debug), read their console
+    output, wait until they are ready, hot-swap changed classes into a JVM debug session, and read test results
+    (counts, failed tests with message and stack trace), also while the tests are running.</li>
+  <li><code>mc_modules</code>: modules with their content roots and folders, the dependency graph with scopes, and
+    dependency cycles.</li>
+  <li><code>mc_sync</code>: re-import Gradle and Maven projects after build file changes and report the result.</li>
+  <li><code>mc_status</code>: plugin version, IDE build and the state of each MCP Companion tool.</li>
+</ul>
+
+<h3>Safety</h3>
+<ul>
+  <li>Before <code>mc_run</code> starts or restarts a process, the IDE asks you to allow or deny it, as the built-in
+    <code>execute_run_configuration</code> does. Whether the IDE asks is the MCP Server's brave mode, which is off by
+    default.</li>
+  <li><code>mc_run</code> only runs run configurations that exist in the project, never arbitrary commands.</li>
+  <li><code>mc_safe_delete</code> refuses to delete a declaration that is still used or that lies outside the
+    project.</li>
+  <li><code>mc_run</code> and <code>mc_sync</code> refuse to run anything in a project that is not trusted.</li>
+</ul>
+
+<h3>Settings</h3>
+<p>Switch individual tools on or off on the MCP Server's tool page. <i>Settings | Tools | MCP Companion</i> shows the
+state of each tool, links to that page and holds the brave mode setting. The user interface is available in English
+and Simplified Chinese.</p>
+
+<h3>Compatibility</h3>
+<p>Only the latest major IDE version is supported, currently 2026.3. When a new major version needs changes, a new
+plugin version follows; IDEs of earlier major versions keep the last plugin version that supports them.</p>
+
+<p><a href="https://github.com/SinLordEp/mcp-companion">Source code and documentation</a> |
+<a href="https://github.com/SinLordEp/mcp-companion/issues">Issue tracker</a></p>
+]]></description>
 
     <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.mcpServer</depends>
+    <depends optional="true" config-file="mcp-companion-java.xml">com.intellij.java</depends>
+    <!-- The platform's build-system-neutral external-system support (Gradle and others): a product module with this
+         alias, so it may be missing from some IDEs. -->
+    <depends optional="true" config-file="mcp-companion-external-system.xml">com.intellij.modules.externalSystem</depends>
+    <depends optional="true" config-file="mcp-companion-maven.xml">org.jetbrains.idea.maven</depends>
+    <!-- The platform's test runner (test trees of JUnit, TestNG, Gradle and others), for mc_run tests. -->
+    <depends optional="true" config-file="mcp-companion-test-runner.xml">com.intellij.platform.testRunner</depends>
 
-    <resource-bundle>messages.MyBundle</resource-bundle>
+    <resource-bundle>messages.McpCompanionBundle</resource-bundle>
+
+    <extensionPoints>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.qualifiedNameLocator"
+                        interface="com.github.sinlordep.mcpcompanion.common.symbols.psi.QualifiedNameLocatorProvider"
+                        dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.localDeclarations"
+                        interface="com.github.sinlordep.mcpcompanion.common.source.psi.LocalDeclarationDetector"
+                        dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.safeDeleteSupport"
+                        interface="com.github.sinlordep.mcpcompanion.safedelete.psi.SafeDeleteSupport"
+                        dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.superDeclarations"
+                        interface="com.github.sinlordep.mcpcompanion.navigation.implementations.psi.SuperDeclarationProvider"
+                        dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.typeHierarchy"
+                        interface="com.github.sinlordep.mcpcompanion.navigation.hierarchy.psi.TypeHierarchyProvider"
+                        dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.hotSwapSupport"
+                        interface="com.github.sinlordep.mcpcompanion.run.ide.HotSwapSupport"
+                        dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.testResultsSupport"
+                        interface="com.github.sinlordep.mcpcompanion.run.ide.TestResultsSupport"
+                        dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.moduleFacts"
+                        interface="com.github.sinlordep.mcpcompanion.modules.ide.ModuleFactsProvider"
+                        dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.buildSystemSync"
+                        interface="com.github.sinlordep.mcpcompanion.sync.ide.BuildSystemSyncProvider"
+                        dynamic="true"/>
+    </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.sinlordep.mcpcompanion.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
-        <postStartupActivity implementation="com.github.sinlordep.mcpcompanion.startup.MyProjectActivity" />
+        <applicationConfigurable parentId="tools"
+                                 id="com.github.sinlordep.mcpcompanion.settings"
+                                 instance="com.github.sinlordep.mcpcompanion.settings.McpCompanionConfigurable"
+                                 bundle="messages.McpCompanionBundle"
+                                 key="settings.display.name"
+                                 dynamic="true"/>
+    </extensions>
+
+    <!-- mc_run: every start in the project, also those the user makes in the IDE, feeds the process tracker. -->
+    <projectListeners>
+        <listener class="com.github.sinlordep.mcpcompanion.run.ide.ExecutionEventsListener"
+                  topic="com.intellij.execution.ExecutionListener"/>
+    </projectListeners>
+
+    <!-- One line per toolset. Each also needs a catalog line in mcp-companion/official-equivalents.txt when an
+         official equivalent becomes known, and toolset.<id>.name/.description in McpCompanionBundle. -->
+    <extensions defaultExtensionNs="com.intellij.mcpServer">
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.StatusToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.usages.FindUsagesToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.implementations.FindImplementationsToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.hierarchy.TypeHierarchyToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.safedelete.SafeDeleteToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.run.RunToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.modules.ModulesToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.sync.SyncToolset"/>
     </extensions>
 </idea-plugin>

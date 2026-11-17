@@ -1,15 +1,16 @@
 # Dependabot configuration:
-# https://docs.github.com/en/free-pro-team@latest/github/administering-a-repository/configuration-options-for-dependency-updates
+# https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference
 
 version: 2
 updates:
-  # Maintain dependencies for Gradle dependencies
+  # Gradle plugins and libraries (settings.gradle.kts, build.gradle.kts, buildSrc). The IntelliJ Platform version
+  # (intellijIdea("2026.3")) is not a Maven coordinate; it is raised by hand together with since-build (docs/PLAN.md).
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
-      interval: "daily"
-  # Maintain dependencies for GitHub Actions
+      interval: "weekly"
+  # GitHub Actions used by the workflows
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"

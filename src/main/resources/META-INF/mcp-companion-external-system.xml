@@ -1,0 +1,8 @@
+<!-- Loaded only when the platform's external-system support is present (optional dependency in plugin.xml). -->
+<idea-plugin>
+    <extensions defaultExtensionNs="com.github.sinlordep.mcpcompanion">
+        <moduleFacts implementation="com.github.sinlordep.mcpcompanion.modules.externalsystem.ExternalSystemModuleFacts"/>
+        <buildSystemSync
+                implementation="com.github.sinlordep.mcpcompanion.sync.externalsystem.ExternalSystemSyncProvider"/>
+    </extensions>
+</idea-plugin>

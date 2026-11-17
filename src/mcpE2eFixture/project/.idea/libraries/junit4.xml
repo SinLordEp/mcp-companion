@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <!-- JUnit 4.13.2 and Hamcrest as the sandbox IDE bundles them; runIdeForMcpE2e copies them into lib/. -->
+  <library name="junit4">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/junit-4.13.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/hamcrest.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

@@ -1,0 +1,7 @@
+<!-- Loaded only when the platform's test runner plugin is present (optional dependency in plugin.xml): its content
+     module intellij.platform.smRunner holds the test tree API that mc_run tests reads. -->
+<idea-plugin>
+    <extensions defaultExtensionNs="com.github.sinlordep.mcpcompanion">
+        <testResultsSupport implementation="com.github.sinlordep.mcpcompanion.run.smrunner.SmTestResultsSupport"/>
+    </extensions>
+</idea-plugin>

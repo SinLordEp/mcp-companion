@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Crash" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="runfix.Crash" />
+    <module name="fixture" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

@@ -1,7 +1,35 @@
 <!-- Keep a Changelog guide -> https://keepachangelog.com -->
 
-# mcp-companion Changelog
+# MCP Companion Changelog
 
 ## [Unreleased]
+
 ### Added
-- Initial scaffold created from [IntelliJ Platform Plugin Template](https://github.com/JetBrains/intellij-platform-plugin-template)
+
+- MCP tools for AI agents on the IDE's built-in MCP Server, next to the built-in tools; their names start with `mc_`.
+  A tool steps aside by itself when the IDE ships an official tool with the same capability.
+- `mc_find_usages`: every reference to a symbol, in the project or also in libraries, with a
+  read/write filter and paging.
+- `mc_find_implementations`: implementations, inheritors and overriding methods, or the supertypes and super methods.
+- `mc_type_hierarchy`: supertypes and subtypes of a JVM class as a graph, with depth and size limits.
+- `mc_safe_delete`: `preview` lists what still uses a declaration; `apply` deletes it only when nothing does, as one
+  undoable command and without any dialog. Unused overriding methods are deleted together with their method.
+- `mc_run`: start, stop and restart existing run configurations (run or debug), list processes (also those started in
+  the IDE), read their console output (tail, regular expression filter, cursor), wait until they are ready (output
+  pattern, failure pattern, port, end of process) and hot-swap changed classes into JVM debug sessions, built the way
+  the project builds (also when the build is delegated to Gradle).
+- `mc_run tests`: results of test runs shown in the IDE's test console (tested with JUnit 4 and Gradle test tasks),
+  also while the tests are running: verdict, counts, failed tests with location, message, expected and actual values and a shortened
+  stack trace.
+- `mc_modules`: modules with build system, SDK, language level, content roots (also those outside the project
+  directory) and folders; the dependency graph with scopes, also from one module towards its dependencies or
+  dependents; dependency cycles.
+- `mc_sync`: status of linked Gradle and Maven projects, and re-import after build file changes, waiting for the
+  result with a timeout and reporting the build tool's message on failure.
+- `mc_status`: plugin version, IDE build, target project and the state of every MCP Companion tool.
+- Confirmation before `mc_run` starts a process: `start`, `restart` and a `hotswap` that has to restart ask in the IDE
+  (Allow/Deny), as the built-in `execute_run_configuration` does. The MCP Server's brave mode decides whether the IDE
+  asks; a refusal, or no answer within 120 seconds, starts nothing.
+- Locations in results use the path form of the built-in MCP tools, so they can be passed to `read_file`.
+- Settings | Tools | MCP Companion: the state of every tool, a link to the MCP Server's tool page where tools are
+  switched on and off, and the brave mode setting. English and Simplified Chinese.

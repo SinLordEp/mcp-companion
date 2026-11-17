@@ -1,6 +1,10 @@
 .DS_Store
 .gradle
 .idea
+# The e2e fixture project ships its project files (module list, JDK name).
+!/src/mcpE2eFixture/project/.idea/
+!/src/mcpE2eFixtureGradle/.idea/
 .intellijPlatform
 .kotlin
 build
+.claude

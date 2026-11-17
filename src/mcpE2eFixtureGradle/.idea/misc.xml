@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The JDK "mcp-e2e-jdk" is the sandbox IDE's own runtime, defined in the sandbox's jdk.table.xml by runIdeForMcpE2e. -->
+<project version="4">
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_21" project-jdk-name="mcp-e2e-jdk" project-jdk-type="JavaSDK">
+    <output url="file://$PROJECT_DIR$/out" />
+  </component>
+</project>
