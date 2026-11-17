@@ -1,4 +1,9 @@
+import mcpcompanion.e2e.McpE2eJvmArguments
+import mcpcompanion.e2e.McpE2eLayout
+import mcpcompanion.e2e.McpE2eOpenedProject
+import mcpcompanion.e2e.PrepareMcpE2eSandbox
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import org.jetbrains.intellij.platform.gradle.tasks.RunIdeTask
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
@@ -58,7 +63,9 @@ intellijPlatform {
 detekt {
     buildUponDefaultConfig = true
     config.setFrom(files("config/detekt/detekt.yml"))
-    source.setFrom(files("src/main/kotlin", "src/test/kotlin", "src/architectureTest/kotlin"))
+    source.setFrom(
+        files("src/main/kotlin", "src/test/kotlin", "src/architectureTest/kotlin", "buildSrc/src/main/kotlin"),
+    )
 }
 
 ktlint {
@@ -92,248 +99,44 @@ tasks.named("check") {
 }
 
 // ---- Sandbox IDE for manual and end-to-end checks ------------------------------------------------------------------
+//   ./gradlew runIdeForMcpE2e [-PmcpE2ePort=64399] [-PmcpE2eAwtToolkit=XToolkit] [-PmcpE2eFixture=jps|gradle|maven]
+//                             [-PmcpE2eLaunchConfirmation=skip|ask] [-PmcpE2eGradleHome=<unpacked Gradle>]
+// The bundled MCP server is force-enabled on a fixed loopback port and the sandbox opens only a throwaway copy of a
+// fixture under build/. Endpoints: http://127.0.0.1:<port>/sse (SSE) and http://127.0.0.1:<port>/stream (Streamable
+// HTTP). The logic lives in buildSrc/src/main/kotlin/mcpcompanion/e2e; see README.md, Development.
 
-// The bundled MCP server is force-enabled on a fixed loopback port (no consent dialog) and only a throwaway project
-// under build/ is opened: a fresh copy of src/mcpE2eFixture (a small Java module with a second content root at
-// ../mcp-e2e-sibling).
-//   ./gradlew runIdeForMcpE2e [-PmcpE2ePort=64399] [-PmcpE2eAwtToolkit=XToolkit]
-// Endpoints: http://127.0.0.1:<port>/sse (SSE) and http://127.0.0.1:<port>/stream (Streamable HTTP).
-// mcpE2eAwtToolkit=XToolkit keeps the IDE on $DISPLAY (e.g. a private Xvfb): JBR 25 otherwise picks the Wayland
-// toolkit and opens its windows on the desktop session even when WAYLAND_DISPLAY is unset.
-val mcpE2ePort = providers.gradleProperty("mcpE2ePort").orElse("64399")
-val mcpE2eAwtToolkit = providers.gradleProperty("mcpE2eAwtToolkit").orElse("")
-// -PmcpE2eFixture=gradle opens a Gradle project instead (build and run delegated to Gradle; src/mcpE2eFixtureGradle).
-// It uses a Gradle distribution that is already unpacked on the machine, never a download:
-// -PmcpE2eGradleHome=<dir>, by default the newest one under ~/.gradle/wrapper/dists.
-val mcpE2eFixtureKind = providers.gradleProperty("mcpE2eFixture").orElse("jps")
-val mcpE2eGradleHome = providers.gradleProperty("mcpE2eGradleHome").orElse(
-    providers.systemProperty("user.home").map { home ->
-        File(home, ".gradle/wrapper/dists").listFiles().orEmpty()
-            .filter { it.name.matches(Regex("gradle-[0-9.]+-bin")) }
-            .flatMap { dist -> dist.listFiles().orEmpty().flatMap { it.listFiles().orEmpty().toList() } }
-            .filter { it.resolve("bin/gradle").isFile }
-            .maxByOrNull {
-                it.name.removePrefix("gradle-").split('.').map(String::toInt).fold(0L) { a, n -> a * 1000 + n }
-            }
-            ?.absolutePath.orEmpty()
-    },
-)
-// -PmcpE2eLaunchConfirmation=ask|skip: whether MCP clients' launches are confirmed in the sandbox (mc_run start,
-// restart and hotswap restarts; also the bundled execute_run_configuration and terminal tools). It is the MCP Server's
-// brave mode, written into the sandbox's options/mcpServer.xml before every start (never the owner's IDE settings).
-// Default skip (brave mode on), so scripted end-to-end rounds run without anyone at the display; ask shows the question.
-val mcpE2eLaunchConfirmation = providers.gradleProperty("mcpE2eLaunchConfirmation").orElse("skip")
-val mcpE2eFixture = layout.buildDirectory.dir("mcp-e2e-fixture")
-val mcpE2eGradleFixture = layout.buildDirectory.dir("mcp-e2e-gradle")
-val mcpE2eSibling = layout.buildDirectory.dir("mcp-e2e-sibling")
-val mcpE2eFixtureSource = layout.projectDirectory.dir("src/mcpE2eFixture")
-val mcpE2eGradleFixtureSource = layout.projectDirectory.dir("src/mcpE2eFixtureGradle")
-// The Gradle fixture includes the build next to it (a composite of sibling repositories, see its settings.gradle).
-val mcpE2eGradleSibling = layout.buildDirectory.dir("mcp-e2e-gradle-sibling")
-val mcpE2eGradleSiblingSource = layout.projectDirectory.dir("src/mcpE2eFixtureGradleSibling")
-// Gradle runs by the sandbox keep their caches and daemons in a private user home, never in ~/.gradle.
-// -PmcpE2eFixture=maven opens a two-module Maven project (src/mcpE2eFixtureMaven) whose Maven settings point to a
-// private local repository under build/ (kept across runs), so nothing is read from or written to ~/.m2. The bundled
-// Maven downloads the build plugins it needs into that repository.
-val mcpE2eMavenFixture = layout.buildDirectory.dir("mcp-e2e-maven")
-val mcpE2eMavenFixtureSource = layout.projectDirectory.dir("src/mcpE2eFixtureMaven")
-val mcpE2eMavenRepository = layout.buildDirectory.dir("mcp-e2e-m2")
-val mcpE2eGradleUserHome = layout.buildDirectory.dir("mcp-e2e-gradle-user-home")
+val mcpE2eGradleUserHome = layout.buildDirectory.dir(McpE2eLayout.GRADLE_USER_HOME).map { it.asFile.absolutePath }
+
+val prepareMcpE2eSandbox = tasks.register<PrepareMcpE2eSandbox>("prepareMcpE2eSandbox") {
+    description = "Copies a fresh e2e fixture and writes the sandbox options; run by runIdeForMcpE2e."
+    fixture = providers.gradleProperty("mcpE2eFixture").orElse("jps")
+    launchConfirmation = providers.gradleProperty("mcpE2eLaunchConfirmation").orElse("skip")
+    gradleHome = providers.gradleProperty("mcpE2eGradleHome")
+    gradleUserHome = gradle.gradleUserHomeDir
+    fixtureSources = layout.projectDirectory.dir("src")
+    workDirectory = layout.buildDirectory
+    // Installation, runtime and sandbox directories of the sandbox IDE, as its run task resolves them.
+    val ide = tasks.named<RunIdeTask>("runIdeForMcpE2e")
+    platformDirectory.fileProvider(ide.map { it.platformPath.toFile() })
+    runtimeDirectory = ide.flatMap { it.runtimeDirectory }
+    sandboxConfigDirectory = ide.flatMap { it.sandboxConfigDirectory }
+    sandboxSystemDirectory = ide.flatMap { it.sandboxSystemDirectory }
+}
 
 intellijPlatformTesting {
     runIde {
         register("runIdeForMcpE2e") {
             task {
-                jvmArgumentProviders += CommandLineArgumentProvider {
-                    val toolkit = mcpE2eAwtToolkit.get().takeIf { it.isNotBlank() }
-                    listOfNotNull(
-                        "-Didea.mcp.server.force.enable=true",
-                        "-Didea.mcp.server.force.port=${mcpE2ePort.get()}",
-                        "-Didea.trust.all.projects=true",
-                        "-Dgradle.user.home=${mcpE2eGradleUserHome.get().asFile.absolutePath}",
-                        toolkit?.let { "-Dawt.toolkit.name=$it" },
-                    )
-                }
-                environment("GRADLE_USER_HOME", mcpE2eGradleUserHome.get().asFile.absolutePath)
-                argumentProviders += CommandLineArgumentProvider {
-                    val opened = when (mcpE2eFixtureKind.get()) {
-                        "gradle" -> mcpE2eGradleFixture
-                        "maven" -> mcpE2eMavenFixture
-                        else -> mcpE2eFixture
-                    }
-                    listOf(opened.get().asFile.absolutePath)
-                }
-                doFirst {
-                    // A fresh copy on every start, so that edits of an earlier run (e.g. mc_safe_delete apply) are
-                    // gone. The sibling directory is a second content root outside the project directory.
-                    val fixture = mcpE2eFixture.get().asFile
-                    val sibling = mcpE2eSibling.get().asFile
-                    listOf(fixture, sibling).forEach { it.deleteRecursively() }
-                    mcpE2eFixtureSource.asFile.resolve("project").copyRecursively(fixture)
-                    mcpE2eFixtureSource.asFile.resolve("sibling").copyRecursively(sibling)
-                    fixture.resolve("README.md").writeText("Throwaway project opened by runIdeForMcpE2e.\n")
-                    // JUnit 4 for the test fixtures (mc_run tests), taken from the sandbox IDE's own JUnit plugin, so
-                    // nothing is downloaded: the JPS fixture's library junit4 and the Gradle fixture's file
-                    // dependencies point to these copies.
-                    val junitDirectory = platformPath.resolve("plugins/junit/lib").toFile()
-                    val junitJars = listOf(
-                        "intellij.libraries.junit4.jar" to "junit-4.13.2.jar",
-                        "intellij.libraries.hamcrest.jar" to "hamcrest.jar",
-                    )
-                    junitJars.forEach { (jar, copy) ->
-                        junitDirectory.resolve(jar).copyTo(fixture.resolve("lib/$copy"), overwrite = true)
-                    }
-                    if (mcpE2eFixtureKind.get() == "maven") {
-                        val mavenFixture = mcpE2eMavenFixture.get().asFile
-                        val repository = mcpE2eMavenRepository.get().asFile.apply { mkdirs() }
-                        mavenFixture.deleteRecursively()
-                        sandboxSystemDirectory.get().asFile.resolve("projects").listFiles().orEmpty()
-                            .filter { it.name.startsWith("${mavenFixture.name}.") }.forEach { it.deleteRecursively() }
-                        mcpE2eMavenFixtureSource.asFile.copyRecursively(mavenFixture)
-                        val settings = mavenFixture.resolve(".idea/mcp-e2e-maven-settings.xml")
-                        // The source has no .idea directory (git ignores it there).
-                        settings.parentFile.mkdirs()
-                        settings.writeText(
-                            """
-                            |<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">
-                            |  <localRepository>${repository.absolutePath}</localRepository>
-                            |</settings>
-                            |
-                            """.trimMargin(),
-                        )
-                        // Machine-specific, so written here: the private repository and these settings, never ~/.m2.
-                        mavenFixture.resolve(".idea/workspace.xml").writeText(
-                            """
-                            |<?xml version="1.0" encoding="UTF-8"?>
-                            |<project version="4">
-                            |  <component name="MavenImportPreferences">
-                            |    <option name="generalSettings">
-                            |      <MavenGeneralSettings>
-                            |        <option name="localRepository" value="${repository.absolutePath}" />
-                            |        <option name="userSettingsFile" value="${settings.absolutePath}" />
-                            |      </MavenGeneralSettings>
-                            |    </option>
-                            |  </component>
-                            |</project>
-                            |
-                            """.trimMargin(),
-                        )
-                    }
-                    if (mcpE2eFixtureKind.get() == "gradle") {
-                        val gradleFixture = mcpE2eGradleFixture.get().asFile
-                        val gradleHome = mcpE2eGradleHome.get()
-                        check(File(gradleHome, "bin/gradle").isFile) { "no unpacked Gradle distribution: $gradleHome" }
-                        gradleFixture.deleteRecursively()
-                        mcpE2eGradleSibling.get().asFile.let {
-                            it.deleteRecursively()
-                            mcpE2eGradleSiblingSource.asFile.copyRecursively(it)
-                        }
-                        // Forget the sandbox's cached model of an earlier run, so the IDE imports the project afresh.
-                        sandboxSystemDirectory.get().asFile.resolve("projects").listFiles().orEmpty()
-                            .filter { it.name.startsWith("${gradleFixture.name}.") }.forEach { it.deleteRecursively() }
-                        mcpE2eGradleFixtureSource.asFile.copyRecursively(gradleFixture)
-                        junitJars.forEach { (jar, copy) ->
-                            val target = gradleFixture.resolve("testlibs/$copy")
-                            junitDirectory.resolve(jar).copyTo(target, overwrite = true)
-                        }
-                        // Machine-specific, so written here: the local Gradle; Gradle runs on JAVA_HOME of the caller
-                        // (Gradle sync refused the sandbox JDK entry "mcp-e2e-jdk" as its JVM).
-                        gradleFixture.resolve(".idea/gradle.xml").writeText(
-                            """
-                            |<?xml version="1.0" encoding="UTF-8"?>
-                            |<project version="4">
-                            |  <component name="GradleSettings">
-                            |    <option name="linkedExternalProjectsSettings">
-                            |      <GradleProjectSettings>
-                            |        <option name="distributionType" value="LOCAL" />
-                            |        <option name="externalProjectPath" value="${'$'}PROJECT_DIR${'$'}" />
-                            |        <option name="gradleHome" value="$gradleHome" />
-                            |        <option name="gradleJvm" value="#JAVA_HOME" />
-                            |        <option name="delegatedBuild" value="true" />
-                            |        <option name="testRunner" value="GRADLE" />
-                            |      </GradleProjectSettings>
-                            |    </option>
-                            |  </component>
-                            |</project>
-                            |
-                            """.trimMargin(),
-                        )
-                    }
-                    // Launch confirmation (brave mode) of the sandbox: only the one option is set, the rest of the
-                    // sandbox's MCP Server settings stays as it is.
-                    val braveMode = when (val choice = mcpE2eLaunchConfirmation.get()) {
-                        "ask" -> false
-                        "skip" -> true
-                        else -> throw GradleException("mcpE2eLaunchConfirmation must be ask or skip, was $choice")
-                    }
-                    val mcpServerOptions = sandboxConfigDirectory.get().asFile.resolve("options/mcpServer.xml")
-                    val braveOption = "<option name=\"enableBraveMode\" value=\"$braveMode\" />"
-                    val braveComponent = "<component name=\"McpServerSettings\">\n    $braveOption\n  </component>"
-                    val stored = mcpServerOptions.takeIf { it.isFile }?.readText().orEmpty()
-                    val component = Regex("<component name=\"McpServerSettings\"\\s*(/?)>").find(stored)
-                    val selfClosing = component?.groupValues?.get(1) == "/"
-                    val options = when {
-                        "name=\"enableBraveMode\"" in stored ->
-                            stored.replace(Regex("<option name=\"enableBraveMode\"[^>]*/>"), braveOption)
-
-                        component != null && selfClosing -> stored.replaceRange(component.range, braveComponent)
-
-                        component != null -> stored.replaceRange(
-                            component.range,
-                            "${component.value}\n    $braveOption",
-                        )
-
-                        "</application>" in stored -> stored.replace(
-                            "</application>",
-                            "  $braveComponent\n</application>",
-                        )
-
-                        else -> "<application>\n  $braveComponent\n</application>\n"
-                    }
-                    mcpServerOptions.parentFile.mkdirs()
-                    mcpServerOptions.writeText(options)
-                    // The fixture's project JDK "mcp-e2e-jdk" (see its .idea/misc.xml) is the runtime the sandbox IDE
-                    // runs on; it has javac and JDWP. It is defined in the sandbox's own JDK table, never the owner's:
-                    // a Java 9+ JDK with one jrt root per module, as the IDE itself would write it.
-                    val home = runtimeDirectory.get().asFile
-                    val release = home.resolve("release").readLines()
-                    fun releaseValue(key: String) =
-                        release.first { it.startsWith("$key=") }.substringAfter('=').trim('"')
-                    val modules = releaseValue("MODULES").split(' ').filter { it.isNotBlank() }
-                    // Without a version the IDE cannot tell which Java this is, and Gradle refuses it as its JVM.
-                    val version = "JetBrains Runtime version ${releaseValue("JAVA_VERSION")}"
-                    val roots = modules.joinToString("\n") {
-                        "            <root url=\"jrt://${home.absolutePath}!/$it\" type=\"simple\" />"
-                    }
-                    val table = sandboxConfigDirectory.get().asFile.resolve("options/jdk.table.xml")
-                    table.parentFile.mkdirs()
-                    table.writeText(
-                        """
-                        |<application>
-                        |  <component name="ProjectJdkTable">
-                        |    <jdk version="2">
-                        |      <name value="mcp-e2e-jdk" />
-                        |      <type value="JavaSDK" />
-                        |      <version value="$version" />
-                        |      <homePath value="${home.absolutePath}" />
-                        |      <roots>
-                        |        <annotationsPath><root type="composite" /></annotationsPath>
-                        |        <classPath>
-                        |          <root type="composite">
-                        |$roots
-                        |          </root>
-                        |        </classPath>
-                        |        <javadocPath><root type="composite" /></javadocPath>
-                        |        <sourcePath><root type="composite" /></sourcePath>
-                        |      </roots>
-                        |      <additional />
-                        |    </jdk>
-                        |  </component>
-                        |</application>
-                        |
-                        """.trimMargin(),
-                    )
-                }
+                dependsOn(prepareMcpE2eSandbox)
+                jvmArgumentProviders += McpE2eJvmArguments(
+                    port = providers.gradleProperty("mcpE2ePort").orElse("64399"),
+                    awtToolkit = providers.gradleProperty("mcpE2eAwtToolkit").orElse(""),
+                    gradleUserHome = mcpE2eGradleUserHome,
+                )
+                environment("GRADLE_USER_HOME", mcpE2eGradleUserHome.get())
+                argumentProviders += McpE2eOpenedProject(
+                    prepareMcpE2eSandbox.flatMap { it.openedProject }.map { it.asFile.absolutePath },
+                )
             }
         }
     }
