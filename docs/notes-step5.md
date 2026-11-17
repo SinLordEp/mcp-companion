@@ -21,7 +21,7 @@ Sources (read 2026-11-17):
 | Pick a stable id; it cannot change after public release | `com.github.sinlordep.mcpcompanion` unchanged |
 | `until-build`: "highly recommended not to set this attribute" | Not set; `since-build="263"` |
 | Change notes: short summary per version, no template placeholders (§1.5) | Generated from `CHANGELOG.md`; template line removed |
-| Icon: SVG, 40x40, at least 2 px transparent padding, not the template's, not resembling JetBrains or other brands; visible on light and dark, dark variant allowed | See Icon |
+| Icon: SVG, 40x40, at least 2 px transparent padding, not the template's, not resembling JetBrains or other brands; visible on light and dark, dark variant allowed | See Icon (open point: it carries the MCP mark) |
 
 The template version this project came from keeps the description in `plugin.xml` only (its README: "Maintain the
 plugin description directly in this file"); there are no `<!-- Plugin description -->` markers and the build does not
@@ -29,12 +29,34 @@ read the README. `plugin.xml` is the single source; the README has its own, long
 
 ## Icon
 
-A blue rounded square with two white bars (a panel of tools) and a green disc with a white plus docked to its
-top-right corner (the companion that adds tools), with an arc cut out of the square around the disc so the two shapes
-stay apart at 40 px. Colours from the IntelliJ action icon palette (light: `#389FD6`, `#59A869`; dark variant:
-`#3592C4`, `#499C54`). Visible shapes span 3..37 px (2 px padding minimum), no text, no gradients, nothing taken from
-the JetBrains, IntelliJ or MCP logos. Rendered with JSVG (the IDE's own SVG renderer) at 40, 80 and 160 px on
-`#FFFFFF`, `#F7F8FA`, `#1E1F22`, `#2B2D30`, and seen in the IDE's plugin list at 40 px.
+Chosen by the owner on 2026-11-17 (the first icon, a tool panel with a plus disc, was rejected as unrelated to MCP): a
+blue puzzle piece (rounded square with a knob on top and on the right, the usual sign for an extension; light
+`#3574F0`, dark variant `#548AF7`) carrying the Model Context Protocol mark in white. The mark's three paths are the
+official ones (`docs/logo/light.svg` of the `modelcontextprotocol/modelcontextprotocol` repository, the same geometry as
+modelcontextprotocol.io's favicon), only scaled, with the stroke widened from 12 to 13.5 units so it stays about 2 px
+wide at 40 px. Visible shapes span 2..38 px, no text, no gradients. Rendered with librsvg at 40, 80 and 160 px on
+`#FFFFFF`, `#F7F8FA`, `#1E1F22`, `#2B2D30`.
+
+Open point, not settled: the icon contains a third party's mark. Findings of 2026-11-17:
+
+- The SVG may be copied (repository LICENSE: Apache-2.0 / CC-BY-4.0), but both licences exclude trademark rights.
+- The mark belongs to LF Projects, LLC ("Model Context Protocol a Series of LF Projects, LLC",
+  modelcontextprotocol.io/community/governance). Its trademark policy
+  (https://lfprojects.org/policies/trademark-policy/) says, without written permission: "A trademark should not be
+  altered or amended in any way", "A logo should not be displayed with color variations, or with other elements
+  superimposed on top of the logo", "A trademark should not be incorporated into your company's logos or designs".
+  This icon recolours the mark and builds it into our own logo, so it needs permission. No MCP-specific logo guide
+  was found.
+- JetBrains Marketplace: approval guideline 1.8(b) "The Plugin and/or marketing assets do not infringe on any
+  copyright or third-party trademarks"; the plugin icon guide says "Check the license terms before using the logo"
+  and "If there is no existing logo, or its use is prohibited, create a custom logo".
+- Precedent: JetBrains' own MCP Server plugin uses the unchanged mark as its icon; "MCP Server Extension for Unity"
+  combines it with a cube; most other MCP plugins avoid the mark. Whether any of them has permission is unknown.
+- The same policy says "A trademark should not be used as part of your product name" and allows the form
+  "<your product name> for <mark>"; this touches the name "MCP Companion" too.
+
+So shipping this icon without written permission from LF Projects risks a rejected review or a later takedown
+request. Alternatives without the mark are drawn (session scratch, not in the repository).
 
 ## Build
 

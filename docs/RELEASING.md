@@ -19,7 +19,8 @@ Sources (read 2026-11-17):
 - The description lives only in `src/main/resources/META-INF/plugin.xml` (the build does not read README markers).
   The change notes are generated from `CHANGELOG.md` by the Gradle Changelog Plugin: the section of the current
   version, or `[Unreleased]` before `patchChangelog` has run.
-- Plugin icon: `META-INF/pluginIcon.svg` and `pluginIcon_dark.svg` (40x40, original artwork).
+- Plugin icon: `META-INF/pluginIcon.svg` and `pluginIcon_dark.svg` (40x40): a blue puzzle piece carrying the Model Context
+  Protocol mark. It uses a third party's mark: see `docs/notes-step5.md`, Icon, before uploading.
 - Signing and publishing read only environment variables: `CERTIFICATE_CHAIN`, `PRIVATE_KEY`, `PRIVATE_KEY_PASSWORD`,
   `PUBLISH_TOKEN`. `publishPlugin` signs, verifies the signature, then uploads. The Marketplace channel follows the
   version: `1.2.0` goes to the default (stable) channel, `1.2.0-beta.1` to `beta`.
