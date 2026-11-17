@@ -30,14 +30,12 @@ Sources (read 2026-11-17):
 
 ## 1. Decisions and accounts (Owner)
 
-1. **License (gap).** The repository has no `LICENSE` file, so no license is granted today. Marketplace requires one
-   at upload: "You must provide your own end user license agreement with any plugin via JetBrains Marketplace"
-   (uploading-a-new-plugin), and approval guideline §3 requires the developer's own EULA and, for an open-source
-   license, a link to the source code. Options:
-   - an open-source license (e.g. Apache 2.0 or MIT): add `LICENSE` to the repository, give its URL on Marketplace,
-     and keep the source link in the description;
-   - a proprietary EULA of your own: give its URL or text on Marketplace; then decide whether the source links in the
-     description stay.
+1. **License: Apache License 2.0** (`LICENSE` in the repository root, the unchanged text from apache.org; chosen by
+   the owner on 2026-11-17). Marketplace requires a license at upload: "You must provide your own end user license
+   agreement with any plugin via JetBrains Marketplace" (uploading-a-new-plugin), and approval guideline §3 requires,
+   for an open-source license, a link to the source code. At upload give the license URL
+   `https://github.com/SinLordEp/mcp-companion/blob/main/LICENSE` (reachable once the repository is public) and keep
+   the source link in the description.
    - Third-party code: none is bundled today. If code from idea-mcp-ext (MIT) is ever copied (PLAN section 5), add a
      `NOTICE` with its copyright notice.
 2. **JetBrains Account and Developer Agreement.** Sign in at plugins.jetbrains.com, accept the JetBrains Marketplace
@@ -111,7 +109,7 @@ plugin that already exists on Marketplace.
 
 1. plugins.jetbrains.com > your account menu > **Upload plugin**; choose the vendor profile.
 2. Upload `mcp-companion-0.1.0-signed.zip`.
-3. License: the URL or text from 1.1. Tags: choose the ones that match (they are search filters).
+3. License: the URL from 1.1. Tags: choose the ones that match (they are search filters).
 4. Channel: default (stable) for `0.1.0`. Optionally tick **Hidden** to keep it unlisted after approval.
 5. Submit. Every new plugin and every update is reviewed by hand; if nothing happens within 3–4 working days, write to
    marketplace@jetbrains.com (approval guidelines).

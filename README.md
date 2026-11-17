@@ -150,7 +150,7 @@ upload to Marketplace is manual.
 
 ## License
 
-Not chosen yet; see `docs/RELEASING.md`. Until a license is added, no license is granted.
+[Apache License 2.0](LICENSE).
 
 ---
 Plugin based on the [IntelliJ Platform Plugin Template](https://github.com/JetBrains/intellij-platform-plugin-template).
