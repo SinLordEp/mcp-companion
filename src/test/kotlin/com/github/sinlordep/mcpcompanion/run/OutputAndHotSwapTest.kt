@@ -30,6 +30,7 @@ class OutputAndHotSwapTest {
         },
         FakeTestResults(),
         { false },
+        FakeConsent(),
         ManualClock(),
         Mutex(),
     )

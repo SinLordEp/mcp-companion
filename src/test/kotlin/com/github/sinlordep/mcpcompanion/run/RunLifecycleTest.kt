@@ -29,6 +29,7 @@ class RunLifecycleTest {
         { error("no hot swap") },
         FakeTestResults(),
         { false },
+        FakeConsent(),
         clock,
         Mutex(),
     )

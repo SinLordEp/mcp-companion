@@ -3,6 +3,7 @@ package com.github.sinlordep.mcpcompanion.run.ide
 import com.github.sinlordep.mcpcompanion.common.result.ErrorCode
 import com.github.sinlordep.mcpcompanion.common.result.ToolResult
 import com.github.sinlordep.mcpcompanion.common.result.flatMap
+import com.github.sinlordep.mcpcompanion.common.result.map
 import com.github.sinlordep.mcpcompanion.run.ConfigurationRef
 import com.github.sinlordep.mcpcompanion.run.ExecutionGateway
 import com.github.sinlordep.mcpcompanion.run.ExecutorKind
@@ -41,7 +42,16 @@ internal class IdeExecutionGateway(
     override suspend fun configuration(key: String): ConfigurationRef? =
         readAction { allSettings().find { it.uniqueID == key }?.let(ProcessDescriptions::configurationOf) }
 
-    override suspend fun start(configuration: ConfigurationRef, executor: ExecutorKind): ToolResult<TrackedProcess> {
+    override suspend fun checkLaunch(configuration: ConfigurationRef, executor: ExecutorKind): ToolResult<Unit> =
+        checked(configuration, executor).map { }
+
+    override suspend fun start(configuration: ConfigurationRef, executor: ExecutorKind): ToolResult<TrackedProcess> =
+        checked(configuration, executor).flatMap { (settings, ideExecutor) -> launch(settings, ideExecutor) }
+
+    private suspend fun checked(
+        configuration: ConfigurationRef,
+        executor: ExecutorKind,
+    ): ToolResult<Pair<RunnerAndConfigurationSettings, Executor>> {
         val ideExecutor = ProcessDescriptions.executorOf(executor)
             ?: return ToolResult.failure(ErrorCode.INVALID_ARGUMENT, "executor must be run or debug.", null)
         val settings = readAction { allSettings().find { it.uniqueID == configuration.key } }
@@ -50,7 +60,7 @@ internal class IdeExecutionGateway(
                 "The run configuration '${configuration.name}' no longer exists.",
                 "List the configurations with the official get_run_configurations tool.",
             )
-        return checks.check(settings, ideExecutor).flatMap { launch(settings, ideExecutor) }
+        return checks.check(settings, ideExecutor).map { settings to ideExecutor }
     }
 
     private suspend fun launch(

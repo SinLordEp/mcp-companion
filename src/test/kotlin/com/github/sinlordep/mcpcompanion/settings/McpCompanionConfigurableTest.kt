@@ -1,10 +1,14 @@
 package com.github.sinlordep.mcpcompanion.settings
 
+import com.github.sinlordep.mcpcompanion.common.consent.ConfirmationSetting
+import com.github.sinlordep.mcpcompanion.common.consent.ide.BraveModeSetting
 import com.github.sinlordep.mcpcompanion.toolsets.ToolsetOverview
 import com.github.sinlordep.mcpcompanion.yield.ToolsetState
+import com.intellij.mcpserver.settings.McpServerSettings
 import com.intellij.openapi.options.Configurable
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.ui.components.ActionLink
+import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.table.TableView
 import com.intellij.util.ui.UIUtil
 import javax.swing.JComponent
@@ -55,6 +59,49 @@ class McpCompanionConfigurableTest : BasePlatformTestCase() {
         assertFalse(missing.isAvailable())
         withComponent(McpCompanionConfigurable(missing)) { component ->
             assertNull(UIUtil.findComponentOfType(component, ActionLink::class.java))
+        }
+    }
+
+    fun testLaunchConfirmationIsEditableWithApplyAndReset() {
+        val setting = object : ConfirmationSetting {
+            override var asksBeforeLaunch = true
+        }
+        val configurable = McpCompanionConfigurable(confirmation = setting)
+        withComponent(configurable) { component ->
+            val box = UIUtil.findComponentsOfType(component, JBCheckBox::class.java)
+                .single { it.text == "Run shell commands or run configurations without confirmation (brave mode)" }
+            assertFalse("asking is shown as unticked", box.isSelected)
+            assertFalse(configurable.isModified)
+
+            box.isSelected = true
+            assertTrue(configurable.isModified)
+            assertTrue("nothing changes before apply", setting.asksBeforeLaunch)
+            configurable.apply()
+            assertFalse(setting.asksBeforeLaunch)
+            assertFalse(configurable.isModified)
+
+            setting.asksBeforeLaunch = true
+            configurable.reset()
+            assertFalse(box.isSelected)
+            box.isSelected = true
+            configurable.reset()
+            assertFalse("reset discards the change", box.isSelected)
+            assertTrue(setting.asksBeforeLaunch)
+        }
+    }
+
+    fun testTheConfirmationSettingIsTheMcpServersBraveMode() {
+        val settings = McpServerSettings.getInstance()
+        val before = settings.enableBraveMode
+        try {
+            settings.enableBraveMode = false
+            assertTrue(BraveModeSetting().asksBeforeLaunch)
+            BraveModeSetting().asksBeforeLaunch = false
+            assertTrue(settings.enableBraveMode)
+            settings.enableBraveMode = false
+            assertTrue("read on every call", BraveModeSetting().asksBeforeLaunch)
+        } finally {
+            settings.enableBraveMode = before
         }
     }
 

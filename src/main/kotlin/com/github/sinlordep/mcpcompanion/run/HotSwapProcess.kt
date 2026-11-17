@@ -52,10 +52,26 @@ class HotSwapProcess(
         )
     }
 
+    /** A failed restart (e.g. the user denied it) still says why the code was not reloaded. */
     private suspend fun restartInstead(process: TrackedProcess, report: HotSwapReport): ToolResult<RunOutcome> =
-        lifecycle.restart(process, RESTART_STOP_TIMEOUT, force = false).map { restarted ->
-            RunOutcome.HotSwapped(restarted.previous ?: process.snapshot, report, restarted.process)
+        when (val restart = lifecycle.restart(process, RESTART_STOP_TIMEOUT, false, LaunchPurpose.HOTSWAP_RESTART)) {
+            is ToolResult.Success -> ToolResult.success(
+                RunOutcome.HotSwapped(restart.value.previous ?: process.snapshot, report, restart.value.process),
+            )
+
+            is ToolResult.Failure -> ToolResult.Failure(
+                restart.error.copy(message = "${notReloaded(report)} ${restart.error.message}"),
+            )
         }
+
+    private fun notReloaded(report: HotSwapReport): String = when (report) {
+        is HotSwapReport.Rejected ->
+            "The JVM refused the changed classes (${report.reasons.joinToString("; ")}); nothing was reloaded."
+
+        is HotSwapReport.NotPossible -> "Nothing was reloaded: ${report.reason}"
+
+        else -> "Nothing was reloaded."
+    }
 
     private fun notRunning(process: TrackedProcess): ToolResult<Nothing> = ToolResult.failure(
         ErrorCode.CONFLICT,

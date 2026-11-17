@@ -5,6 +5,7 @@ import com.github.sinlordep.mcpcompanion.testing.ScriptConfiguration
 import com.github.sinlordep.mcpcompanion.testing.ScriptConfigurations
 import com.github.sinlordep.mcpcompanion.testing.ToolCalls
 import com.github.sinlordep.mcpcompanion.testing.freshTracker
+import com.github.sinlordep.mcpcompanion.testing.launchConfirmation
 import com.intellij.execution.BeforeRunTaskProvider
 import com.intellij.execution.ExecutionListener
 import com.intellij.execution.ExecutionManager
@@ -35,6 +36,7 @@ class RunToolsetTest : BasePlatformTestCase() {
         super.setUp()
         // The light project outlives a test; a fresh tracker keeps tests apart.
         freshTracker(project, testRootDisposable)
+        launchConfirmation(asks = false, testRootDisposable)
         tools = ToolCalls(project)
         scripts = ScriptConfigurations(project, testRootDisposable)
     }

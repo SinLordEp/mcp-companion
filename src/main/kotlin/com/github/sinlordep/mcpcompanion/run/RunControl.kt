@@ -34,11 +34,12 @@ class RunControl(handlers: List<RunActionHandler>) {
             hotSwap: HotSwapGateway,
             tests: TestResultsGateway,
             ports: PortProbe,
+            consent: LaunchConsent,
             clock: Clock,
             startLock: Mutex,
         ): RunControl {
             val processes = ProcessResolver(catalog)
-            val lifecycle = ProcessLifecycle(execution, catalog, clock, startLock)
+            val lifecycle = ProcessLifecycle(execution, catalog, LaunchApproval(consent, clock), clock, startLock)
             val summaries = TestSummaries(tests)
             return RunControl(
                 listOf(

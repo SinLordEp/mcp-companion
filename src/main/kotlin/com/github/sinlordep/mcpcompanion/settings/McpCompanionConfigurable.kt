@@ -1,22 +1,30 @@
 package com.github.sinlordep.mcpcompanion.settings
 
 import com.github.sinlordep.mcpcompanion.McpCompanionBundle
+import com.github.sinlordep.mcpcompanion.common.consent.ConfirmationSetting
+import com.github.sinlordep.mcpcompanion.common.consent.ide.BraveModeSetting
 import com.github.sinlordep.mcpcompanion.toolsets.CompanionToolsetStates
 import com.intellij.openapi.options.BoundSearchableConfigurable
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.dsl.builder.AlignX
+import com.intellij.ui.dsl.builder.MAX_LINE_LENGTH_WORD_WRAP
+import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.table.TableView
 import java.awt.Component
 import javax.swing.JComponent
 
 /**
- * Settings | Tools | MCP Companion: a read-only overview of our toolsets and their state, plus a way to the bundled
- * MCP Server's tool page, where tools are switched on and off. Nothing here is editable, so there is nothing to apply.
+ * Settings | Tools | MCP Companion: an overview of our toolsets and their state, plus a way to the bundled
+ * MCP Server's tool page, where tools are switched on and off. The one editable setting is whether the IDE asks before
+ * MCP clients start run configurations ([ConfirmationSetting], the MCP Server's brave mode); it is bound to the panel,
+ * so apply, reset and the modified state come from the Kotlin UI DSL.
  */
-class McpCompanionConfigurable(private val toolFilterPage: ToolFilterPage = ToolFilterPage()) :
-    BoundSearchableConfigurable(McpCompanionBundle.message("settings.display.name"), "", ID) {
+class McpCompanionConfigurable(
+    private val toolFilterPage: ToolFilterPage = ToolFilterPage(),
+    private val confirmation: ConfirmationSetting = BraveModeSetting(),
+) : BoundSearchableConfigurable(McpCompanionBundle.message("settings.display.name"), "", ID) {
 
     override fun createPanel(): DialogPanel = panel {
         row { text(McpCompanionBundle.message("settings.intro")) }
@@ -30,6 +38,14 @@ class McpCompanionConfigurable(private val toolFilterPage: ToolFilterPage = Tool
                 }
             } else {
                 comment(McpCompanionBundle.message("settings.tool.page.missing"))
+            }
+        }
+        group(McpCompanionBundle.message("settings.launch.group")) {
+            row {
+                checkBox(McpCompanionBundle.message("consent.without.confirmation"))
+                    .bindSelected({ !confirmation.asksBeforeLaunch }, { confirmation.asksBeforeLaunch = !it })
+                    // Wrapped to the page's width: a fixed line length would widen the page beyond the intro text.
+                    .comment(McpCompanionBundle.message("settings.launch.comment"), MAX_LINE_LENGTH_WORD_WRAP)
             }
         }
     }

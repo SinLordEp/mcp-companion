@@ -24,7 +24,10 @@ interface ProcessCatalog {
     suspend fun find(id: ProcessId): TrackedProcess?
 }
 
-/** Gateway boundary: run configurations and the IDE's execution machinery. Never opens UI that waits for the user. */
+/**
+ * Gateway boundary: run configurations and the IDE's execution machinery. Never opens UI that waits for the user (the
+ * user's confirmation is [LaunchConsent]'s).
+ */
 interface ExecutionGateway {
     /** The run configurations named [name] (several when types share the name). */
     suspend fun configurationsNamed(name: String): List<ConfigurationRef>
@@ -33,8 +36,16 @@ interface ExecutionGateway {
     suspend fun configuration(key: String): ConfigurationRef?
 
     /**
+     * The refusals that need no user: whether [configuration] could be started with [executor] now (trusted project,
+     * valid configuration, no setting with which the IDE would ask during the launch). Checked before the user is
+     * asked, so that nobody is asked about a launch that would be refused anyway.
+     */
+    suspend fun checkLaunch(configuration: ConfigurationRef, executor: ExecutorKind): ToolResult<Unit>
+
+    /**
      * Starts [configuration] with [executor] and returns at once with the tracked process (state [ProcessState.Starting]
-     * until a process exists). Fails when the configuration is invalid or cannot run with that executor.
+     * until a process exists). Fails when the configuration is invalid or cannot run with that executor (checked again:
+     * it may have changed while the user was asked).
      */
     suspend fun start(configuration: ConfigurationRef, executor: ExecutorKind): ToolResult<TrackedProcess>
 

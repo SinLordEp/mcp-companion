@@ -34,6 +34,16 @@ class McpToolResultsTest {
     }
 
     @Test
+    fun `a refusal by the user is DENIED`() {
+        val error = assertThrows(McpExpectedError::class.java) {
+            ToolResult.failure(ErrorCode.DENIED, "The user denied it.", "Do not retry.").toMcpOutput()
+        }
+        assertEquals("[DENIED] The user denied it. Next step: Do not retry.", error.mcpErrorText)
+        val details = (error.mcpErrorStructureContent as JsonObject).getValue("error") as JsonObject
+        assertEquals("\"DENIED\"", details.getValue("code").toString())
+    }
+
+    @Test
     fun `failure without next step omits it`() {
         val error = assertThrows(McpExpectedError::class.java) {
             ToolResult.failure(ErrorCode.UNSUPPORTED, "Not here.").toMcpOutput()

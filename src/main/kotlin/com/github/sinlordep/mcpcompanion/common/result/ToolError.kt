@@ -27,4 +27,10 @@ enum class ErrorCode {
      * tool ran. Nothing was changed.
      */
     CONFLICT,
+
+    /**
+     * The user did not allow the action: they refused it when the IDE asked, or did not answer in time. Nothing was
+     * done. Agents must not retry on their own; they ask the user first.
+     */
+    DENIED,
 }

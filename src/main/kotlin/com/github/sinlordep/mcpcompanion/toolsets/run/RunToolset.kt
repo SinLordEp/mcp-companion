@@ -90,6 +90,10 @@ class RunToolset : CompanionToolset {
             "failed, no_tests, interrupted), counts, then one page of tests by filter (default failed) with suite, " +
             "path+line, message, expected/actual, stack trace (stackLines); timeoutSeconds waits for the end. " +
             "Without results: verdict not_started or no_results + reason (e.g. Maven runs: read output). " +
+            "Consent: start, restart and a hotswap that restarts first ask the user in the IDE (Allow/Deny), as " +
+            "the bundled execute_run_configuration does, unless the user turned on brave mode; one question per " +
+            "call, after the checks that need no user. Refused or unanswered within 120 s: DENIED, nothing " +
+            "started or stopped - do not retry, ask the user. " +
             "Parameters that do not apply to the action are rejected. Typical: start -> wait_ready -> output -> " +
             "edit code -> hotswap -> stop; for tests: start -> tests timeoutSeconds=120. Breakpoints, stepping: " +
             "xdebug_* tools."
@@ -111,7 +115,7 @@ private object RunParameterTexts {
     const val TIMEOUT = "stop, restart: wait for the exit, default 10, max 120. wait_ready: default 60, max 300. " +
         "tests: wait for the end of the test run, default 0 (answer at once), max 300."
     const val FORCE = "stop, restart: kill if still alive after timeoutSeconds."
-    const val RESTART_ON_FAILURE = "hotswap: restart instead when the change cannot be reloaded."
+    const val RESTART_ON_FAILURE = "hotswap: restart instead when the change cannot be reloaded (asks the user first)."
     const val FILTER = "tests: which tests to list: failed (default; assertions or exceptions), passed, ignored, all."
     const val LIMIT = "tests: page size, 1-1000, default 20."
     const val OFFSET = "tests: first test of the page, default 0; continue with nextOffset."

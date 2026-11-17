@@ -9,7 +9,7 @@ Read from the bytecode of every `mcpToolset` of the IDE (and pinned by `Executio
 | Tool (toolset) | What it does | Consequence for `mc_run` |
 |---|---|---|
 | `get_run_configurations` (ExecutionToolset) | Lists run configurations (name, type, arguments, env), or the run points of a file. | Not duplicated: `mc_run` has no list of configurations, its descriptions point to this tool. |
-| `execute_run_configuration` (ExecutionToolset) | Runs a configuration by name or a temporary one from `filePath`+`line`, Run executor only. `waitForExit=true` (default, `timeout` 10 s) waits for the end and returns output snapshot, `exitCode` (absent on timeout, the process keeps running) and `fullOutputPath` (a temp file). `waitForExit=false` returns once the process started. It returns **no handle**: nothing can address that process later. No stop, restart, status or readiness. Starts through `ProgramRunnerUtil.executeConfigurationAsync`, so an invalid configuration opens the configuration editor (`RunDialog.editConfiguration`), and a second instance is started even when the configuration does not allow parallel runs. **No consent gate** (see below). | Overlaps only with `start`; kept, because a run without a handle cannot be stopped, read or hot-swapped, and the debug executor is missing. |
+| `execute_run_configuration` (ExecutionToolset) | Runs a configuration by name or a temporary one from `filePath`+`line`, Run executor only. `waitForExit=true` (default, `timeout` 10 s) waits for the end and returns output snapshot, `exitCode` (absent on timeout, the process keeps running) and `fullOutputPath` (a temp file). `waitForExit=false` returns once the process started. It returns **no handle**: nothing can address that process later. No stop, restart, status or readiness. Starts through `ProgramRunnerUtil.executeConfigurationAsync`, so an invalid configuration opens the configuration editor (`RunDialog.editConfiguration`), and a second instance is started even when the configuration does not allow parallel runs. **Asks the user first** unless brave mode is on (see below). | Overlaps only with `start`; kept, because a run without a handle cannot be stopped, read or hot-swapped, and the debug executor is missing. |
 | `xdebug_start_debugger_session` (debuggerMcp) | Starts a configuration with the debugger, waits for the session. | Overlaps with `start executor=debug`; kept for the same reason (handle, readiness, stop, hot swap). |
 | `xdebug_control_session` | Step, resume, pause, **stop** a debug session. | Stops debug sessions only; `mc_run stop` covers run and debug. |
 | `xdebug_get_process_output` | Output of **debug** sessions (also ones not started by MCP), line ranges, up to 1,000,000 characters per session, five stopped sessions retained. | Debug only; `mc_run output` covers run and debug, with regex filter and tail. |
@@ -23,12 +23,19 @@ So no action was dropped and the equivalence catalog stays empty. Nothing in 263
 
 ### Consent
 
-`execute_run_configuration` does **not** ask. In `Execution_utilKt` the only caller of `checkUserConfirmationIfNeeded`
-is its own continuation; the gate is used by `execute_terminal_command` (and the IDE script toolset): with the session's
-`AskCommandExecutionMode.ASK`, or `RESPECT_GLOBAL_SETTINGS` without "brave mode", it shows a modal confirmation dialog.
-That mode lives in `McpServerService.McpSessionOptions` (package `impl`), so a plugin cannot read it with public API.
+**Corrected 2026-11-17** (details in `docs/notes-consent.md`): `execute_run_configuration` **does** ask.
+`Execution_utilKt.prepareAndExecuteRunConfiguration`, the helper `ExecutionToolset` calls, resolves the configuration
+and then calls `checkUserConfirmationIfNeeded` ("MCP client wants to execute run configuration '…'", Allow/Deny, a
+"brave mode" checkbox) before it executes anything. The gate asks when the session's `AskCommandExecutionMode` is `ASK`,
+or `RESPECT_GLOBAL_SETTINGS` (every external client) while brave mode (`McpServerSettings.enableBraveMode`) is off; it
+is also used by `execute_terminal_command` and the IDE script tool. The first reading was wrong because the search for
+callers covered `ExecutionToolset` and the gate's own coroutine class, not the helper in the same file as the gate; the
+step-3 rounds never called the official tool, step 3b did and saw the dialog.
 
-`mc_run` mirrors the official run tool: no dialog. What makes a start deliberate instead:
+The session mode is in package `impl`, but brave mode is public API (`McpServerSettings`, module `intellij.mcpserver`,
+not internal). `mc_run` therefore asks too, governed by the same brave mode: `start`, `restart` and a `hotswap` that
+restarts show a confirmation of their own after the checks that need no user (see `docs/notes-consent.md`). What also
+keeps starts deliberate:
 
 - the tool carries MCP annotations `destructiveHint=true`, `readOnlyHint=false` (`@McpToolHints`, public), so clients
   that ask before destructive tools ask before every `mc_run` call;
@@ -37,8 +44,9 @@ That mode lives in `McpServerService.McpSessionOptions` (package `impl`), so a p
 - only existing run configurations, in a trusted project (`TrustedProjects.isProjectTrusted`); never commands,
   never new or changed configurations.
 
-Residual risk: any MCP client allowed to call `mc_run` can run the project's run configurations, exactly as it can with
-`execute_run_configuration`; the user switches the tool off on the MCP Server's tool page if that is not wanted.
+Residual risk: with brave mode on, any MCP client allowed to call `mc_run` can run the project's run configurations,
+exactly as it can with `execute_run_configuration`; the user switches the tool off on the MCP Server's tool page if
+that is not wanted.
 
 ## Design
 

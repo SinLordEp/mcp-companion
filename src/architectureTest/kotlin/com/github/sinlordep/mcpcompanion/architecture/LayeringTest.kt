@@ -215,6 +215,20 @@ class LayeringTest {
     }
 
     @Test
+    fun `the MCP Server's settings are read and written only by the confirmation setting gateway`() {
+        val gateway = filesIn("common.consent.ide")
+        Assertions.assertTrue(gateway.isNotEmpty(), "no common.consent.ide files found")
+        (production.files - gateway.toSet())
+            .assertFalse { it.importsAny(listOf("com.intellij.mcpserver.settings.McpServerSettings")) }
+    }
+
+    @Test
+    fun `run use cases know the user's confirmation only through their gateway interface`() {
+        val useCases = filesIn("run").filterNot { it.isGateway() }
+        useCases.assertFalse { it.importsAny(listOf("$root.common.consent")) }
+    }
+
+    @Test
     fun `main code does not use the undocumented tool disallow list or the tool filter extension point`() {
         val forbidden = listOf(
             "com.intellij.mcpserver.settings.McpToolDisallowListSettings",

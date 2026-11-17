@@ -5,7 +5,9 @@ import com.github.sinlordep.mcpcompanion.common.result.ToolResult
 import com.github.sinlordep.mcpcompanion.common.time.Clock
 import com.github.sinlordep.mcpcompanion.run.output.ConsoleBuffer
 import com.github.sinlordep.mcpcompanion.run.output.ConsoleStream
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -75,6 +77,10 @@ class FakeExecution(private val catalog: FakeCatalog, vararg configurations: Con
     var stopExitCode = 130
     var startFailure: ToolResult.Failure? = null
 
+    /** The refusal of [checkLaunch] (and therefore of [start]), e.g. an invalid configuration. */
+    var launchRefusal: ToolResult.Failure? = null
+    val launchChecks = mutableListOf<ConfigurationRef>()
+
     /** Runs inside [start] before the process exists, e.g. to let another coroutine interleave. */
     var beforeStart: suspend () -> Unit = {}
 
@@ -82,8 +88,13 @@ class FakeExecution(private val catalog: FakeCatalog, vararg configurations: Con
 
     override suspend fun configuration(key: String) = configurations.find { it.key == key }
 
+    override suspend fun checkLaunch(configuration: ConfigurationRef, executor: ExecutorKind): ToolResult<Unit> {
+        launchChecks += configuration
+        return launchRefusal ?: ToolResult.success(Unit)
+    }
+
     override suspend fun start(configuration: ConfigurationRef, executor: ExecutorKind): ToolResult<TrackedProcess> {
-        startFailure?.let { return it }
+        (launchRefusal ?: startFailure)?.let { return it }
         beforeStart()
         started += configuration to executor
         val process = FakeProcess(ProcessId.of(catalog.all.size + 1L), configuration, executor, ProcessState.Starting)
@@ -102,6 +113,36 @@ class FakeExecution(private val catalog: FakeCatalog, vararg configurations: Con
         kills += process.id
         (process as FakeProcess).moveTo(ProcessState.Terminated(137))
         return true
+    }
+}
+
+/**
+ * The user's confirmation under the test's control. By default confirmation is off ([required] false), so tests of
+ * other behaviour start without a question. With [required], every question is recorded in [questions] and answered
+ * with [answer], or, when [answers] is set, with the next answer the test sends there (the question waits until then;
+ * a question withdrawn by cancellation is recorded in [withdrawn]).
+ */
+class FakeConsent(var required: Boolean = false, var answer: ConsentAnswer = ConsentAnswer.Allowed(false)) :
+    LaunchConsent {
+    val questions = mutableListOf<LaunchRequest>()
+    val withdrawn = mutableListOf<LaunchRequest>()
+    var answers: Channel<ConsentAnswer>? = null
+
+    override fun isRequired(): Boolean = required
+
+    override suspend fun ask(request: LaunchRequest): ConsentAnswer {
+        questions += request
+        val channel = answers ?: return answer
+        try {
+            return channel.receive()
+        } catch (e: CancellationException) {
+            withdrawn += request
+            throw e
+        }
+    }
+
+    override fun stopAsking() {
+        required = false
     }
 }
 

@@ -5,6 +5,7 @@ import com.github.sinlordep.mcpcompanion.run.ide.TestResultsSupport
 import com.github.sinlordep.mcpcompanion.testing.ScriptConfigurations
 import com.github.sinlordep.mcpcompanion.testing.ToolCalls
 import com.github.sinlordep.mcpcompanion.testing.freshTracker
+import com.github.sinlordep.mcpcompanion.testing.launchConfirmation
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.testframework.sm.runner.SMTRunnerEventsListener
 import com.intellij.execution.testframework.sm.runner.SMTestProxy
@@ -29,6 +30,7 @@ class RunTestsToolsetTest : BasePlatformTestCase() {
     override fun setUp() {
         super.setUp()
         tracker = freshTracker(project, testRootDisposable)
+        launchConfirmation(asks = false, testRootDisposable)
         tools = ToolCalls(project)
         ScriptConfigurations(project, testRootDisposable).add("ticker", ScriptConfigurations.TICKER)
     }

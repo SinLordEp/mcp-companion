@@ -1,5 +1,6 @@
 package com.github.sinlordep.mcpcompanion.run.ide
 
+import com.github.sinlordep.mcpcompanion.common.consent.ide.BraveModeSetting
 import com.github.sinlordep.mcpcompanion.common.time.SystemClock
 import com.github.sinlordep.mcpcompanion.run.PortProbe
 import com.github.sinlordep.mcpcompanion.run.RunControl
@@ -21,6 +22,7 @@ fun runControlFor(project: Project): RunControl {
         hotSwap = ExtensionHotSwapGateway(project, tracker, supports),
         tests = IdeTestResultsGateway { TestResultsSupport.EP.extensionList },
         ports = LoopbackPortProbe,
+        consent = IdeLaunchConsent(project, BraveModeSetting()),
         clock = SystemClock,
         startLock = tracker.startLock,
     )

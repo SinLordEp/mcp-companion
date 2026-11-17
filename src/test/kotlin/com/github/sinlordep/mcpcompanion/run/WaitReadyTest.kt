@@ -32,6 +32,7 @@ class WaitReadyTest {
             probes += port
             portOpen.get()
         },
+        FakeConsent(),
         clock,
         Mutex(),
     )

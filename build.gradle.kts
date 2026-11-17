@@ -118,6 +118,11 @@ val mcpE2eGradleHome = providers.gradleProperty("mcpE2eGradleHome").orElse(
             ?.absolutePath.orEmpty()
     },
 )
+// -PmcpE2eLaunchConfirmation=ask|skip: whether MCP clients' launches are confirmed in the sandbox (mc_run start,
+// restart and hotswap restarts; also the bundled execute_run_configuration and terminal tools). It is the MCP Server's
+// brave mode, written into the sandbox's options/mcpServer.xml before every start (never the owner's IDE settings).
+// Default skip (brave mode on), so scripted end-to-end rounds run without anyone at the display; ask shows the question.
+val mcpE2eLaunchConfirmation = providers.gradleProperty("mcpE2eLaunchConfirmation").orElse("skip")
 val mcpE2eFixture = layout.buildDirectory.dir("mcp-e2e-fixture")
 val mcpE2eGradleFixture = layout.buildDirectory.dir("mcp-e2e-gradle")
 val mcpE2eSibling = layout.buildDirectory.dir("mcp-e2e-sibling")
@@ -254,6 +259,39 @@ intellijPlatformTesting {
                             """.trimMargin(),
                         )
                     }
+                    // Launch confirmation (brave mode) of the sandbox: only the one option is set, the rest of the
+                    // sandbox's MCP Server settings stays as it is.
+                    val braveMode = when (val choice = mcpE2eLaunchConfirmation.get()) {
+                        "ask" -> false
+                        "skip" -> true
+                        else -> throw GradleException("mcpE2eLaunchConfirmation must be ask or skip, was $choice")
+                    }
+                    val mcpServerOptions = sandboxConfigDirectory.get().asFile.resolve("options/mcpServer.xml")
+                    val braveOption = "<option name=\"enableBraveMode\" value=\"$braveMode\" />"
+                    val braveComponent = "<component name=\"McpServerSettings\">\n    $braveOption\n  </component>"
+                    val stored = mcpServerOptions.takeIf { it.isFile }?.readText().orEmpty()
+                    val component = Regex("<component name=\"McpServerSettings\"\\s*(/?)>").find(stored)
+                    val selfClosing = component?.groupValues?.get(1) == "/"
+                    val options = when {
+                        "name=\"enableBraveMode\"" in stored ->
+                            stored.replace(Regex("<option name=\"enableBraveMode\"[^>]*/>"), braveOption)
+
+                        component != null && selfClosing -> stored.replaceRange(component.range, braveComponent)
+
+                        component != null -> stored.replaceRange(
+                            component.range,
+                            "${component.value}\n    $braveOption",
+                        )
+
+                        "</application>" in stored -> stored.replace(
+                            "</application>",
+                            "  $braveComponent\n</application>",
+                        )
+
+                        else -> "<application>\n  $braveComponent\n</application>\n"
+                    }
+                    mcpServerOptions.parentFile.mkdirs()
+                    mcpServerOptions.writeText(options)
                     // The fixture's project JDK "mcp-e2e-jdk" (see its .idea/misc.xml) is the runtime the sandbox IDE
                     // runs on; it has javac and JDWP. It is defined in the sandbox's own JDK table, never the owner's:
                     // a Java 9+ JDK with one jrt root per module, as the IDE itself would write it.

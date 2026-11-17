@@ -31,8 +31,16 @@ class TestResultsTest {
         FakeTestResults(positions = mapOf("greets" to SourcePosition("test/pkg/CalculatorTest.java", 17)))
     private val control = control(results)
 
-    private fun control(tests: FakeTestResults) =
-        RunControl.create(catalog, FakeExecution(catalog), { error("no hot swap") }, tests, { false }, clock, Mutex())
+    private fun control(tests: FakeTestResults) = RunControl.create(
+        catalog,
+        FakeExecution(catalog),
+        { error("no hot swap") },
+        tests,
+        { false },
+        FakeConsent(),
+        clock,
+        Mutex(),
+    )
 
     private fun call(action: RunAction, arguments: RunArguments, on: RunControl = control) =
         runBlocking { on.execute(action, arguments) }
