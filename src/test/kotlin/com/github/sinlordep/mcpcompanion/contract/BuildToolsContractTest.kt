@@ -67,8 +67,9 @@ class BuildToolsContractTest : BasePlatformTestCase() {
     }
 
     /**
-     * Why there is no `build` action: the official build tool builds the project or given files, waits and returns
-     * problems with file and position (also for delegated Gradle/Maven builds). What it lacks is a module scope.
+     * What `mc_build` adds: the official build tool builds the whole project or given files (it has no module
+     * parameter), waits and returns problems with file and position. It reads delegated builds' messages from the
+     * Build tool window through an experimental listener API, which `mc_build` does not use (docs/notes-step7.md).
      */
     fun testTheOfficialBuildToolTakesTheseArgumentsAndReturnsProblemsWithPositions() {
         val tool = served("build_project").descriptor
@@ -80,6 +81,46 @@ class BuildToolsContractTest : BasePlatformTestCase() {
             propertyNames(
                 tool.outputSchema,
             ).containsAll(setOf("isSuccess", "problems", "file", "line", "column", "message")),
+        )
+    }
+
+    /**
+     * The official tools that report code problems without building, and why `mc_diagnostics` is not a duplicate:
+     * both take explicit files only (no module or directory scope, no per-module totals, no paging over a scope).
+     * get_ide_diagnostics is about the IDE process (threads, memory), not code. The `*_inspection_kts*` tools (Qodana)
+     * compile and run inspection scripts the agent writes, not the editor's analysis; `inspect_import_*` (database
+     * tools) look at data to import.
+     */
+    fun testTheOfficialProblemToolsTakeExplicitFilesOnly() {
+        val related = Regex("problem|lint|diagnos|inspect")
+        val names = McpToolset.EP.extensionList
+            .filterNot { it.javaClass.name.startsWith("com.github.sinlordep.mcpcompanion") }
+            .flatMap { reflectMcpToolNames(it.javaClass) }
+            .filter { related.containsMatchIn(it) }
+            .toSortedSet()
+        assertEquals(
+            sortedSetOf(
+                "compile_inspection_kts",
+                "generate_inspection_kts_api",
+                "generate_inspection_kts_examples",
+                "get_file_problems",
+                "get_ide_diagnostics",
+                "inspect_import_file",
+                "inspect_import_query",
+                "lint_files",
+                "run_inspection_kts",
+                "run_inspection_kts_examples",
+                "run_inspection_kts_project",
+            ),
+            names,
+        )
+        assertEquals(
+            setOf("filePath", "errorsOnly", "timeout", "projectPath"),
+            served("get_file_problems").descriptor.inputSchema.propertiesSchema.keys,
+        )
+        assertEquals(
+            setOf("files", "min_severity", "timeout", "projectPath"),
+            served("lint_files").descriptor.inputSchema.propertiesSchema.keys,
         )
     }
 
@@ -129,6 +170,14 @@ class BuildToolsContractTest : BasePlatformTestCase() {
         assertEquals(false, sync?.destructiveHint)
         assertEquals("a sync runs build scripts again and may download", false, sync?.idempotentHint)
         assertEquals(true, sync?.openWorldHint)
+        val diagnostics = served("mc_diagnostics").descriptor.annotations
+        assertEquals(true, diagnostics?.readOnlyHint)
+        assertEquals(false, diagnostics?.openWorldHint)
+        val build = served("mc_build").descriptor.annotations
+        assertEquals("a build writes class files", false, build?.readOnlyHint)
+        assertEquals(false, build?.destructiveHint)
+        assertEquals(false, build?.idempotentHint)
+        assertEquals("Gradle and Maven may download", true, build?.openWorldHint)
     }
 
     /** Every property name in [schema], nested objects and definitions included. */

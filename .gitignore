@@ -6,5 +6,8 @@
 !/src/mcpE2eFixtureGradle/.idea/
 .intellijPlatform
 .kotlin
-build
+# Build output only: the source packages named build (mc_build, common/build) are not ignored.
+/build/
+/buildSrc/build/
+/src/mcpE2eFixture*/**/build/
 .claude

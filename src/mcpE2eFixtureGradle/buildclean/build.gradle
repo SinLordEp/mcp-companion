@@ -1,0 +1,4 @@
+// mc_build/mc_diagnostics fixture: no problems, no dependencies.
+plugins {
+    id 'java'
+}

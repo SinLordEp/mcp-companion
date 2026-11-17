@@ -32,6 +32,10 @@ abstract class PrepareMcpE2eSandbox : DefaultTask() {
     @get:Optional
     abstract val gradleHome: Property<String>
 
+    /** Maven fixture: whether the IDE delegates building to Maven (`-PmcpE2eMavenBuild=maven`) or builds it itself. */
+    @get:Input
+    abstract val mavenDelegatedBuild: Property<Boolean>
+
     @get:Internal
     abstract val gradleUserHome: DirectoryProperty
 
@@ -118,7 +122,8 @@ abstract class PrepareMcpE2eSandbox : DefaultTask() {
         val settings = layout.mavenFixture.resolve(".idea/mcp-e2e-maven-settings.xml")
         settings.parentFile.mkdirs()
         settings.writeText(MavenFixtureFiles.mavenSettings(repository))
-        layout.mavenFixture.resolve(".idea/workspace.xml").writeText(MavenFixtureFiles.workspace(repository, settings))
+        layout.mavenFixture.resolve(".idea/workspace.xml")
+            .writeText(MavenFixtureFiles.workspace(repository, settings, mavenDelegatedBuild.get()))
     }
 
     /** Drops the sandbox's cached model of an earlier run of [project], so that the IDE imports it afresh. */

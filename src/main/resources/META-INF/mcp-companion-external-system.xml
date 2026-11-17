@@ -2,6 +2,7 @@
 <idea-plugin>
     <extensions defaultExtensionNs="com.github.sinlordep.mcpcompanion">
         <moduleFacts implementation="com.github.sinlordep.mcpcompanion.modules.externalsystem.ExternalSystemModuleFacts"/>
+        <buildToolTask implementation="com.github.sinlordep.mcpcompanion.common.build.externalsystem.ExternalSystemBuildTasks"/>
         <buildSystemSync
                 implementation="com.github.sinlordep.mcpcompanion.sync.externalsystem.ExternalSystemSyncProvider"/>
     </extensions>

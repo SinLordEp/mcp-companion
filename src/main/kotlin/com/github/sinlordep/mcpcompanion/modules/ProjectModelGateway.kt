@@ -1,5 +1,7 @@
 package com.github.sinlordep.mcpcompanion.modules
 
+import com.github.sinlordep.mcpcompanion.common.modulegraph.ProjectGraph
+
 /** Gateway boundary: the IDE's project model, read in one consistent snapshot per call. */
 interface ProjectModelGateway {
     /** Every module with its content roots. */

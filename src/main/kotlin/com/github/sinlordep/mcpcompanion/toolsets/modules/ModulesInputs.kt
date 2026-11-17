@@ -1,6 +1,7 @@
 package com.github.sinlordep.mcpcompanion.toolsets.modules
 
-import com.github.sinlordep.mcpcompanion.modules.GraphDirection
+import com.github.sinlordep.mcpcompanion.common.modulegraph.GraphDirection
+import com.github.sinlordep.mcpcompanion.modules.GraphFormat
 import com.github.sinlordep.mcpcompanion.modules.ModulesAction
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -26,4 +27,14 @@ enum class DirectionInput(val direction: GraphDirection) {
 
     @SerialName("dependents")
     DEPENDENTS(GraphDirection.DEPENDENTS),
+}
+
+/** MCP input values of `format`. */
+@Serializable
+enum class FormatInput(val format: GraphFormat) {
+    @SerialName("json")
+    JSON(GraphFormat.JSON),
+
+    @SerialName("mermaid")
+    MERMAID(GraphFormat.MERMAID),
 }

@@ -1,5 +1,10 @@
 package com.github.sinlordep.mcpcompanion.run.java
 
+import com.github.sinlordep.mcpcompanion.common.build.BuildResult
+import com.github.sinlordep.mcpcompanion.common.build.BuildRun
+import com.github.sinlordep.mcpcompanion.common.build.BuildScope
+import com.github.sinlordep.mcpcompanion.common.build.ProblemSeverity
+import com.github.sinlordep.mcpcompanion.common.build.java.ProjectTaskBuild
 import com.github.sinlordep.mcpcompanion.common.result.ErrorCode
 import com.github.sinlordep.mcpcompanion.common.result.ToolResult
 import com.github.sinlordep.mcpcompanion.run.CompilerError
@@ -19,7 +24,7 @@ import kotlinx.coroutines.withContext
 
 /**
  * Build, then reload the changed classes into one JVM debug session: the steps of the IDE's "Reload Changed
- * Classes" (a `ProjectTaskManager` build, see [ProjectBuild]), through the public `HotSwapManager` API with a
+ * Classes" (a `ProjectTaskManager` build, see [ProjectTaskBuild]), through the public `HotSwapManager` API with a
  * progress of our own that collects the messages instead of showing notifications. The rule where the IDE would
  * ask: while the session is paused at a breakpoint and the debugger's "warn about a possible hang" setting is on,
  * the IDE asks; this refuses instead (the setting is read, never changed).
@@ -31,7 +36,7 @@ import kotlinx.coroutines.withContext
 internal class JvmHotSwapSession(
     private val project: Project,
     private val session: DebuggerSession,
-    private val build: ProjectBuild,
+    private val build: ProjectTaskBuild,
 ) : HotSwapSession {
 
     override val name: String get() = session.sessionName
@@ -48,19 +53,25 @@ internal class JvmHotSwapSession(
                 "Resume the session (official xdebug_control_session RESUME), then retry.",
             )
         }
-        return when (val outcome = build.run()) {
-            ProjectBuild.Outcome.Aborted -> ToolResult.failure(
+        val run = build.run(BuildScope.AllModules)
+        return when (run.result) {
+            BuildResult.ABORTED -> ToolResult.failure(
                 ErrorCode.CONFLICT,
                 "The build was aborted; nothing was reloaded.",
                 "Retry when no other build runs.",
             )
 
-            is ProjectBuild.Outcome.Failed ->
-                ToolResult.success(HotSwapReport.CompilationFailed(name, outcome.errors.ifEmpty { listOf(UNREADABLE) }))
+            BuildResult.FAILED -> ToolResult.success(HotSwapReport.CompilationFailed(name, errorsOf(run)))
 
-            ProjectBuild.Outcome.Succeeded -> ToolResult.success(withContext(Dispatchers.IO) { scanAndReload() })
+            BuildResult.SUCCEEDED -> ToolResult.success(withContext(Dispatchers.IO) { scanAndReload() })
         }
     }
+
+    private fun errorsOf(run: BuildRun): List<CompilerError> = run.problems
+        .filter { it.severity == ProblemSeverity.ERROR }
+        .take(MAX_ERRORS)
+        .map { CompilerError(it.message, it.path, it.line, it.column) }
+        .ifEmpty { listOf(UNREADABLE) }
 
     /** Blocking: the hot-swap manager waits for the debugger thread. Runs off the EDT and outside read actions. */
     private suspend fun scanAndReload(): HotSwapReport {
@@ -117,10 +128,12 @@ internal class JvmHotSwapSession(
     }
 
     private companion object {
-        /** A failed build of a build tool (Gradle, Maven) whose messages only reach the Build tool window. */
+        const val MAX_ERRORS = 50
+
+        /** A failed build whose messages this plugin could not read (none in the formats it knows). */
         val UNREADABLE = CompilerError(
-            "The build failed; the build tool reported its errors only to the Build tool window. The official " +
-                "build_project tool lists them.",
+            "The build failed without a compiler message this tool can read. The official build_project tool " +
+                "lists the messages of the Build tool window.",
             path = null,
             line = null,
             column = null,

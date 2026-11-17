@@ -7,8 +7,8 @@
     <!-- The one source of the description (the build does not take it from README.md). Marketplace shows the first
          sentence on the plugin card: keep it a plain English summary. The change notes come from CHANGELOG.md. -->
     <description><![CDATA[
-<p>Adds code navigation, safe delete, run configuration control and module tools for AI agents to the IDE's built-in
-MCP Server.</p>
+<p>Adds code navigation, safe delete, run configuration control, module, diagnostics and build tools for AI agents to
+the IDE's built-in MCP Server.</p>
 
 <p>MCP Companion complements the bundled <i>MCP Server</i> plugin, which must be enabled. Its tools appear next to the
 built-in ones for every MCP client connected to the IDE, and their names start with <code>mc_</code>. It does not
@@ -28,8 +28,12 @@ tool steps aside by itself (checked at IDE start and when plugins are installed,
   <li><code>mc_run</code>: start, stop and restart existing run configurations (run or debug), read their console
     output, wait until they are ready, hot-swap changed classes into a JVM debug session, and read test results
     (counts, failed tests with message and stack trace), also while the tests are running.</li>
-  <li><code>mc_modules</code>: modules with their content roots and folders, the dependency graph with scopes, and
-    dependency cycles.</li>
+  <li><code>mc_modules</code>: modules with their content roots and folders, the dependency graph with scopes (also as
+    a Mermaid flowchart), and dependency cycles.</li>
+  <li><code>mc_diagnostics</code>: errors and warnings of a module, a directory or a list of files, found by the
+    IDE's own analysis without building, with line and column and totals per module.</li>
+  <li><code>mc_build</code>: build one module with what it depends on, instead of the whole project, and get the
+    errors with file, line and column, also when the build is delegated to Gradle or Maven.</li>
   <li><code>mc_sync</code>: re-import Gradle and Maven projects after build file changes and report the result.</li>
   <li><code>mc_status</code>: plugin version, IDE build and the state of each MCP Companion tool.</li>
 </ul>
@@ -42,13 +46,15 @@ tool steps aside by itself (checked at IDE start and when plugins are installed,
   <li><code>mc_run</code> only runs run configurations that exist in the project, never arbitrary commands.</li>
   <li><code>mc_safe_delete</code> refuses to delete a declaration that is still used or that lies outside the
     project.</li>
-  <li><code>mc_run</code> and <code>mc_sync</code> refuse to run anything in a project that is not trusted.</li>
+  <li><code>mc_run</code>, <code>mc_sync</code> and <code>mc_build</code> refuse to run anything in a project that
+    is not trusted.</li>
 </ul>
 
 <h3>Settings</h3>
 <p>Switch individual tools on or off on the MCP Server's tool page. <i>Settings | Tools | MCP Companion</i> shows the
-state of each tool, links to that page and holds the brave mode setting. The user interface is available in English
-and Simplified Chinese.</p>
+state of each tool, links to that page, holds the brave mode setting and copies an optional guide for AI agents (for
+AGENTS.md or CLAUDE.md) on how the tools work together. The user interface is available in English and Simplified
+Chinese.</p>
 
 <h3>Compatibility</h3>
 <p>Only the latest major IDE version is supported, currently 2026.3. When a new major version needs changes, a new
@@ -67,6 +73,9 @@ plugin version follows; IDEs of earlier major versions keep the last plugin vers
     <depends optional="true" config-file="mcp-companion-maven.xml">org.jetbrains.idea.maven</depends>
     <!-- The platform's test runner (test trees of JUnit, TestNG, Gradle and others), for mc_run tests. -->
     <depends optional="true" config-file="mcp-companion-test-runner.xml">com.intellij.platform.testRunner</depends>
+    <!-- The platform's VCS support (alias of its content module intellij.platform.vcs.impl): CodeSmellDetector, the
+         batch code analysis of mc_diagnostics. -->
+    <depends optional="true" config-file="mcp-companion-vcs.xml">com.intellij.modules.vcs</depends>
 
     <resource-bundle>messages.McpCompanionBundle</resource-bundle>
 
@@ -98,6 +107,15 @@ plugin version follows; IDEs of earlier major versions keep the last plugin vers
         <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.buildSystemSync"
                         interface="com.github.sinlordep.mcpcompanion.sync.ide.BuildSystemSyncProvider"
                         dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.moduleBuilder"
+                        interface="com.github.sinlordep.mcpcompanion.build.ide.ModuleBuilderProvider"
+                        dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.buildToolTask"
+                        interface="com.github.sinlordep.mcpcompanion.common.build.ide.BuildToolTaskProvider"
+                        dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.fileAnalyzer"
+                        interface="com.github.sinlordep.mcpcompanion.diagnostics.ide.FileAnalyzerProvider"
+                        dynamic="true"/>
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
@@ -107,6 +125,10 @@ plugin version follows; IDEs of earlier major versions keep the last plugin vers
                                  bundle="messages.McpCompanionBundle"
                                  key="settings.display.name"
                                  dynamic="true"/>
+        <!-- mc_diagnostics: no external annotators for the files it analyses, while it analyses them
+             (see ExternalAnnotatorPause). -->
+        <daemon.externalAnnotatorsFilter
+                implementation="com.github.sinlordep.mcpcompanion.diagnostics.ide.PausedExternalAnnotatorsFilter"/>
     </extensions>
 
     <!-- mc_run: every start in the project, also those the user makes in the IDE, feeds the process tracker. -->
@@ -126,5 +148,7 @@ plugin version follows; IDEs of earlier major versions keep the last plugin vers
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.run.RunToolset"/>
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.modules.ModulesToolset"/>
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.sync.SyncToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.diagnostics.DiagnosticsToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.build.BuildToolset"/>
     </extensions>
 </idea-plugin>

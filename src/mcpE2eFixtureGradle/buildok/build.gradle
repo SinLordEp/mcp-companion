@@ -1,0 +1,4 @@
+// mc_build/mc_diagnostics fixture: no errors (Legacy has warnings); buildbad depends on it.
+plugins {
+    id 'java-library'
+}

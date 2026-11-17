@@ -1,4 +1,4 @@
-package com.github.sinlordep.mcpcompanion.modules
+package com.github.sinlordep.mcpcompanion.common.modulegraph
 
 /**
  * The declared dependencies of a project, indexed both ways, in a stable order. Library dependencies are leaves; a

@@ -1,5 +1,8 @@
 package com.github.sinlordep.mcpcompanion.modules
 
+import com.github.sinlordep.mcpcompanion.common.modulegraph.Dependency
+import com.github.sinlordep.mcpcompanion.common.modulegraph.GraphDirection
+import com.github.sinlordep.mcpcompanion.common.modulegraph.GraphEdge
 import com.github.sinlordep.mcpcompanion.common.paging.Page
 
 /** What an `mc_modules` action produced. [total] counts the items of the whole result, across pages. */
@@ -19,11 +22,16 @@ sealed interface ModulesOutcome {
         val total: Int,
     ) : ModulesOutcome
 
+    /** `graph` with format=mermaid: the same edges as one diagram, not paged; bounded by [MermaidGraph.MAX_EDGES]. */
+    data class Diagram(
+        val root: String?,
+        val direction: GraphDirection?,
+        val reached: Int,
+        val diagram: MermaidGraph.Diagram,
+    ) : ModulesOutcome
+
     data class Cycles(val page: Page<DependencyCycle>, val total: Int, val ignoredTestScope: Boolean) : ModulesOutcome
 }
-
-/** A dependency in a graph walk; [depth] is the number of edges between the walk's root and the edge's far end. */
-data class GraphEdge(val dependency: Dependency, val depth: Int? = null)
 
 /**
  * A strongly connected group of modules: every module of [modules] (sorted) reaches every other one. [cycle] is one

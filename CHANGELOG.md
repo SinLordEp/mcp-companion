@@ -33,3 +33,20 @@
 - Locations in results use the path form of the built-in MCP tools, so they can be passed to `read_file`.
 - Settings | Tools | MCP Companion: the state of every tool, a link to the MCP Server's tool page where tools are
   switched on and off, and the brave mode setting. English and Simplified Chinese.
+- `mc_diagnostics`: errors (and on request warnings) of one module, optionally with the modules it depends on or that
+  depend on it, of a directory or of a list of files, found by the IDE's own analysis without building and without
+  opening the files; grouped by file with line and column, totals per severity and per module, bounded and resumable
+  (`limit`, `offset`, `timeoutSeconds`), waiting until the IDE finished importing and indexing. External annotators
+  (external linters, XML schema validation) are not run for the analysed files.
+- `mc_build`: build one module with the modules it depends on, optionally also the modules that depend on it, through
+  the IDE's own build path (also when building is delegated to Gradle or Maven); errors and warnings with file, line
+  and column (from the IDE's compiler, or read from Gradle's and Maven's console output), the build tool's reason when
+  a build fails before compiling, a timeout after which the build goes on, `status`, one build at a time.
+- `mc_modules graph format=mermaid`: the dependency graph as a Mermaid flowchart.
+- An optional guide for AI agents on how the tools work together (check loop after edits, sync after build file
+  changes, paging, consent): Settings | Tools | MCP Companion | Copy Guide puts it on the clipboard for `AGENTS.md` or
+  `CLAUDE.md`; the repository also has it as the Claude skill `skills/mcp-companion`.
+
+### Changed
+
+- `mc_run hotswap`: compile errors of builds delegated to Gradle or Maven now come with file, line and column.

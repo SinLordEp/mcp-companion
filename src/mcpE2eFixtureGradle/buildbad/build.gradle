@@ -1,0 +1,8 @@
+// mc_build/mc_diagnostics fixture: a compile error; depends on buildok.
+plugins {
+    id 'java'
+}
+
+dependencies {
+    implementation project(':buildok')
+}

@@ -1,3 +1,4 @@
+import mcpcompanion.e2e.GradleFixtureFiles
 import mcpcompanion.e2e.McpE2eJvmArguments
 import mcpcompanion.e2e.McpE2eLayout
 import mcpcompanion.e2e.McpE2eOpenedProject
@@ -41,6 +42,9 @@ dependencies {
         // Optional at runtime (META-INF/mcp-companion-test-runner.xml); its content module intellij.platform.smRunner
         // holds the test tree API of mc_run's tests action.
         bundledPlugin("com.intellij.platform.testRunner")
+        // Optional at runtime (META-INF/mcp-companion-vcs.xml); its content module intellij.platform.vcs.impl holds
+        // CodeSmellDetector, the batch code analysis of mc_diagnostics.
+        bundledPlugin("com.intellij.platform.vcs")
         testFramework(TestFrameworkType.Platform)
         testBundledPlugins("com.intellij.modules.ultimate")
         pluginVerifier()
@@ -139,6 +143,12 @@ testing {
     }
 }
 
+// AgentGuideTest compares the repository's Claude skill with the bundled guide; it reads skills/ from the working
+// directory, so the task reruns when the skill changes.
+tasks.test {
+    inputs.files(fileTree("skills")).withPropertyName("skills")
+}
+
 tasks.named("check") {
     dependsOn(testing.suites.named("architectureTest"))
 }
@@ -146,17 +156,37 @@ tasks.named("check") {
 // ---- Sandbox IDE for manual and end-to-end checks ------------------------------------------------------------------
 //   ./gradlew runIdeForMcpE2e [-PmcpE2ePort=64399] [-PmcpE2eAwtToolkit=XToolkit] [-PmcpE2eFixture=jps|gradle|maven]
 //                             [-PmcpE2eLaunchConfirmation=skip|ask] [-PmcpE2eGradleHome=<unpacked Gradle>]
+//                             [-PmcpE2eMavenBuild=ide|maven]
 // The bundled MCP server is force-enabled on a fixed loopback port and the sandbox opens only a throwaway copy of a
 // fixture under build/. Endpoints: http://127.0.0.1:<port>/sse (SSE) and http://127.0.0.1:<port>/stream (Streamable
 // HTTP). The logic lives in buildSrc/src/main/kotlin/mcpcompanion/e2e; see README.md, Development.
 
 val mcpE2eGradleUserHome = layout.buildDirectory.dir(McpE2eLayout.GRADLE_USER_HOME).map { it.asFile.absolutePath }
 
+// The unpacked local Gradle of the Gradle fixture: -PmcpE2eGradleHome, else the newest under the build's Gradle user
+// home. Empty for the other fixtures, which need none.
+val buildGradleUserHome: File = gradle.gradleUserHomeDir
+val mcpE2eGradleHome: Provider<String> = providers.gradleProperty("mcpE2eFixture").orElse("jps").flatMap { fixture ->
+    if (fixture != "gradle") {
+        provider { "" }
+    } else {
+        providers.gradleProperty("mcpE2eGradleHome").orElse(
+            provider {
+                GradleFixtureFiles.newestUnpackedDistribution(buildGradleUserHome)?.absolutePath.orEmpty()
+            },
+        )
+    }
+}
+
 val prepareMcpE2eSandbox = tasks.register<PrepareMcpE2eSandbox>("prepareMcpE2eSandbox") {
     description = "Copies a fresh e2e fixture and writes the sandbox options; run by runIdeForMcpE2e."
     fixture = providers.gradleProperty("mcpE2eFixture").orElse("jps")
     launchConfirmation = providers.gradleProperty("mcpE2eLaunchConfirmation").orElse("skip")
     gradleHome = providers.gradleProperty("mcpE2eGradleHome")
+    mavenDelegatedBuild = providers.gradleProperty("mcpE2eMavenBuild").orElse("ide").map {
+        require(it == "ide" || it == "maven") { "mcpE2eMavenBuild must be ide or maven, was $it" }
+        it == "maven"
+    }
     gradleUserHome = gradle.gradleUserHomeDir
     fixtureSources = layout.projectDirectory.dir("src")
     workDirectory = layout.buildDirectory
@@ -177,6 +207,7 @@ intellijPlatformTesting {
                     port = providers.gradleProperty("mcpE2ePort").orElse("64399"),
                     awtToolkit = providers.gradleProperty("mcpE2eAwtToolkit").orElse(""),
                     gradleUserHome = mcpE2eGradleUserHome,
+                    gradleHome = mcpE2eGradleHome,
                 )
                 environment("GRADLE_USER_HOME", mcpE2eGradleUserHome.get())
                 argumentProviders += McpE2eOpenedProject(

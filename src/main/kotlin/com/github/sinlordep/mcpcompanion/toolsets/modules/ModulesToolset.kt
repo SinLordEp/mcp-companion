@@ -33,6 +33,7 @@ class ModulesToolset : CompanionToolset {
         @McpDescription(ModulesParameterTexts.DEPTH) depth: Int? = null,
         @McpDescription(ModulesParameterTexts.INCLUDE_LIBRARIES) includeLibraries: Boolean? = null,
         @McpDescription(ModulesParameterTexts.IGNORE_TEST_SCOPE) ignoreTestScope: Boolean? = null,
+        @McpDescription(ModulesParameterTexts.FORMAT) format: FormatInput? = null,
         @McpDescription(ModulesParameterTexts.LIMIT) limit: Int? = null,
         @McpDescription(ModulesParameterTexts.OFFSET) offset: Int? = null,
     ): ModulesOutput {
@@ -43,6 +44,7 @@ class ModulesToolset : CompanionToolset {
             depth = depth,
             includeLibraries = includeLibraries,
             ignoreTestScope = ignoreTestScope,
+            format = format?.format,
             limit = limit,
             offset = offset,
         )
@@ -60,11 +62,14 @@ class ModulesToolset : CompanionToolset {
             "directory that belongs to the project. graph - declared dependency edges (from depends on to) with " +
             "scope (compile, test, runtime, provided) and exported; whole project, or with module a walk in " +
             "direction dependencies|dependents up to depth (default unlimited), each edge with its depth; " +
-            "includeLibraries adds library edges with Maven coordinates when known. cycles - groups of modules " +
-            "that depend on each other (and self loops), each with one shortest cycle and all edges among them; " +
-            "ignoreTestScope leaves test dependencies out. Lists are sorted and paged (limit default 100, max " +
-            "1000, offset; continue with nextOffset). Parameters that do not apply to the action are rejected. " +
-            "Build: build_project. After changing build files: mc_sync."
+            "includeLibraries adds library edges with Maven coordinates when known; format=mermaid returns the " +
+            "same edges as one Mermaid flowchart (field mermaid, not paged, at most 500 edges and 1000 modules; " +
+            "omittedEdges, omittedNodes count the rest). cycles - groups of modules that depend on each other " +
+            "(and self loops), each with one shortest cycle and all edges among them; ignoreTestScope leaves " +
+            "test dependencies out. Lists are " +
+            "sorted and paged (limit default 100, max 1000, offset; continue with nextOffset). Parameters that do " +
+            "not apply to the action are rejected. Build one module: mc_build; whole project: build_project. " +
+            "Problems without building: mc_diagnostics. After changing build files: mc_sync."
     }
 }
 
@@ -76,6 +81,7 @@ private object ModulesParameterTexts {
     const val DEPTH = "graph with module: at most this many edges from the root; default unlimited."
     const val INCLUDE_LIBRARIES = "graph: also library dependencies (default false)."
     const val IGNORE_TEST_SCOPE = "cycles: leave test-scope dependencies out (default false)."
+    const val FORMAT = "graph: json (default, paged edges) or mermaid (one flowchart of all edges)."
     const val LIMIT = "Page size, 1-1000, default 100."
     const val OFFSET = "Start of the page; nextOffset of the previous page."
 }

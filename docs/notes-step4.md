@@ -282,4 +282,4 @@ repository; `~/.m2/repository` was empty before and after (directory unchanged s
 - `lastSync` covers only syncs `mc_sync` started; results of syncs the user started are not known.
 - A failed Gradle sync leaves only the part of the project it could import until the next successful sync (measured:
   3 of 12 modules).
-- No Mermaid output for `graph` (PLAN section 4 mentions it); JSON only.
+- No Mermaid output for `graph` (PLAN section 4 mentions it); JSON only. Added in step 7 (`format=mermaid`, `docs/notes-step7.md`).

@@ -1,5 +1,7 @@
 package com.github.sinlordep.mcpcompanion.run.java
 
+import com.github.sinlordep.mcpcompanion.common.build.java.IdeReloadVeto
+import com.github.sinlordep.mcpcompanion.common.build.java.ProjectTaskBuild
 import com.github.sinlordep.mcpcompanion.run.ide.HotSwapSession
 import com.github.sinlordep.mcpcompanion.run.ide.HotSwapSupport
 import com.intellij.debugger.DebuggerManagerEx
@@ -19,7 +21,7 @@ class JvmHotSwapSupport : HotSwapSupport {
     override fun sessionOf(project: Project, handler: ProcessHandler): HotSwapSession? =
         DebuggerManagerEx.getInstanceEx(project).sessions
             .firstOrNull { it.process.processHandler === handler }
-            ?.let { JvmHotSwapSession(project, it, ProjectBuild(project)) }
+            ?.let { JvmHotSwapSession(project, it, ProjectTaskBuild(project)) }
 
     /** Builds that start [configuration] (its before-launch Build) must not make the IDE ask to reload. */
     override fun suppressBuildReload(project: Project, configuration: RunConfiguration, lifetime: Disposable) =

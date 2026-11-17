@@ -49,6 +49,8 @@ class StatusToolsetTest : BasePlatformTestCase() {
                 "run",
                 "modules",
                 "sync",
+                "diagnostics",
+                "build",
             ),
             output.toolsets.map { it.id },
         )
