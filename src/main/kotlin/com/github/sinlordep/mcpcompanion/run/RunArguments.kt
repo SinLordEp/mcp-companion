@@ -1,9 +1,10 @@
 package com.github.sinlordep.mcpcompanion.run
 
 import com.github.sinlordep.mcpcompanion.common.actions.ToolArguments
+import com.github.sinlordep.mcpcompanion.run.tests.TestFilter
 
 /** The actions of `mc_run`. */
-enum class RunAction { PROCESSES, START, STOP, RESTART, STATUS, OUTPUT, WAIT_READY, HOTSWAP }
+enum class RunAction { PROCESSES, START, STOP, RESTART, STATUS, OUTPUT, WAIT_READY, HOTSWAP, TESTS }
 
 /** The optional arguments of `mc_run`; each action accepts a subset (see the handlers' `parameters`). */
 enum class RunParameter(val label: String) {
@@ -19,6 +20,10 @@ enum class RunParameter(val label: String) {
     TIMEOUT("timeoutSeconds"),
     FORCE("force"),
     RESTART_ON_FAILURE("restartOnFailure"),
+    FILTER("filter"),
+    LIMIT("limit"),
+    OFFSET("offset"),
+    STACK_LINES("stackLines"),
 }
 
 /** Raw client arguments of one `mc_run` call, not yet validated. Null means "not given". */
@@ -35,6 +40,10 @@ data class RunArguments(
     val timeoutSeconds: Int? = null,
     val force: Boolean? = null,
     val restartOnFailure: Boolean? = null,
+    val filter: TestFilter? = null,
+    val limit: Int? = null,
+    val offset: Int? = null,
+    val stackLines: Int? = null,
 ) : ToolArguments<RunParameter> {
     /** The parameters the client gave. */
     override fun given(): Set<RunParameter> = buildSet {
@@ -51,6 +60,10 @@ data class RunArguments(
             RunParameter.TIMEOUT to timeoutSeconds,
             RunParameter.FORCE to force,
             RunParameter.RESTART_ON_FAILURE to restartOnFailure,
+            RunParameter.FILTER to filter,
+            RunParameter.LIMIT to limit,
+            RunParameter.OFFSET to offset,
+            RunParameter.STACK_LINES to stackLines,
         )
         values.forEach { (parameter, value) -> if (value != null) add(parameter) }
     }

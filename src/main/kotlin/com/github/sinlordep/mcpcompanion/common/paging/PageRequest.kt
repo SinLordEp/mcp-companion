@@ -16,14 +16,15 @@ data class PageRequest private constructor(val limit: Int, val offset: Int) {
 
         val FIRST: PageRequest = PageRequest(DEFAULT_LIMIT, 0)
 
-        fun of(limit: Int?, offset: Int?): ToolResult<PageRequest> {
-            val effectiveLimit = limit ?: DEFAULT_LIMIT
+        /** Validates a client's [limit] and [offset]; [defaultLimit] applies when [limit] is absent. */
+        fun of(limit: Int?, offset: Int?, defaultLimit: Int = DEFAULT_LIMIT): ToolResult<PageRequest> {
+            val effectiveLimit = limit ?: defaultLimit
             val effectiveOffset = offset ?: 0
             return when {
                 effectiveLimit !in 1..MAX_LIMIT -> ToolResult.failure(
                     ErrorCode.INVALID_ARGUMENT,
                     "limit must be between 1 and $MAX_LIMIT, was $effectiveLimit",
-                    "Retry with a limit in range, or omit it to get $DEFAULT_LIMIT items.",
+                    "Retry with a limit in range, or omit it to get $defaultLimit items.",
                 )
 
                 effectiveOffset < 0 -> ToolResult.failure(

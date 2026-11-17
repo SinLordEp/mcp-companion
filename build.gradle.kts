@@ -28,6 +28,9 @@ dependencies {
         bundledPlugin("com.intellij.java")
         // Optional at runtime (META-INF/mcp-companion-maven.xml); needed at compile time for mc_sync's Maven gateway.
         bundledPlugin("org.jetbrains.idea.maven")
+        // Optional at runtime (META-INF/mcp-companion-test-runner.xml); its content module intellij.platform.smRunner
+        // holds the test tree API of mc_run's tests action.
+        bundledPlugin("com.intellij.platform.testRunner")
         testFramework(TestFrameworkType.Platform)
         testBundledPlugins("com.intellij.modules.ultimate")
         pluginVerifier()
@@ -164,6 +167,17 @@ intellijPlatformTesting {
                     mcpE2eFixtureSource.asFile.resolve("project").copyRecursively(fixture)
                     mcpE2eFixtureSource.asFile.resolve("sibling").copyRecursively(sibling)
                     fixture.resolve("README.md").writeText("Throwaway project opened by runIdeForMcpE2e.\n")
+                    // JUnit 4 for the test fixtures (mc_run tests), taken from the sandbox IDE's own JUnit plugin, so
+                    // nothing is downloaded: the JPS fixture's library junit4 and the Gradle fixture's file
+                    // dependencies point to these copies.
+                    val junitDirectory = platformPath.resolve("plugins/junit/lib").toFile()
+                    val junitJars = listOf(
+                        "intellij.libraries.junit4.jar" to "junit-4.13.2.jar",
+                        "intellij.libraries.hamcrest.jar" to "hamcrest.jar",
+                    )
+                    junitJars.forEach { (jar, copy) ->
+                        junitDirectory.resolve(jar).copyTo(fixture.resolve("lib/$copy"), overwrite = true)
+                    }
                     if (mcpE2eFixtureKind.get() == "maven") {
                         val mavenFixture = mcpE2eMavenFixture.get().asFile
                         val repository = mcpE2eMavenRepository.get().asFile.apply { mkdirs() }
@@ -172,6 +186,8 @@ intellijPlatformTesting {
                             .filter { it.name.startsWith("${mavenFixture.name}.") }.forEach { it.deleteRecursively() }
                         mcpE2eMavenFixtureSource.asFile.copyRecursively(mavenFixture)
                         val settings = mavenFixture.resolve(".idea/mcp-e2e-maven-settings.xml")
+                        // The source has no .idea directory (git ignores it there).
+                        settings.parentFile.mkdirs()
                         settings.writeText(
                             """
                             |<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">
@@ -211,6 +227,10 @@ intellijPlatformTesting {
                         sandboxSystemDirectory.get().asFile.resolve("projects").listFiles().orEmpty()
                             .filter { it.name.startsWith("${gradleFixture.name}.") }.forEach { it.deleteRecursively() }
                         mcpE2eGradleFixtureSource.asFile.copyRecursively(gradleFixture)
+                        junitJars.forEach { (jar, copy) ->
+                            val target = gradleFixture.resolve("testlibs/$copy")
+                            junitDirectory.resolve(jar).copyTo(target, overwrite = true)
+                        }
                         // Machine-specific, so written here: the local Gradle; Gradle runs on JAVA_HOME of the caller
                         // (Gradle sync refused the sandbox JDK entry "mcp-e2e-jdk" as its JVM).
                         gradleFixture.resolve(".idea/gradle.xml").writeText(

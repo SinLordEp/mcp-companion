@@ -2,14 +2,21 @@ package com.github.sinlordep.mcpcompanion.run
 
 import com.github.sinlordep.mcpcompanion.run.output.ConsoleLine
 import com.github.sinlordep.mcpcompanion.run.output.ConsoleSlice
+import com.github.sinlordep.mcpcompanion.run.tests.TestReport
+import com.github.sinlordep.mcpcompanion.run.tests.TestSummary
 
 /** Result of one `mc_run` action. */
 sealed interface RunOutcome {
 
-    data class Processes(val processes: List<ProcessSnapshot>) : RunOutcome
+    /** [tests]: a test summary for each process that is a test run. */
+    data class Processes(val processes: List<ProcessSnapshot>, val tests: Map<ProcessId, TestSummary> = emptyMap()) :
+        RunOutcome
 
-    /** `start` and `status`. */
-    data class Process(val process: ProcessSnapshot) : RunOutcome
+    /** `start` and `status`. [tests]: a test summary when the process is a test run (`status` only). */
+    data class Process(val process: ProcessSnapshot, val tests: TestSummary? = null) : RunOutcome
+
+    /** `tests`. */
+    data class Tests(val process: ProcessSnapshot, val report: TestReport) : RunOutcome
 
     data class Stopped(val process: ProcessSnapshot, val stop: StopResult) : RunOutcome
 

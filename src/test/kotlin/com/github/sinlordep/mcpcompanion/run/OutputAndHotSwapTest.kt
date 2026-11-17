@@ -28,6 +28,7 @@ class OutputAndHotSwapTest {
             hotSwapped += process.id
             report
         },
+        FakeTestResults(),
         { false },
         ManualClock(),
         Mutex(),

@@ -1,3 +1,13 @@
 plugins {
     id 'java-library'
 }
+
+dependencies {
+    // mc_run tests fixture: JUnit 4 as the sandbox IDE bundles it, copied to testlibs/ by runIdeForMcpE2e, so no
+    // repository and no download is needed.
+    testImplementation files("$rootDir/testlibs/junit-4.13.2.jar", "$rootDir/testlibs/hamcrest.jar")
+}
+
+test {
+    useJUnit()
+}

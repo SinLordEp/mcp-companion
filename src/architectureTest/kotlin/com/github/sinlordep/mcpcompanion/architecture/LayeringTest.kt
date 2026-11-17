@@ -35,12 +35,18 @@ class LayeringTest {
     /**
      * Sub-package names that hold platform gateways: `psi` for code analysis, `ide` for other IDE services, and one
      * per optional plugin: `java` (Java plugin), `externalsystem` (the platform's optional external-system support:
-     * Gradle and others), `maven` (Maven plugin).
+     * Gradle and others), `maven` (Maven plugin), `smrunner` (the platform's test runner plugin).
      */
-    private val gatewaySegments = setOf("psi", "ide", "java", "externalsystem", "maven")
+    private val gatewaySegments = setOf("psi", "ide", "java", "externalsystem", "maven", "smrunner")
 
     /** Gateway segments that need an optional plugin; the neutral `ide` gateways must not depend on them. */
-    private val optionalSegments = listOf("java", "externalsystem", "maven")
+    private val optionalSegments = listOf("java", "externalsystem", "maven", "smrunner")
+
+    /**
+     * APIs of the optional test runner plugin (`com.intellij.platform.testRunner`: test trees, test consoles, test
+     * states); only `smrunner` packages use them.
+     */
+    private val testRunnerApis = listOf("com.intellij.execution.testframework")
 
     /** APIs of the platform's optional external-system support; only `externalsystem` and `maven` packages use them. */
     private val externalSystemApis = listOf("com.intellij.openapi.externalSystem")
@@ -145,6 +151,23 @@ class LayeringTest {
         production.files.filterNot { file ->
             file.packagee?.name.orEmpty().split('.').any { it == "externalsystem" || it == "maven" }
         }.assertFalse { it.importsAny(externalSystemApis) }
+    }
+
+    @Test
+    fun `test runner APIs are used only in smrunner packages`() {
+        Assertions.assertTrue(
+            filesIn("run").any { it.packagee?.name.orEmpty().endsWith(".smrunner") },
+            "no smrunner files found",
+        )
+        production.files.filterNot { file -> file.packagee?.name.orEmpty().split('.').contains("smrunner") }
+            .assertFalse { it.importsAny(testRunnerApis) }
+    }
+
+    @Test
+    fun `the test results use case is a platform-free sub-package of run`() {
+        val useCases = filesIn("run.tests")
+        Assertions.assertTrue(useCases.isNotEmpty(), "no run.tests files found")
+        useCases.assertFalse { it.importsAny(listOf("com.intellij", "$root.run.ide", "$root.run.smrunner")) }
     }
 
     @Test

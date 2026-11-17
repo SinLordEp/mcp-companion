@@ -39,7 +39,7 @@ MCP Companion complements the MCP Server bundled with JetBrains IDEs. It adds th
 | `mc_find_implementations` | Implementations, inheritors and overriding methods, or (`direction=up`) the supertypes and super methods. |
 | `mc_type_hierarchy` | Supertypes and subtypes of a class as a graph, with depth and size limits (JVM languages). |
 | `mc_safe_delete` | `preview` lists what blocks deleting a declaration; `apply` deletes it only when nothing does, as one undoable command, without ever opening a dialog (fixed rules for accessors, overriding methods and parameters). |
-| `mc_run` | Existing run configurations: `start` (run or debug, returns a handle at once), `stop`, `restart`, `status`, `processes` (also those started in the IDE), `output` (bounded console capture: tail, regex filter, cursor), `wait_ready` (output pattern, failure pattern, port, end of process), `hotswap` (JVM debug sessions: build the way the project builds, also with Gradle or Maven delegation, and reload changed classes, with compile errors or the JVM's reason when it refuses). Never asks the user anything. |
+| `mc_run` | Existing run configurations: `start` (run or debug, returns a handle at once), `stop`, `restart`, `status`, `processes` (also those started in the IDE), `output` (bounded console capture: tail, regex filter, cursor), `wait_ready` (output pattern, failure pattern, port, end of process), `hotswap` (JVM debug sessions: build the way the project builds, also with Gradle or Maven delegation, and reload changed classes, with compile errors or the JVM's reason when it refuses), `tests` (results of a test run, also while it runs: verdict, counts, failed tests with location, message, expected/actual and a bounded stack trace; filter, paging, optional wait). Never asks the user anything. |
 
 | `mc_modules` | Read-only module model: `list` (modules with build system, SDK, language level, content roots and their source/test/resource/excluded folders; roots next to the project directory, e.g. a sibling repository of a Gradle composite, are marked `outsideProjectDir`), `graph` (declared dependencies with scope and exported flag, whole project or a walk from one module towards its dependencies or dependents with depth; library edges with Maven coordinates on request), `cycles` (groups of mutually dependent modules with one shortest cycle each; test scope optional). |
 | `mc_sync` | Re-import Gradle (and other external-system) and Maven projects after build file changes: `status` (linked projects, whether the IDE wants a reload, running syncs, the latest sync result) and `sync` (waits for the end with a timeout; the build tool's message on failure; optionally waits for indexing). Never opens a dialog; refused in untrusted projects. |
@@ -47,7 +47,8 @@ MCP Companion complements the MCP Server bundled with JetBrains IDEs. It adds th
 Building is left to the bundled `build_project` tool, and the plain module and library lists to `get_project_modules`
 and `get_project_dependencies`; see `docs/notes-step4.md`.
 
-A typical `mc_run` sequence: `start` -> `wait_ready` -> `output` -> edit code -> `hotswap` -> `stop`. Process handles
+A typical `mc_run` sequence: `start` -> `wait_ready` -> `output` -> edit code -> `hotswap` -> `stop`; for tests:
+`start` -> `tests` with `timeoutSeconds`. Process handles
 (`p1`, `p2`, ...) stay valid until the run tab of the process is closed or reused. `mc_run` only runs existing run
 configurations, like the bundled `execute_run_configuration`, and is marked as a destructive tool for MCP clients.
 
@@ -73,16 +74,17 @@ state, and a link to the tool page.
 - `./gradlew runIdeForMcpE2e` starts a sandbox IDE with the MCP server enabled on `127.0.0.1:64399` and only a
   throwaway copy of `src/mcpE2eFixture` open. On a private X display add `-PmcpE2eAwtToolkit=XToolkit`.
 - The e2e fixture has run configurations `Beacon` (prints `READY`, listens on 127.0.0.1:64411) and `Crash` (exit
-  code 3), `Prompting` (asks for its arguments, refused by `mc_run`); its JDK is the sandbox IDE's own runtime, defined
+  code 3), `Prompting` (asks for its arguments, refused by `mc_run`), JUnit configurations `AllTests`, `SlowTest` and
+  `BadJvmTest` (module `testfix`, JUnit 4 copied from the sandbox IDE); its JDK is the sandbox IDE's own runtime, defined
   in the sandbox's JDK table. `-PmcpE2eFixture=gradle` opens a Gradle-delegated fixture instead
   (`src/mcpE2eFixtureGradle`: root project plus `app` and `lib`, and the included build `src/mcpE2eFixtureGradleSibling`
   copied next to it), built with an already unpacked local Gradle distribution and a private Gradle user home under
   `build/`. The JPS fixture's modules `cyclea` and `cycleb` depend on each other (for `mc_modules cycles`).
   `-PmcpE2eFixture=maven` opens a two-module Maven project (`src/mcpE2eFixtureMaven`) whose Maven settings point to a
   private local repository `build/mcp-e2e-m2`, so `~/.m2` is never used; the bundled Maven downloads its build plugins
-  there.
+  (and JUnit for the `CoreTests` configuration) there. The Gradle fixture's `lib` has JUnit 4 tests (`LibTests`).
 - Design rules: `docs/PLAN.md` section 5.1. Platform findings: `docs/spike-step0.md`, `docs/notes-step1.md`,
-  `docs/notes-step2.md`, `docs/notes-step3.md`, `docs/notes-step4.md`.
+  `docs/notes-step2.md`, `docs/notes-step3.md`, `docs/notes-step3b.md`, `docs/notes-step4.md`.
 
 ## Installation
 

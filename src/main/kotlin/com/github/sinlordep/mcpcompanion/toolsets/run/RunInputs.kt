@@ -2,6 +2,7 @@ package com.github.sinlordep.mcpcompanion.toolsets.run
 
 import com.github.sinlordep.mcpcompanion.run.ExecutorKind
 import com.github.sinlordep.mcpcompanion.run.RunAction
+import com.github.sinlordep.mcpcompanion.run.tests.TestFilter
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -31,6 +32,25 @@ enum class RunActionInput(val action: RunAction) {
 
     @SerialName("hotswap")
     HOTSWAP(RunAction.HOTSWAP),
+
+    @SerialName("tests")
+    TESTS(RunAction.TESTS),
+}
+
+/** MCP input values of `filter` (action `tests`). */
+@Serializable
+enum class TestFilterInput(val filter: TestFilter) {
+    @SerialName("failed")
+    FAILED(TestFilter.FAILED),
+
+    @SerialName("passed")
+    PASSED(TestFilter.PASSED),
+
+    @SerialName("ignored")
+    IGNORED(TestFilter.IGNORED),
+
+    @SerialName("all")
+    ALL(TestFilter.ALL),
 }
 
 /** MCP input values of `executor`. */

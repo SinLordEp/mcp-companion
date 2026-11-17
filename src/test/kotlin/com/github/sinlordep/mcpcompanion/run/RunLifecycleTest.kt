@@ -23,7 +23,15 @@ class RunLifecycleTest {
     private val catalog = FakeCatalog()
     private val execution = FakeExecution(catalog, server)
     private val clock = ManualClock()
-    private val control = RunControl.create(catalog, execution, { error("no hot swap") }, { false }, clock, Mutex())
+    private val control = RunControl.create(
+        catalog,
+        execution,
+        { error("no hot swap") },
+        FakeTestResults(),
+        { false },
+        clock,
+        Mutex(),
+    )
 
     private fun call(action: RunAction, arguments: RunArguments) = runBlocking { control.execute(action, arguments) }
 

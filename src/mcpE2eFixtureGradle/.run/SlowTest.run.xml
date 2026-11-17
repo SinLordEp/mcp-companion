@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <!-- A JUnit configuration in a project that delegates running tests to Gradle (testRunner GRADLE). -->
+  <configuration default="false" name="SlowTest" type="JUnit" factoryName="JUnit">
+    <module name="gradlefix.lib.test" />
+    <option name="PACKAGE_NAME" value="slowfix" />
+    <option name="MAIN_CLASS_NAME" value="slowfix.SlowTest" />
+    <option name="METHOD_NAME" value="" />
+    <option name="TEST_OBJECT" value="class" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

@@ -86,7 +86,7 @@
 | `mc_find_implementations` | — | 接口或抽象方法的实现、子类、重写方法、父方法 | `DefinitionsScopedSearch`、`ClassInheritorsSearch`、`OverridingMethodsSearch` |
 | `mc_type_hierarchy` | — | 一个类的父类链和子类树，限制深度 | `ClassInheritorsSearch`、`PsiClass.getSupers` |
 | `mc_safe_delete` | `preview`、`apply` | 先报告还有哪些引用，没有才删除 | `SafeDeleteProcessor` |
-| `mc_run` | `processes`、`start`、`stop`、`restart`、`status`、`output`、`wait_ready`、`hotswap` | Run Configuration 全生命周期。`output` 支持末尾 N 行、正则过滤和游标。热替换走 IDE 自己的构建路径（`ProjectTaskManager`），所以委托给 Gradle、Maven 的项目也能用。测试结果（通过/失败数、失败堆栈）单列为第 3b 步 | `ExecutionListener`、`ProgramRunner`、`ProcessHandler`、`ProjectTaskManager`、`HotSwapManager` |
+| `mc_run` | `processes`、`start`、`stop`、`restart`、`status`、`output`、`wait_ready`、`hotswap`、`tests` | Run Configuration 全生命周期。`output` 支持末尾 N 行、正则过滤和游标。热替换走 IDE 自己的构建路径（`ProjectTaskManager`），所以委托给 Gradle、Maven 的项目也能用。`tests`：测试运行的结论、计数和失败的测试（位置、消息、期望/实际值、截断的堆栈），运行中也能读（标为部分结果），可等待结束；`processes`、`status` 对测试运行附带摘要。Maven 运行在 263 没有结构化结果，`tests` 说明原因并指向 `output` | `ExecutionListener`、`ProgramRunner`、`ProcessHandler`、`ProjectTaskManager`、`HotSwapManager`、`SMTRunnerEventsListener.TEST_STATUS`、`SMTestProxy` |
 | `mc_modules` | `list`、`graph`、`cycles` | 只读。模块及其内容根目录和文件夹（项目目录之外的根会标出）、带作用域的依赖图（JSON）、循环依赖。不做 `build`：官方 `build_project` 已覆盖，且能给出带位置的错误 | `ModuleManager`、`ModuleRootManager` |
 | `mc_sync` | `status`、`sync` | 重新导入 Gradle（及其他 external system）和 Maven 项目，等待并返回结果；同一项目不会同时跑两次同步；Maven 只能整体同步 | `ExternalSystemUtil.refreshProject`、`MavenProjectsManager`、`MavenSyncListener` |
 
@@ -188,7 +188,7 @@ MCP 适配层 (toolsets/)        只做参数解析、调用用例、把结果�
 | 1（已完成） | 公共部分：符号定位、分页、错误模型、设置状态、设置页、让开机制；接入 detekt、ktlint 和 Konsist 架构测试 | 单元测试通过；设置页显示每个工具组的状态并能跳到官方开关页；架构测试在 CI 里生效 |
 | 2（已完成） | 代码导航四个工具 | fixture 项目上每个工具的正常和异常用例都通过 |
 | 3（已完成） | `mc_run` | 在普通 Java fixture 和 Gradle 委托的 fixture 上跑通启动、等待就绪、读输出、热替换、停止，全程不弹对话框。细节和已知限制见 `docs/notes-step3.md` |
-| 3b | `mc_run` 的测试结果：测试类运行配置返回通过/失败数和失败堆栈 | 所需接口在 2026.3 属于内容模块 `intellij.platform.smRunner`（插件 `com.intellij.platform.testRunner`），先在沙箱里确认哪种依赖声明可用，再实现 |
+| 3b（已完成） | `mc_run` 的测试结果：测试类运行配置返回通过/失败数和失败堆栈 | 依赖声明用可选的 `<depends optional="true" config-file="mcp-companion-test-runner.xml">com.intellij.platform.testRunner</depends>`，Plugin Verifier 无警告（`TestStateInfo.Magnitude` 是内部接口，不用；因此异常和断言失败不区分）。在 JPS 和 Gradle fixture 上实测：运行中、结束后、中途停止、JVM 起不来、编译失败、同名测试、非测试进程、句柄释放；Maven 运行没有结构化结果，如实说明。细节和限制见 `docs/notes-step3b.md` |
 | 4（已完成） | `mc_modules`、`mc_sync` | 在 JPS、Gradle（多项目加 included build）和 Maven 三个 fixture 上实测：依赖图和环检测正确；改构建文件后同步生效，写坏时返回失败原因。细节和限制见 `docs/notes-step4.md` |
 | 5 | 发布准备：README、插件描述、图标、CHANGELOG、Plugin Verifier 通过、签名 | CI 全绿；本地从磁盘安装到 IDEA 2026.3 可用 |
 | 6 | 发布到 Marketplace | 需要用户提供 Marketplace 令牌和签名证书，并明确同意发布 |

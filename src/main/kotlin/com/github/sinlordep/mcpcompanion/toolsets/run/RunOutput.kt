@@ -9,6 +9,7 @@ import com.github.sinlordep.mcpcompanion.run.StopResult
 import com.github.sinlordep.mcpcompanion.run.output.ConsoleLine
 import com.github.sinlordep.mcpcompanion.run.output.ConsoleSlice
 import com.github.sinlordep.mcpcompanion.run.output.ConsoleStream
+import com.github.sinlordep.mcpcompanion.run.tests.TestSummary
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -23,22 +24,19 @@ data class RunOutput(
     val output: ConsoleOutput? = null,
     val readiness: ReadinessOutput? = null,
     val hotswap: HotSwapOutput? = null,
+    val tests: TestsOutput? = null,
 ) {
     companion object {
         fun from(outcome: RunOutcome): RunOutput = when (outcome) {
-            is RunOutcome.Processes -> RunOutput(processes = outcome.processes.map(ProcessOutput::from))
-
-            is RunOutcome.Process -> RunOutput(process = ProcessOutput.from(outcome.process))
-
-            is RunOutcome.Stopped -> RunOutput(
-                process = ProcessOutput.from(outcome.process),
-                stop = StopOutput.from(outcome.stop),
+            is RunOutcome.Processes -> RunOutput(
+                processes = outcome.processes.map { ProcessOutput.from(it, outcome.tests[it.id]) },
             )
 
-            is RunOutcome.Restarted -> RunOutput(
+            is RunOutcome.Process -> RunOutput(process = ProcessOutput.from(outcome.process, outcome.tests))
+
+            is RunOutcome.Tests -> RunOutput(
                 process = ProcessOutput.from(outcome.process),
-                previous = outcome.previous?.let(ProcessOutput::from),
-                stop = outcome.stop?.let(StopOutput::from),
+                tests = TestsOutput.from(outcome.report),
             )
 
             is RunOutcome.Output -> RunOutput(
@@ -51,12 +49,26 @@ data class RunOutput(
                 readiness = ReadinessOutput.from(outcome.readiness),
             )
 
-            is RunOutcome.HotSwapped -> RunOutput(
-                process = ProcessOutput.from(outcome.restarted ?: outcome.process),
-                previous = outcome.restarted?.let { ProcessOutput.from(outcome.process) },
-                hotswap = HotSwapOutput.from(outcome.report, restarted = outcome.restarted != null),
+            is RunOutcome.Stopped -> RunOutput(
+                process = ProcessOutput.from(outcome.process),
+                stop = StopOutput.from(outcome.stop),
             )
+
+            is RunOutcome.Restarted -> RunOutput(
+                process = ProcessOutput.from(outcome.process),
+                previous = outcome.previous?.let(ProcessOutput::from),
+                stop = outcome.stop?.let(StopOutput::from),
+            )
+
+            is RunOutcome.HotSwapped -> hotSwapped(outcome)
         }
+
+        /** With a restart, the process is the new one and previous the one that could not take the change. */
+        private fun hotSwapped(outcome: RunOutcome.HotSwapped) = RunOutput(
+            process = ProcessOutput.from(outcome.restarted ?: outcome.process),
+            previous = outcome.restarted?.let { ProcessOutput.from(outcome.process) },
+            hotswap = HotSwapOutput.from(outcome.report, restarted = outcome.restarted != null),
+        )
     }
 }
 
@@ -77,6 +89,8 @@ data class ProcessOutput(
     val pid: Long? = null,
     /** False: the process ran before tracking began; output before that is missing. */
     val outputComplete: Boolean? = null,
+    /** A test run's counts and verdict (processes, status); action=tests lists the tests. */
+    val tests: TestSummaryOutput? = null,
 ) {
     @Serializable
     enum class StateOutput {
@@ -97,7 +111,7 @@ data class ProcessOutput(
     }
 
     companion object {
-        fun from(snapshot: ProcessSnapshot): ProcessOutput {
+        fun from(snapshot: ProcessSnapshot, tests: TestSummary? = null): ProcessOutput {
             val state = snapshot.state
             return ProcessOutput(
                 id = snapshot.id.value,
@@ -116,6 +130,7 @@ data class ProcessOutput(
                 endedAt = snapshot.endedAt?.toString(),
                 pid = snapshot.pid,
                 outputComplete = if (snapshot.outputComplete) null else false,
+                tests = tests?.let(TestSummaryOutput::from),
             )
         }
 

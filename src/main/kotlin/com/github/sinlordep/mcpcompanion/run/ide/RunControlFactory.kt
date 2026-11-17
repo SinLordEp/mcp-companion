@@ -19,6 +19,7 @@ fun runControlFor(project: Project): RunControl {
         catalog = tracker,
         execution = IdeExecutionGateway(project, tracker, LaunchChecks(project, supports)),
         hotSwap = ExtensionHotSwapGateway(project, tracker, supports),
+        tests = IdeTestResultsGateway { TestResultsSupport.EP.extensionList },
         ports = LoopbackPortProbe,
         clock = SystemClock,
         startLock = tracker.startLock,

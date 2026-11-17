@@ -44,6 +44,9 @@ class FakeProcess(
 
     fun print(text: String, stream: ConsoleStream = ConsoleStream.STDOUT) = console.append(text, stream)
 
+    /** As if tracking began after the process had started. */
+    fun adopted() = flow.update { it.copy(outputComplete = false) }
+
     fun moveTo(next: ProcessState) {
         if (next.hasEnded) console.close()
         flow.update { it.copy(state = next) }

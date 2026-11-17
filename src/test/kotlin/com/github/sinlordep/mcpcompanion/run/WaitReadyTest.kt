@@ -27,6 +27,7 @@ class WaitReadyTest {
         FakeCatalog(process),
         FakeExecution(FakeCatalog()),
         { error("no hot swap") },
+        FakeTestResults(),
         { port ->
             probes += port
             portOpen.get()

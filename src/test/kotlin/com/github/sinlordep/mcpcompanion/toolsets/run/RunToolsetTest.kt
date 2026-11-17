@@ -4,6 +4,7 @@ import com.github.sinlordep.mcpcompanion.run.ide.ProcessTracker
 import com.github.sinlordep.mcpcompanion.testing.ScriptConfiguration
 import com.github.sinlordep.mcpcompanion.testing.ScriptConfigurations
 import com.github.sinlordep.mcpcompanion.testing.ToolCalls
+import com.github.sinlordep.mcpcompanion.testing.freshTracker
 import com.intellij.execution.BeforeRunTaskProvider
 import com.intellij.execution.ExecutionListener
 import com.intellij.execution.ExecutionManager
@@ -16,7 +17,6 @@ import com.intellij.mcpserver.McpExpectedError
 import com.intellij.mcpserver.McpToolset
 import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import com.intellij.testFramework.replaceService
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -34,7 +34,7 @@ class RunToolsetTest : BasePlatformTestCase() {
     override fun setUp() {
         super.setUp()
         // The light project outlives a test; a fresh tracker keeps tests apart.
-        project.replaceService(ProcessTracker::class.java, ProcessTracker(project), testRootDisposable)
+        freshTracker(project, testRootDisposable)
         tools = ToolCalls(project)
         scripts = ScriptConfigurations(project, testRootDisposable)
     }

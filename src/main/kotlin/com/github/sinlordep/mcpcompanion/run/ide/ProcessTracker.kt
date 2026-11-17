@@ -14,22 +14,28 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.sync.Mutex
 import java.util.IdentityHashMap
 import java.util.concurrent.atomic.AtomicLong
 
 /**
  * The processes of one project: those `mc_run` starts and those the user starts in the IDE, learnt from the
- * execution events of the project's message bus ([ExecutionEventsListener]). Owns every process listener: a process
- * is released, with its output, when its run tab is closed or reused after it ended, when more than
- * [MAX_ENDED] ended processes are retained, or when the project closes.
+ * execution events of the project's message bus ([ExecutionEventsListener]). Owns every process listener and every
+ * test tree ([TestResultsSupport] reports test events here): a process is released, with its output and its test
+ * results, when its run tab is closed or reused after it ended, when more than [MAX_ENDED] ended processes are
+ * retained, or when the project closes.
  */
 @Service(Service.Level.PROJECT)
-class ProcessTracker internal constructor(private val project: Project, private val clock: Clock) :
-    ProcessCatalog,
+class ProcessTracker internal constructor(
+    private val project: Project,
+    private val clock: Clock,
+    scope: CoroutineScope,
+) : ProcessCatalog,
     Disposable {
 
-    constructor(project: Project) : this(project, SystemClock)
+    /** [scope]: the service's own scope, given by the platform; it ends when the project closes. */
+    constructor(project: Project, scope: CoroutineScope) : this(project, SystemClock, scope)
 
     private val lock = Any()
     private val sequence = AtomicLong()
@@ -40,6 +46,16 @@ class ProcessTracker internal constructor(private val project: Project, private 
 
     /** Serialises the "is it running?" check and the scheduling of a start, per project. */
     val startLock: Mutex = Mutex()
+
+    init {
+        TestResultsObservation(
+            project,
+            parent = this,
+            scope = scope,
+            testsOf = { handler -> synchronized(lock) { byHandler[handler] }?.tests },
+            all = { synchronized(lock) { records.values.map { it.tests } } },
+        ).start()
+    }
 
     override suspend fun processes(): List<TrackedProcess> {
         adoption.adoptOnce(this)

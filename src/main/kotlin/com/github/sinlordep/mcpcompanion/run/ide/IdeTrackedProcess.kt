@@ -22,7 +22,8 @@ import kotlinx.coroutines.flow.update
 
 /**
  * One process the IDE runs, observed through its [ProcessHandler]: output goes into [console], state changes into
- * [snapshots]. The listener lives as long as [lifetime], which the tracker disposes when it releases the process.
+ * [snapshots], test events into [tests]. The listener lives as long as [lifetime], which the tracker disposes when it
+ * releases the process.
  */
 internal class IdeTrackedProcess(
     override val id: ProcessId,
@@ -35,6 +36,9 @@ internal class IdeTrackedProcess(
     private val state = MutableStateFlow(initial)
     override val snapshots: StateFlow<ProcessSnapshot> = state.asStateFlow()
     override val console: ConsoleBuffer = ConsoleBuffer()
+
+    /** The IDE's test tree of this process, once a test event named it; released with this record. */
+    val tests: ProcessTests = ProcessTests()
 
     @Volatile
     var handler: ProcessHandler? = null

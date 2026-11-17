@@ -4,25 +4,31 @@ import com.github.sinlordep.mcpcompanion.common.result.ErrorCode
 import com.github.sinlordep.mcpcompanion.common.result.ToolResult
 import com.github.sinlordep.mcpcompanion.common.result.flatMap
 import com.github.sinlordep.mcpcompanion.run.output.ConsoleQuery
+import com.github.sinlordep.mcpcompanion.run.tests.TestSummaries
 
-/** `processes`: every retained process of the project, most recently started first. */
-class ListProcesses(private val catalog: ProcessCatalog) : RunActionHandler {
+/** `processes`: every retained process of the project, most recently started first, with test summaries. */
+class ListProcesses(private val catalog: ProcessCatalog, private val summaries: TestSummaries) : RunActionHandler {
 
     override val action = RunAction.PROCESSES
     override val parameters = emptySet<RunParameter>()
 
-    override suspend fun handle(request: RunArguments): ToolResult<RunOutcome> =
-        ToolResult.success(RunOutcome.Processes(catalog.processes().map { it.snapshot }))
+    override suspend fun handle(request: RunArguments): ToolResult<RunOutcome> {
+        val processes = catalog.processes()
+        val tests = processes.mapNotNull { process -> summaries.of(process)?.let { process.id to it } }.toMap()
+        return ToolResult.success(RunOutcome.Processes(processes.map { it.snapshot }, tests))
+    }
 }
 
-/** `status`: the state of one process. */
-class ProcessStatus(private val processes: ProcessResolver) : RunActionHandler {
+/** `status`: the state of one process, with its test summary when it is a test run. */
+class ProcessStatus(private val processes: ProcessResolver, private val summaries: TestSummaries) :
+    RunActionHandler {
 
     override val action = RunAction.STATUS
     override val parameters = setOf(RunParameter.PROCESS, RunParameter.CONFIGURATION, RunParameter.TYPE)
 
-    override suspend fun handle(request: RunArguments): ToolResult<RunOutcome> =
-        processes.resolve(request).flatMap { ToolResult.success(RunOutcome.Process(it.snapshot)) }
+    override suspend fun handle(request: RunArguments): ToolResult<RunOutcome> = processes.resolve(request).flatMap {
+        ToolResult.success(RunOutcome.Process(it.snapshot, summaries.of(it)))
+    }
 }
 
 /**

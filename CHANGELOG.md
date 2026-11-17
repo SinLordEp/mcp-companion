@@ -19,6 +19,9 @@
   captured console output (tail, regex filter, cursor), wait until they are ready (output pattern, failure pattern,
   port, end of process) and hot-swap changed classes into JVM debug sessions; also sees processes started in the IDE;
   never opens a dialog
+- `mc_run tests`: structured results of test runs (JUnit, TestNG, Gradle test tasks and other IDE test consoles):
+  verdict and counts, also while the run goes on, failed tests with location, message, expected and actual values and
+  a bounded stack trace, filters and paging, optional wait for the end; `processes` and `status` show a test summary
 - `mc_modules`: read-only module model: modules with build system, SDK, language level, content roots (also those
   next to the project directory) and folders; dependency graph with scopes and the exported flag, walks towards
   dependencies or dependents with depth, library edges with Maven coordinates; dependency cycles
