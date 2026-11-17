@@ -52,8 +52,9 @@ tool steps aside by itself (checked at IDE start and when plugins are installed,
 
 <h3>Settings</h3>
 <p>Switch individual tools on or off on the MCP Server's tool page. <i>Settings | Tools | MCP Companion</i> shows the
-state of each tool, links to that page and holds the brave mode setting. The user interface is available in English
-and Simplified Chinese.</p>
+state of each tool, links to that page, holds the brave mode setting and copies an optional guide for AI agents (for
+AGENTS.md or CLAUDE.md) on how the tools work together. The user interface is available in English and Simplified
+Chinese.</p>
 
 <h3>Compatibility</h3>
 <p>Only the latest major IDE version is supported, currently 2026.3. When a new major version needs changes, a new

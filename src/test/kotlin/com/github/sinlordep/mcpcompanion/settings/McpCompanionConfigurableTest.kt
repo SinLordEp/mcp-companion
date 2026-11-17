@@ -2,16 +2,22 @@ package com.github.sinlordep.mcpcompanion.settings
 
 import com.github.sinlordep.mcpcompanion.common.consent.ConfirmationSetting
 import com.github.sinlordep.mcpcompanion.common.consent.ide.BraveModeSetting
+import com.github.sinlordep.mcpcompanion.guide.AgentGuide
 import com.github.sinlordep.mcpcompanion.toolsets.ToolsetOverview
 import com.github.sinlordep.mcpcompanion.yield.ToolsetState
 import com.intellij.mcpserver.settings.McpServerSettings
+import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.openapi.options.Configurable
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.ui.components.ActionLink
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.table.TableView
 import com.intellij.util.ui.UIUtil
+import java.awt.datatransfer.DataFlavor
+import java.awt.datatransfer.StringSelection
+import javax.swing.JButton
 import javax.swing.JComponent
+import javax.swing.JLabel
 
 class McpCompanionConfigurableTest : BasePlatformTestCase() {
 
@@ -105,6 +111,25 @@ class McpCompanionConfigurableTest : BasePlatformTestCase() {
         } finally {
             settings.enableBraveMode = before
         }
+    }
+
+    fun testCopiesTheAgentGuideAndConfirmsIt() {
+        val configurable = McpCompanionConfigurable()
+        withComponent(configurable) { component -> copyGuide(component, configurable) }
+    }
+
+    private fun copyGuide(component: JComponent, configurable: McpCompanionConfigurable) {
+        val clipboard = CopyPasteManager.getInstance()
+        clipboard.setContents(StringSelection("before"))
+        val copied = UIUtil.findComponentsOfType(component, JLabel::class.java)
+            .single { it.text == "Copied to the clipboard" }
+        assertFalse("no confirmation before the click", copied.isVisible)
+
+        UIUtil.findComponentsOfType(component, JButton::class.java).single { it.text == "Copy Guide" }.doClick()
+
+        assertEquals(AgentGuide().text(), clipboard.getContents<String>(DataFlavor.stringFlavor))
+        assertTrue(copied.isVisible)
+        assertFalse("copying changes no setting", configurable.isModified)
     }
 
     fun testYieldedStateNamesTheOfficialTools() {

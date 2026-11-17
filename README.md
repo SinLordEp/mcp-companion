@@ -38,7 +38,8 @@ them (JetBrains Marketplace offers each IDE the newest compatible version). See 
   for `mc_`), and changes take effect immediately. MCP Companion keeps no on/off state of its own.
 - **Overview and brave mode:** <kbd>Settings</kbd> > <kbd>Tools</kbd> > <kbd>MCP Companion</kbd> lists every toolset
   with its state (available, or provided by an official tool) and links to the tool page. Its one editable setting is
-  the MCP Server's brave mode (see [Safety](#safety)). The page is in English and Simplified Chinese.
+  the MCP Server's brave mode (see [Safety](#safety)); a button copies the [guide for AI agents](#guide-for-ai-agents).
+  The page is in English and Simplified Chinese.
 - **MCP clients** must pass `projectPath` (or provide roots), so that the server knows the target project.
 
 ## Tools
@@ -68,6 +69,22 @@ A typical `mc_run` sequence: `start` -> `wait_ready` -> `output` -> edit code ->
 is closed or reused. To check edits: `mc_diagnostics` for the module (seconds, no build), then `mc_build` for the module
 (compiles what it needs), and the bundled `build_project` for the whole project. The plain module and library lists are
 left to `get_project_modules` and `get_project_dependencies`.
+
+## Guide for AI agents
+
+Tool descriptions explain one tool at a time; the plugin cannot tell an MCP client how the tools fit together. The
+optional agent guide does that in about 40 lines of English, written for the agent: when to prefer the IDE's tools over
+shell commands, the check loop after edits (`mc_diagnostics`, then `mc_build`, `mc_run hotswap` or `restart`,
+`mc_run tests`), `mc_sync` after build file changes, paging and timeouts, consent and project boundaries. Nothing needs
+it; it only helps an agent choose. Three ways to get it:
+
+- <kbd>Settings</kbd> > <kbd>Tools</kbd> > <kbd>MCP Companion</kbd> > <kbd>Copy Guide</kbd> puts it on the clipboard,
+  to paste into a project's `AGENTS.md` or `CLAUDE.md`.
+- Copy it from [`src/main/resources/agent/mcp-companion-guide.md`](src/main/resources/agent/mcp-companion-guide.md).
+- As a Claude skill: copy the directory [`skills/mcp-companion`](skills/mcp-companion) into `~/.claude/skills/` (all
+  projects) or into a project's `.claude/skills/`.
+
+The skill's body is the same text; a test keeps the two equal and checks that the guide names every `mc_` tool.
 
 ## Safety
 

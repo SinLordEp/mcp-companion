@@ -143,6 +143,12 @@ testing {
     }
 }
 
+// AgentGuideTest compares the repository's Claude skill with the bundled guide; it reads skills/ from the working
+// directory, so the task reruns when the skill changes.
+tasks.test {
+    inputs.files(fileTree("skills")).withPropertyName("skills")
+}
+
 tasks.named("check") {
     dependsOn(testing.suites.named("architectureTest"))
 }

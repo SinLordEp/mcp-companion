@@ -43,6 +43,9 @@
   and column (from the IDE's compiler, or read from Gradle's and Maven's console output), the build tool's reason when
   a build fails before compiling, a timeout after which the build goes on, `status`, one build at a time.
 - `mc_modules graph format=mermaid`: the dependency graph as a Mermaid flowchart.
+- An optional guide for AI agents on how the tools work together (check loop after edits, sync after build file
+  changes, paging, consent): Settings | Tools | MCP Companion | Copy Guide puts it on the clipboard for `AGENTS.md` or
+  `CLAUDE.md`; the repository also has it as the Claude skill `skills/mcp-companion`.
 
 ### Changed
 
