@@ -1,11 +1,8 @@
-<!-- MCP Companion plugin icon (40x40, light themes): a puzzle piece, the usual sign for an extension, carrying the
-     Model Context Protocol mark. The mark's paths are the official ones (modelcontextprotocol.io, docs/logo), only
-     scaled; see docs/notes-step5.md, Icon. -->
+<!-- MCP Companion plugin icon (40x40, light themes): a puzzle piece, the usual sign for an extension, with the
+     letters "AI" drawn as strokes (no font), and a plus at its top-right corner: an add-on for AI agents. Original
+     artwork; see docs/notes-step5.md, Icon. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
   <path fill="#3574F0" d="M7.5 9H13.332A4.4 4.4 0 1 1 19.668 9H25.5A5.5 5.5 0 0 1 31 14.5V20.332A4.4 4.4 0 1 1 31 26.668V32.5A5.5 5.5 0 0 1 25.5 38H7.5A5.5 5.5 0 0 1 2 32.5V14.5A5.5 5.5 0 0 1 7.5 9Z"/>
-  <g transform="translate(16.5 23.6) scale(0.15) translate(-96.5 -103.2)" fill="none" stroke="#FFFFFF" stroke-width="13.5" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M25 97.8528L92.8823 29.9706C102.255 20.598 117.451 20.598 126.823 29.9706V29.9706C136.196 39.3431 136.196 54.5391 126.823 63.9117L75.5581 115.177"/>
-    <path d="M76.2653 114.47L126.823 63.9117C136.196 54.5391 151.392 54.5391 160.765 63.9117L161.118 64.2652C170.491 73.6378 170.491 88.8338 161.118 98.2063L99.7248 159.6C96.6006 162.724 96.6006 167.789 99.7248 170.913L112.331 183.52"/>
-    <path d="M109.853 46.9411L59.6482 97.1457C50.2757 106.518 50.2757 121.714 59.6482 131.087V131.087C69.0208 140.459 84.2168 140.459 93.5894 131.087L143.794 80.8822"/>
-  </g>
+  <path fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M6.6 33L12.3 16L18 33M8.84 27.22H15.76M23.4 16V33"/>
+  <path fill="none" stroke="#3DAE5E" stroke-width="2.6" stroke-linecap="round" d="M33.6 3.5V9.7M30.5 6.6H36.7"/>
 </svg>
