@@ -61,7 +61,7 @@ Generate the key pair once, on your machine, outside the repository (commands fr
 ```sh
 openssl genpkey -aes-256-cbc -algorithm RSA -out private_encrypted.pem -pkeyopt rsa_keygen_bits:4096
 openssl rsa -in private_encrypted.pem -out private.pem
-openssl req -key private.pem -new -x509 -days 365 -out chain.crt
+openssl req -key private.pem -new -x509 -days 3650 -subj "/CN=SinLordEp" -out chain.crt
 ```
 
 The first command asks for the password (`PRIVATE_KEY_PASSWORD`). `-days` is the certificate's validity; a longer
@@ -75,7 +75,7 @@ GitHub repository > Settings > Secrets and variables > Actions > New repository 
 |---|---|
 | `CERTIFICATE_CHAIN` | the whole text of `chain.crt` (`-----BEGIN CERTIFICATE-----` ... `-----END CERTIFICATE-----`) |
 | `PRIVATE_KEY` | the whole text of `private.pem` |
-| `PRIVATE_KEY_PASSWORD` | the password |
+| `PRIVATE_KEY_PASSWORD` | not needed with `private.pem` (the second command above removes the password); set it only if you store the encrypted key instead |
 | `PUBLISH_TOKEN` | the Marketplace token |
 
 Give the key and chain as **PEM text, not Base64**. With IntelliJ Platform Gradle Plugin 2.20.1, `signPlugin` accepts
@@ -95,8 +95,7 @@ All green; the verifier says `Compatible` for every IDE. Then build the signed Z
 the environment of that one shell (never in a file in the repository):
 
 ```sh
-export CERTIFICATE_CHAIN="$(cat chain.crt)" PRIVATE_KEY="$(cat private.pem)" PRIVATE_KEY_PASSWORD='...'
-./gradlew signPlugin verifyPluginSignature
+CERTIFICATE_CHAIN="$(cat chain.crt)" PRIVATE_KEY="$(cat private.pem)" ./gradlew signPlugin verifyPluginSignature
 # -> build/distributions/mcp-companion-0.1.0-signed.zip
 ```
 
