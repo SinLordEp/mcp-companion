@@ -2,18 +2,61 @@
 <idea-plugin>
     <id>com.github.sinlordep.mcpcompanion</id>
     <name>MCP Companion</name>
-    <vendor>sinlordep</vendor>
+    <!-- Shown in the IDE; on JetBrains Marketplace the vendor profile chosen at upload is shown (docs/RELEASING.md). -->
+    <vendor url="https://github.com/SinLordEp/mcp-companion">SinLordEp</vendor>
+    <!-- The one source of the description (the build does not take it from README.md). Marketplace shows the first
+         sentence on the plugin card: keep it a plain English summary. The change notes come from CHANGELOG.md. -->
     <description><![CDATA[
-        <p><b>MCP Companion</b> complements the MCP Server that is bundled with JetBrains IDEs.
-        It adds MCP tools that AI agents need but the bundled server does not provide, and nothing else:
-        tools the bundled server already offers are not duplicated.</p>
-        <p>The tools are registered through the bundled MCP Server, so any MCP client connected to the IDE
-        sees them next to the built-in ones. When a later IDE version ships an official tool with the same
-        capability, the corresponding MCP Companion toolset steps aside by itself.</p>
-        <p>Switch individual tools on or off on the MCP Server's tool page in Settings.
-        <i>Settings | Tools | MCP Companion</i> shows the state of each toolset.</p>
-        <p>Requires the bundled <i>MCP Server</i> plugin to be enabled.</p>
-    ]]></description>
+<p>Adds code navigation, safe delete, run configuration control and module tools for AI agents to the IDE's built-in
+MCP Server.</p>
+
+<p>MCP Companion complements the bundled <i>MCP Server</i> plugin, which must be enabled. Its tools appear next to the
+built-in ones for every MCP client connected to the IDE, and their names start with <code>mc_</code>. It does not
+duplicate built-in tools: when a newer IDE ships an official tool with the same capability, the matching MCP Companion
+tool steps aside by itself (checked at IDE start and when plugins are installed, updated or removed).</p>
+
+<h3>Tools</h3>
+<ul>
+  <li><code>mc_find_usages</code>: every reference to a symbol, in the project or also in libraries, with a read/write
+    filter and paging.</li>
+  <li><code>mc_find_implementations</code>: implementations, inheritors and overriding methods, or the supertypes and
+    super methods.</li>
+  <li><code>mc_type_hierarchy</code>: supertypes and subtypes of a class, with depth and size limits (JVM
+    languages).</li>
+  <li><code>mc_safe_delete</code>: <code>preview</code> lists what still uses a declaration; <code>apply</code> deletes
+    it only when nothing does, as one undoable command.</li>
+  <li><code>mc_run</code>: start, stop and restart existing run configurations (run or debug), read their console
+    output, wait until they are ready, hot-swap changed classes into a JVM debug session, and read test results
+    (counts, failed tests with message and stack trace), also while the tests are running.</li>
+  <li><code>mc_modules</code>: modules with their content roots and folders, the dependency graph with scopes, and
+    dependency cycles.</li>
+  <li><code>mc_sync</code>: re-import Gradle and Maven projects after build file changes and report the result.</li>
+  <li><code>mc_status</code>: plugin version, IDE build and the state of each MCP Companion tool.</li>
+</ul>
+
+<h3>Safety</h3>
+<ul>
+  <li>Before <code>mc_run</code> starts or restarts a process, the IDE asks you to allow or deny it, as the built-in
+    <code>execute_run_configuration</code> does. Whether the IDE asks is the MCP Server's brave mode, which is off by
+    default.</li>
+  <li><code>mc_run</code> only runs run configurations that exist in the project, never arbitrary commands.</li>
+  <li><code>mc_safe_delete</code> refuses to delete a declaration that is still used or that lies outside the
+    project.</li>
+  <li><code>mc_run</code> and <code>mc_sync</code> refuse to run anything in a project that is not trusted.</li>
+</ul>
+
+<h3>Settings</h3>
+<p>Switch individual tools on or off on the MCP Server's tool page. <i>Settings | Tools | MCP Companion</i> shows the
+state of each tool, links to that page and holds the brave mode setting. The user interface is available in English
+and Simplified Chinese.</p>
+
+<h3>Compatibility</h3>
+<p>Only the latest major IDE version is supported, currently 2026.3. When a new major version needs changes, a new
+plugin version follows; IDEs of earlier major versions keep the last plugin version that supports them.</p>
+
+<p><a href="https://github.com/SinLordEp/mcp-companion">Source code and documentation</a> |
+<a href="https://github.com/SinLordEp/mcp-companion/issues">Issue tracker</a></p>
+]]></description>
 
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.mcpServer</depends>

@@ -1,6 +1,6 @@
 # MCP Companion 实现计划
 
-状态：草案，等待确认。日期：2026-11-16。
+状态：草案，等待确认。日期：2026-11-16。第 5 步完成于 2026-11-17。
 
 ## 1. 目标
 
@@ -191,7 +191,7 @@ MCP 适配层 (toolsets/)        只做参数解析、调用用例、把结果�
 | 3b（已完成） | `mc_run` 的测试结果：测试类运行配置返回通过/失败数和失败堆栈 | 依赖声明用可选的 `<depends optional="true" config-file="mcp-companion-test-runner.xml">com.intellij.platform.testRunner</depends>`，Plugin Verifier 无警告（`TestStateInfo.Magnitude` 是内部接口，不用；因此异常和断言失败不区分）。在 JPS 和 Gradle fixture 上实测：运行中、结束后、中途停止、JVM 起不来、编译失败、同名测试、非测试进程、句柄释放；Maven 运行没有结构化结果，如实说明。细节和限制见 `docs/notes-step3b.md` |
 | 4（已完成） | `mc_modules`、`mc_sync` | 在 JPS、Gradle（多项目加 included build）和 Maven 三个 fixture 上实测：依赖图和环检测正确；改构建文件后同步生效，写坏时返回失败原因。细节和限制见 `docs/notes-step4.md` |
 | 4b（已完成） | `mc_run` 启动确认 | 第 3 步说官方 `execute_run_configuration` 不询问，是错的。`start`、`restart`、会重启的 `hotswap` 现在先问用户（允许/拒绝，"无需确认"复选框），由官方 Brave 模式控制，设置页可改；拒绝或超时返回 `DENIED`，取消调用会关闭对话框。沙箱里中英文实测，细节和限制见 `docs/notes-consent.md` |
-| 5 | 发布准备：README、插件描述、图标、CHANGELOG、Plugin Verifier 通过、签名 | CI 全绿；本地从磁盘安装到 IDEA 2026.3 可用 |
+| 5（已完成） | 发布准备：README、插件描述、图标、CHANGELOG、Plugin Verifier 通过、签名 | 版本 0.1.0；`check buildPlugin verifyPlugin` 全绿，Verifier 对 IU-263.7307.200 为 Compatible（下一版 EAP 尚未发布，出现后自动加入）；用一次性自签名证书验证了 `signPlugin` 和 `verifyPluginSignature`；构建好的 ZIP 从磁盘装进干净的 IDEA 2026.3（独立的配置目录，私有 Xvfb），无需重启即加载，`idea.log` 无错误，插件页、设置页、MCP 调用和启动确认在中英文下实测。`runIdeForMcpE2e` 的配置缓存问题已修（逻辑移到 `buildSrc`）。CI 只做了静态检查，推送后才能证明。细节见 `docs/notes-step5.md`，第 6 步的清单见 `docs/RELEASING.md` |
 | 6 | 发布到 Marketplace | 需要用户提供 Marketplace 令牌和签名证书，并明确同意发布 |
 
 每一步一个分支、一个 PR。
@@ -201,7 +201,7 @@ MCP 适配层 (toolsets/)        只做参数解析、调用用例、把结果�
 - 单元测试：`BasePlatformTestCase` 加小型 fixture 项目，覆盖每个工具的正常、空结果、找不到符号、索引未完成几种情况。
 - 端到端：`runIde` 起沙箱 IDE，只打开 fixture 项目，用 MCP 客户端真实调用每个工具。
 - 每次提交前跑：`./gradlew check verifyPlugin`。
-- CI：模板自带的 GitHub Actions（构建、测试、Plugin Verifier 对当前最新大版本和已有的下一版 EAP）。
+- CI：模板自带的 GitHub Actions（构建、测试、Plugin Verifier 对当前最新大版本和已有的下一版 EAP）。下一版 EAP 由 `build.gradle.kts` 里 `pluginVerification` 的 `latest { channels = EAP; sinceBuild = 当前大版本 + 1 }` 自动找到，没有时不加（第 5 步）。
 - 界面（设置页）在 1440x900 下对中文和英文各截图检查。界面文字放在资源文件里，提供中英两种。
 
 ## 8. 风险

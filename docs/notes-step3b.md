@@ -202,9 +202,9 @@ private display; the official call then did not return until the IDE was stopped
 - TestNG, JUnit 5, Kotlin test, JavaScript test runners use the same tree and topic but were not run.
 - Positions need the index; while the IDE indexes, `url` is given instead (not shown end to end).
 - Paging during a run with parallel suites may shift; not reproduced.
-- Pre-existing, not fixed: `runIdeForMcpE2e` reports "cannot serialize Gradle script object references" for the
-  configuration cache (the `argumentProviders` lambda captures script values); the IDE still starts, the Gradle build
-  ends as FAILED when the IDE is stopped.
+- Pre-existing, fixed in step 5 (`docs/notes-step5.md`): `runIdeForMcpE2e` reported "cannot serialize Gradle script
+  object references" for the configuration cache (the `argumentProviders` lambda captures script values); the IDE
+  still started, the Gradle build ended as FAILED when the IDE was stopped.
 
 ## Checks
 
