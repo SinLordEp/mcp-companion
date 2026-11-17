@@ -1,7 +1,9 @@
 # GitHub Actions workflow for building, testing, verifying, and preparing plugin release drafts:
 # - Build the plugin ZIP with the 'buildPlugin' task and upload it as a workflow artifact.
-# - Run the 'check' task and upload test reports on failure.
-# - Run the 'verifyPlugin' task and upload Plugin Verifier reports.
+# - Run the 'check' task (tests, architecture tests, detekt, ktlint; buildSrc tests run when buildSrc is built) and
+#   upload test reports on failure.
+# - Run the 'verifyPlugin' task (IntelliJ IDEA 2026.3 and, once published, the newest EAP of the next major version)
+#   and upload Plugin Verifier reports.
 # - Create a draft GitHub release on non-pull-request runs.
 #
 # The workflow is triggered on pushes to the 'main' branch and on pull_request events.
@@ -21,6 +23,10 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
+
+# Least privilege: read-only by default; only the release draft job may write (it creates the draft release).
+permissions:
+  contents: read
 
 jobs:
 

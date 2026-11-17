@@ -7,6 +7,9 @@ on:
   release:
     types: [ prereleased, released ]
 
+# Least privilege: nothing by default; the publishing job below asks for what it needs.
+permissions: {}
+
 jobs:
 
   # Prepare and publish the plugin to JetBrains Marketplace repository
@@ -14,7 +17,9 @@ jobs:
     name: Publish Plugin
     runs-on: ubuntu-latest
     permissions:
+      # Upload the ZIP to the GitHub release and push the branch with the patched changelog.
       contents: write
+      # Open the pull request with the patched changelog.
       pull-requests: write
     steps:
 

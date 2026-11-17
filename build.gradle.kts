@@ -2,7 +2,9 @@ import mcpcompanion.e2e.McpE2eJvmArguments
 import mcpcompanion.e2e.McpE2eLayout
 import mcpcompanion.e2e.McpE2eOpenedProject
 import mcpcompanion.e2e.PrepareMcpE2eSandbox
+import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import org.jetbrains.intellij.platform.gradle.models.ProductRelease
 import org.jetbrains.intellij.platform.gradle.tasks.RunIdeTask
 
 plugins {
@@ -18,6 +20,9 @@ kotlin {
     // IntelliJ Platform 2026.3 (build 263) runs on Java 25 (product-info.json: minRequiredJavaVersion = 25).
     jvmToolchain(25)
 }
+
+// Only the latest major IDE version is supported; see docs/PLAN.md section 3.
+val supportedMajorBuild = 263
 
 dependencies {
     testImplementation("junit:junit:4.13.2")
@@ -42,20 +47,60 @@ dependencies {
     }
 }
 
+// ---- Plugin descriptor, verification, signing and publishing ------------------------------------------------------
+// The description is maintained in plugin.xml only; the change notes come from CHANGELOG.md through the Gradle
+// Changelog Plugin (the section of the current version, or [Unreleased] before patchChangelog). See docs/RELEASING.md.
+
 intellijPlatform {
     pluginConfiguration {
         ideaVersion {
-            // Only the latest major IDE version is supported; see docs/PLAN.md section 3.
-            sinceBuild = "263"
+            sinceBuild = "$supportedMajorBuild"
+            // No upper bound: later IDE versions stay compatible until an API change needs a new plugin version.
             untilBuild = provider { null }
         }
     }
     pluginVerification {
         ides {
-            // The IDE the plugin is built against (IntelliJ IDEA 2026.3). Add the next EAP here once it exists.
+            // The IDE the plugin is built against (IntelliJ IDEA 2026.3).
             current()
+            // The newest EAP of the next major version, once JetBrains publishes one; without one nothing is added.
+            latest {
+                types = listOf(IntelliJPlatformType.IntellijIdea)
+                channels = listOf(ProductRelease.Channel.EAP)
+                sinceBuild = "${supportedMajorBuild + 1}"
+            }
         }
     }
+    // Secrets only from the environment (GitHub Actions secrets in .github/workflows/release.yml), never from files in
+    // the repository. Key and chain as PEM text: signPlugin also accepts them Base64-encoded, verifyPluginSignature
+    // (which publishPlugin runs) does not (IntelliJ Platform Gradle Plugin 2.20.1, docs/RELEASING.md).
+    signing {
+        certificateChain = providers.environmentVariable("CERTIFICATE_CHAIN")
+        privateKey = providers.environmentVariable("PRIVATE_KEY")
+        password = providers.environmentVariable("PRIVATE_KEY_PASSWORD")
+    }
+    publishing {
+        token = providers.environmentVariable("PUBLISH_TOKEN")
+        // A pre-release version such as 1.2.0-beta.1 goes to the Marketplace channel "beta"; 1.2.0 goes to "default".
+        channels = listOf(version.toString().substringAfter('-', "").substringBefore('.').ifEmpty { "default" })
+    }
+}
+
+// verifyPluginSignature reads signPlugin's output but does not depend on it (IntelliJ Platform Gradle Plugin 2.20.1).
+// Publishing checks the signature before anything is uploaded.
+tasks.verifyPluginSignature {
+    dependsOn(tasks.signPlugin)
+}
+tasks.publishPlugin {
+    dependsOn(tasks.verifyPluginSignature)
+}
+
+changelog {
+    // patchChangelog starts a new [Unreleased] section without empty group headings.
+    groups.empty()
+    repositoryUrl = providers.gradleProperty("pluginRepositoryUrl")
+    // Release tags are the bare version (0.1.0), as the release draft in .github/workflows/build.yml creates them.
+    versionPrefix = ""
 }
 
 // ---- Quality gates (all part of `./gradlew check`) ---------------------------------------------------------------
