@@ -137,4 +137,27 @@ class CompilerOutputParserTest {
         )
         assertEquals(emptyList<RawProblem>(), parser.problems())
     }
+
+    @Test
+    fun `a kotlinc error as the Kotlin Gradle plugin 2_4_21 prints it, captured from a real build`() {
+        // Captured with Gradle 9.8.1 and org.jetbrains.kotlin.jvm 2.4.21 (docs/notes-step7.md); path shortened.
+        val problems = parse(
+            "> Task :compileKotlin FAILED",
+            "e: file:///w/kt/src/main/kotlin/Broken.kt:4:23 Unresolved reference 'missingValue'.",
+            "",
+            "FAILURE: Build failed with an exception.",
+        )
+        assertEquals(
+            listOf(
+                RawProblem(
+                    ProblemSeverity.ERROR,
+                    "Unresolved reference 'missingValue'.",
+                    "/w/kt/src/main/kotlin/Broken.kt",
+                    4,
+                    23,
+                ),
+            ),
+            problems,
+        )
+    }
 }

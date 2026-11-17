@@ -109,6 +109,9 @@ plugin version follows; IDEs of earlier major versions keep the last plugin vers
         <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.moduleBuilder"
                         interface="com.github.sinlordep.mcpcompanion.build.ide.ModuleBuilderProvider"
                         dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.buildToolTask"
+                        interface="com.github.sinlordep.mcpcompanion.common.build.ide.BuildToolTaskProvider"
+                        dynamic="true"/>
         <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.fileAnalyzer"
                         interface="com.github.sinlordep.mcpcompanion.diagnostics.ide.FileAnalyzerProvider"
                         dynamic="true"/>
@@ -121,6 +124,10 @@ plugin version follows; IDEs of earlier major versions keep the last plugin vers
                                  bundle="messages.McpCompanionBundle"
                                  key="settings.display.name"
                                  dynamic="true"/>
+        <!-- mc_diagnostics: no external annotators for the files it analyses, while it analyses them
+             (see ExternalAnnotatorPause). -->
+        <daemon.externalAnnotatorsFilter
+                implementation="com.github.sinlordep.mcpcompanion.diagnostics.ide.PausedExternalAnnotatorsFilter"/>
     </extensions>
 
     <!-- mc_run: every start in the project, also those the user makes in the IDE, feeds the process tracker. -->

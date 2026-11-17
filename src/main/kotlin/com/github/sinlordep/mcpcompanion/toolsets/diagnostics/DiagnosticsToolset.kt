@@ -59,18 +59,19 @@ class DiagnosticsToolset : CompanionToolset {
 
         private const val DESCRIPTION: String = "Problems in a scope of files without building: the IDE runs the " +
             "analysis an editor shows (the language's error checks and the project's enabled inspections) on files " +
-            "that need not be open. Scope, exactly one: module (exact name from mc_modules list; include adds the " +
-            "modules it depends on or that depend on it), directory, or files. minSeverity error (default) or " +
-            "warning. Results grouped by file: line, column, severity, message, inspection id when the IDE names " +
+            "that need not be open; external annotators (external linters, XML schema validation, Javadoc HTML " +
+            "lint, KDoc links) are not run. Scope, exactly one: module (exact name from mc_modules list; include " +
+            "adds the modules it depends on or that depend on it), directory, or files. minSeverity error (default) " +
+            "or warning. Results grouped by file: line, column, severity, message, inspection id when the IDE names " +
             "it. errors, warnings and byModule count all analysed files. The scope's files are sorted; a call " +
             "analyses limit files (default 100, max 500) from offset within timeoutSeconds (default 60, max 600); " +
             "partial=timeout|indexing, hasMore and nextOffset say where to continue. Waits until the IDE finished " +
-            "importing (Gradle, Maven) and indexing. Named files written outside the IDE are refreshed. Sees what " +
-            "the editor sees (unresolved symbols, type errors, syntax errors; inspection findings, where the IDE " +
-            "may be stricter than the compiler). Does not see what only a real compile finds: compiler limits such " +
-            "as 'code too large', annotation processors and code generated during the build (missing generated " +
-            "classes show as errors), build script and dependency problems. To verify: mc_build (one module) or " +
-            "build_project. One file in detail: get_file_problems."
+            "importing (Gradle, Maven) and indexing. Named files written outside the IDE are refreshed. Use it " +
+            "first, after every edit: it takes seconds, builds nothing and also covers modules you would not build. " +
+            "Build (mc_build, one module; build_project) when you need what only a compile shows: compiler limits " +
+            "such as 'code too large', annotation processors and code generated during the build (missing " +
+            "generated classes show here as errors), build script and dependency problems. One file in detail: " +
+            "get_file_problems."
     }
 }
 

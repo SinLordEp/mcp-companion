@@ -96,4 +96,13 @@ class SandboxOptionsTest {
         assertEquals(true, delegated in MavenFixtureFiles.workspace(repository, settings, delegatedBuild = true))
         assertEquals(false, delegated in MavenFixtureFiles.workspace(repository, settings))
     }
+
+    @Test
+    fun `the gradle fixture's local gradle is passed as the IDE's headless default, offline`() {
+        assertEquals(
+            listOf("-Didea.gradle.distributionType=LOCAL", "-Didea.gradle.home=/g/gradle-9.8.1", "-Didea.gradle.offline=true"),
+            McpE2eJvmArguments.gradleArguments("/g/gradle-9.8.1"),
+        )
+        assertEquals(emptyList<String>(), McpE2eJvmArguments.gradleArguments(""))
+    }
 }

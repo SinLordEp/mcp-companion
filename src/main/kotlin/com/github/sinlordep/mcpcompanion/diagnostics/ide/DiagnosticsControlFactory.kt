@@ -14,12 +14,14 @@ import com.github.sinlordep.mcpcompanion.diagnostics.SourceFile
 import com.intellij.openapi.application.readAction
 import com.intellij.openapi.application.smartReadAction
 import com.intellij.openapi.extensions.ExtensionPointName
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.backend.observation.Observation
 import kotlinx.coroutines.Dispatchers
@@ -70,11 +72,17 @@ internal class IdeDiagnosticsEnvironment(private val project: Project) : Diagnos
         return list(selection)
     }
 
-    /** Named files written outside the IDE (not yet in its file system view) are refreshed first, off any lock. */
+    /**
+     * Named files created or changed outside the IDE are looked up and reloaded from disk first, off any lock. A file
+     * with unsaved changes in the IDE is left alone: reloading it would make the IDE ask which version to keep.
+     */
     private suspend fun refresh(paths: List<String>) = withContext(Dispatchers.IO) {
         val resolver = ProjectFiles.of(project).paths
         val files = LocalFileSystem.getInstance()
-        paths.forEach { path -> files.refreshAndFindFileByPath(resolver.resolve(path)) }
+        val found = paths.mapNotNull { path -> files.refreshAndFindFileByPath(resolver.resolve(path)) }
+        val documents = FileDocumentManager.getInstance()
+        val saved = readAction { found.filterNot(documents::isFileModified) }
+        if (saved.isNotEmpty()) VfsUtil.markDirtyAndRefresh(false, false, false, *saved.toTypedArray())
     }
 
     private suspend fun list(selection: FileSelection): ToolResult<List<SourceFile>> = readAction {

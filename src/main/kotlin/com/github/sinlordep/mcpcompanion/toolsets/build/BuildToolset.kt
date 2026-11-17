@@ -60,8 +60,10 @@ class BuildToolset : CompanionToolset {
             "readable; build_project lists the Build window's messages). state=running means the timeout passed and " +
             "the build goes on: call status. status - the running build and the latest result. One build at a " +
             "time: a second build call is refused while one runs. Refused in an untrusted project; never asks or " +
-            "opens a dialog (a running debug session is not offered a class reload). To see errors without " +
-            "building: mc_diagnostics. Whole project: build_project."
+            "opens a dialog (a running debug session is not offered a class reload). Check edits with mc_diagnostics " +
+            "first: seconds, no build, the editor's errors also in dependent modules. Build when you need what only " +
+            "a compile shows: compiler-only errors, annotation processors, generated code, build script and " +
+            "dependency problems, or class files to run. Whole project: build_project."
     }
 }
 

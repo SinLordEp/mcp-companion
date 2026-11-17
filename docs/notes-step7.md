@@ -42,7 +42,8 @@ How `mc_build` gets positions without the Build view (decided):
 | Maven (delegated) | the same console route | the Maven compiler plugin's `[ERROR] /path:[line,column]` lines |
 | anything else (a build script error, a missing dependency) | no compiler line | none: `messages=build_output` (or `none`) with an explicit note that points to `build_project` |
 
-The console route reads every execution that starts while the build runs (there is no public link from a
+The console route reads only the executions that belong to the build (see "Attribution of build messages" below;
+there is no public link from a
 `ProjectTaskContext` to the execution a delegated runner starts); only lines in a compiler's format count. A process the
 user starts during the build and that prints such lines would add them. The same shared gateway now serves
 `mc_run hotswap`, so hot swap in delegated builds reports compile errors with positions too.
@@ -166,13 +167,9 @@ names the files). Rounds: JPS; Gradle twice; Maven with the IDE building; Maven 
 - `timeoutSeconds=1` on the JPS project directory (47 files): `partial=timeout`, `analysedFiles=20`, `nextOffset=20`
   (batches of 20 then); `limit=500, offset=500, timeoutSeconds=5` on the Gradle project with 2,133 files:
   `analysedFiles=128`, `partial=timeout`, `nextOffset=628`.
-- **A platform stall**: with 20 files per `CodeSmellDetector` call the JPS directory analysis hung reproducibly for
-  60 s (19 files took 0.6 s; any 18-file window that contained `buildok/.../Greeting.java` hung; every file alone was
-  fast). Thread dump (`jstack-diag.txt`, `jstack-hang2.txt`): pool threads in `ExternalToolPass.getInfos` sleeping in
-  its wait loop for the `ExternalAnnotatorManager` queue, which gives up after 60 s; then the call completes
-  (`j45-long`: 60.1 s, all 20 analysed). Batches are now 8 files; the JPS directory takes 1.9-3.6 s. On the Gradle
-  project the first analysis of `gen00` (100 files, 13 batches) after a sync still took 64 s once (4 s on every later
-  call): the stall is not fully explained and can recur; the time bound keeps calls bounded.
+- **A platform stall** (first round): with 20 files per `CodeSmellDetector` call the JPS directory analysis stalled
+  60 s per batch; on the Gradle project the first analysis after a sync took 64 s once even with batches of 8. Root
+  cause and fix: section "The 60-second stall" below; it no longer occurs.
 - Mermaid output checked with the IDE's own Mermaid plugin (bundled, enabled in the sandbox): `graph.mmd` with the
   81-node Gradle diagram had no problem and rendered in the preview (`gradle-mermaid-editor.png`); a deliberately
   broken copy got "Flowchart.LINK_TEXT or Flowchart.SEP expected" at 83:21 (through `mc_diagnostics`). The `.mmd`
@@ -224,7 +221,7 @@ With 20 generated subprojects of 100 classes each (only in the throwaway copy; `
 | `mc_build gen00.main`, nothing changed | 0.20 s |
 | `mc_build gen00.main` after an edit in gen00 (3 rounds) | 0.20 / 0.23 / 0.19 s (class file rewritten, checked) |
 | `build_project` after an edit in gen00 (3 rounds) | 0.43 / 0.44 / 0.36 s |
-| `mc_diagnostics module=gen00.main` (100 files) | 64.4 s first time (stall, see above), then 4.0 s; `gen01.main` 3.9 s |
+| `mc_diagnostics module=gen00.main` (100 files) | 64.4 s first time (the stall, fixed in round 2; new numbers below), then 4.0 s |
 | `mc_diagnostics directory=.`, first 500 of 2,133 files | 19.4 s |
 
 On this small project an incremental Gradle build is already fast; the gain of a module build is the configuration
@@ -244,21 +241,118 @@ scrolling (`McpCompanionConfigurableTest` also asserts `rowCount == visibleRowCo
   from javac). Annotation processors and generated code were not run end to end (no fixture with a processor).
 - Inspection ids: the public result carries them only for one kind of finding; none came in the tests and fixtures.
 - Weak warnings and information are never reported (`CodeSmellDetector` minimum is WARNING).
-- The 60-second external-annotator stall can recur; its cause in the platform is not found.
+- External annotators are not run during `mc_diagnostics` (see "The 60-second stall"): their findings (XML schema
+  validation, Javadoc HTML lint, KDoc links, ESLint, Stylelint, ShellCheck, Markdown/HTML link checks) are missing,
+  and an editor highlighting an analysed file in those seconds runs without them until it is highlighted again.
 - Builds started by the user in the IDE are not coordinated with `mc_build`; `status` knows only `mc_build`'s builds.
-  The console of every execution that starts during a build is read; a process started meanwhile that prints
-  compiler-format lines would add them.
+  Attribution limit: another build delegated to Gradle or Maven in the same project that starts while an `mc_build`
+  build runs (e.g. the user's Build menu, the official `build_project`, `mc_run hotswap`) is a build-tool build task
+  like ours, and its compiler lines are mixed in. JPS builds are attributed exactly.
 - Positions of delegated builds depend on the console formats: javac (Gradle prints them), kotlinc 2.x, Maven
-  compiler plugin. Kotlin was not run end to end (no Kotlin module in the fixtures); Groovy and Scala compilers,
+  compiler plugin. Kotlin through `mc_build` was not run end to end (no Kotlin module in the fixtures: the Kotlin
+  Gradle plugin and the Kotlin standard library would have to be downloaded into the sandbox's private, offline Gradle
+  home); the kotlinc line was captured from a real Gradle 9.8.1 / Kotlin Gradle plugin 2.4.21 build outside the sandbox
+  and is a unit test; Groovy and Scala compilers,
   Gradle's Problems-API-only reports and other build tools give no positions.
 - Untrusted project: refused before anything starts (`BuildControlTest`); not run end to end, because the sandbox
   trusts every project (`-Didea.trust.all.projects=true`) and an untrusted start would open the trust dialog.
 - Maven-delegated module builds need the sibling modules in the local repository (see the table).
-- Not run: a debug session on the Gradle fixture (the veto is the same code as on JPS), Windows and macOS.
+- Not run: Windows and macOS.
 
 ## Surprising
 
-- The Gradle sandbox downloaded `gradle-9.8.0-bin.zip` from services.gradle.org into the private Gradle user home
-  (`build/mcp-e2e-gradle-user-home/wrapper/dists`) on its first import, although the harness writes a LOCAL Gradle home
-  into `.idea/gradle.xml`; the IDE rewrote the file without `gradleHome` (it adds `GradleMigrationSettings`). Step 4
-  noted "no network is used"; that no longer holds for a fresh sandbox. Not changed here.
+- The Gradle sandbox downloaded `gradle-9.8.0-bin.zip` from services.gradle.org into the private Gradle user home on
+  its first import (round 1). Cause: in IntelliJ IDEA 2026.3 `GradleProjectSettings.gradleHome` is `@Transient` (the
+  home is kept in `GradleLocalSettings`, stored in the per-project cache file), so the `gradleHome` the harness wrote
+  into `.idea/gradle.xml` was ignored, and the IDE fell back to its default distribution. Not caused by the step-7
+  fixtures. Since when cannot be proven from here: the earlier steps' private Gradle homes (in other, removed
+  worktrees) are gone; on a sandbox whose private home already held a 9.8.0 distribution nothing would be downloaded
+  again, which would explain why it went unnoticed. Fixed in round 2: the harness passes the local Gradle as the
+  Gradle plugin's headless defaults (`-Didea.gradle.distributionType=LOCAL`, `-Didea.gradle.home=...`,
+  `-Didea.gradle.offline=true`, read by every new `GradleProjectSettings`). After deleting the downloaded
+  distribution, a fresh sandbox imported the fixture with no download (`services.gradle.org` not in `idea.log`, no
+  new `wrapper/dists` entry) and ran Gradle 9.8.1 from the local home with the private user home.
+
+## Review round 1 (rework)
+
+### The 60-second stall
+
+Evidence (JPS fixture, 47 files, batches of 20 forced by a temporary system property; diagnostics code not committed):
+
+- Thread dumps during a stall: 7-8 `JobScheduler FJ pool` threads in `ExternalToolPass.getInfos` (line 238), the loop
+  that polls `externalUpdateTaskCompleted` and gives up after 60 s, called from `DaemonCodeAnalyzerImpl.runMainPasses`
+  under `MainPassesRunner` (`e2e2/jstack-probe1.txt`, `jstack-stall-traced.txt`).
+- The pass's flag is set only when its `Update` in `ExternalAnnotatorManager`'s `MergingUpdateQueue` ran or was
+  rejected (every path through `run()`/`setRejected()` sets it in `finally`). A probe that read the queue every 5 s
+  during the stalls (reflection, sandbox only, never committed) saw it idle the whole time: `active=true scheduled=0
+  isFlushing=false alarmCurrentJob=null`. So the waiting passes waited for work that was no longer in the queue and
+  not running; they did not wait for the queue to drain.
+- The "skipped 2nd copy" path of `ProgressableTextEditorHighlightingPass.doCollectInformation` (which skips the
+  collection, i.e. never queues, when the session's indicator is not the pass's) did not log with its category on
+  DEBUG, so it is not the cause.
+- A trace of `ExternalAnnotatorsFilter` calls (pass creation and collection) showed that `MainPassesRunner` created the
+  passes of the same files twice within about a second: it restarts a whole batch when a write action begins.
+  Updates are identified by the `PsiFile`, so the second pass's update replaces the first one's in the queue.
+- Which exact path leaves a restarted pass's flag unset was not isolated. What is established: the wait is the
+  external-annotator pass's own 60-s poll, it happens only for batches (many concurrent passes, restarts by write
+  actions, more of those right after a sync, when the workspace model and indexes change), and every Java, XML,
+  `.iml` and Markdown file gets such a pass because ESLint's annotator is registered for all languages
+  (`EslintExternalAnnotator`, `language=""`); for Java files the only other one is `JavadocHtmlLintAnnotator`, whose
+  inspection is off by default, so the pass usually has nothing to do.
+
+Fix, deterministic and public: `PausedExternalAnnotatorsFilter`, an `ExternalAnnotatorsFilter`
+(`com.intellij.daemon.externalAnnotatorsFilter`, not annotated) that prohibits every external annotator for the files
+of a running `mc_diagnostics` batch (`ExternalAnnotatorPause`, counted per file). `ExternalToolPassFactory` creates no
+pass when no external annotator applies, so nothing can wait. Proof: with the filter, the same JPS directory with
+batches of 20 took 1.65 s, 0.43 s, 0.40 s (before: 79-150 s). What is lost is listed in the limits.
+
+Numbers on the Gradle fixture with 20 generated subprojects of 100 classes (2,133 files), batches of 8, a thread dump
+1.5 s into every call (`e2e2/perf-batch8.txt`, `jstack-b8-*.txt`):
+
+| Call | Run 1 | Run 2 | Run 3 |
+|---|---|---|---|
+| module `genNN.main` (100 files), first call after a sync | 4.66 s (21 files/s) | 2.97 s (34) | 2.58 s (39) |
+| same module, again | 1.92 s (52) | 1.48 s (68) | 1.36 s (73) |
+| same module, third call | 1.73 s (58) | 1.40 s (72) | 1.30 s (77) |
+| directory, 500 files (offsets 500, 1000, 1500) | 16.3 s (31) | 10.6 s (47) | 10.8 s (46) |
+
+No thread dump showed an `ExternalToolPass`. Batches of 32 (`perf-batch32.txt`) gave the same rates (first-after-sync
+5.6 / 2.0 / 1.7 s, 500 files 12.8 / 10.4 / 12.1 s), so 8 stays (finer timeout granularity). Expectation for a module of
+about 2,000 small Java files on this machine (16 cores): 30-50 files/s once indexed, i.e. 40-70 s, in four or more
+calls of 500 files (`limit` max 500); the default `timeoutSeconds` of 60 fits one 500-file call with margin. Larger or
+more complex files and enabled heavy inspections lower the rate.
+
+### Attribution of build messages
+
+`BuildAttribution` (pure, `BuildAttributionTest`) with facts from the gateway:
+
+- JPS: a `CompileContext` counts only when its compile scope carries this build's session id
+  (`ExecutionManager.EXECUTION_SESSION_ID_KEY`, public; the IDE's JPS task runner puts the `ProjectTaskContext`
+  session id on the scope). Verified end to end: `mc_build buildbad` on JPS still reports the error at 11:24
+  (`messages=compiler`).
+- Executions: the project-level `EXECUTION_TOPIC` already excludes other projects; an execution counts only if it is a
+  build tool's build task (extension point `buildToolTask`: external systems: an `ExternalSystemRunConfiguration` with
+  `PROGRESS_LISTENER_KEY` set, which the IDE's build runner sets so that progress goes to the Build window; Maven: a
+  `MavenRunConfiguration`) and is not a configuration in the project's run configuration list.
+- The first version of the filter (any external-system configuration that is not listed) was not enough, seen end to
+  end: while `mc_build gradlefix.buildok.main` ran (compile slowed to 20 s in the throwaway copy), `mc_run start
+  Beacon` (Gradle-delegated) failed to compile an unrelated broken file and printed
+  `.../Outside.java:5: error: cannot find symbol`; the build result contained that error. Gradle-delegated application
+  runs are unlisted external-system configurations. With the Build-window check the same scenario returned only the
+  build's own `[strictfp]` warning (`e2e2/a04-build-during-beacon.txt`), while Beacon's output held the error
+  (`a09-beacon-output`).
+- Delegated Maven still attributed: `mc_build buildok` with a broken `Greeting.java` → failed, 6:28,
+  `messages=build_output`.
+- Remaining: another delegated build of the same project at the same time (limits).
+
+### End-to-end gaps closed
+
+- `files=` after the refresh fix (Gradle sandbox): a file written by the shell, then analysed → found, 0 errors; then
+  changed by the shell → the second call saw the change: 1 error "Cannot resolve symbol 'missingValue'" 5:16. The
+  first version only looked files up and missed the change; named files are now marked dirty and refreshed, except
+  files with unsaved changes in the IDE (reloading those would make the IDE ask which version to keep).
+- Kotlin: see limits (captured real line, unit test).
+- Debug session on Gradle: `mc_run start Beacon executor=debug` (Gradle-delegated), edit `Beacon.java`, `mc_build
+  gradlefix.main` → succeeded in 4.1 s, window list unchanged, no question (`gradle-debug-build.png`). Control: the same
+  edit built by the official `build_project` (no veto) opened "Some classes have been changed. Reload changed classes
+  now?" (`gradle-debug-official-build2.png`; answered Cancel).

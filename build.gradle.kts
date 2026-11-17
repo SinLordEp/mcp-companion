@@ -1,3 +1,4 @@
+import mcpcompanion.e2e.GradleFixtureFiles
 import mcpcompanion.e2e.McpE2eJvmArguments
 import mcpcompanion.e2e.McpE2eLayout
 import mcpcompanion.e2e.McpE2eOpenedProject
@@ -156,6 +157,21 @@ tasks.named("check") {
 
 val mcpE2eGradleUserHome = layout.buildDirectory.dir(McpE2eLayout.GRADLE_USER_HOME).map { it.asFile.absolutePath }
 
+// The unpacked local Gradle of the Gradle fixture: -PmcpE2eGradleHome, else the newest under the build's Gradle user
+// home. Empty for the other fixtures, which need none.
+val buildGradleUserHome: File = gradle.gradleUserHomeDir
+val mcpE2eGradleHome: Provider<String> = providers.gradleProperty("mcpE2eFixture").orElse("jps").flatMap { fixture ->
+    if (fixture != "gradle") {
+        provider { "" }
+    } else {
+        providers.gradleProperty("mcpE2eGradleHome").orElse(
+            provider {
+                GradleFixtureFiles.newestUnpackedDistribution(buildGradleUserHome)?.absolutePath.orEmpty()
+            },
+        )
+    }
+}
+
 val prepareMcpE2eSandbox = tasks.register<PrepareMcpE2eSandbox>("prepareMcpE2eSandbox") {
     description = "Copies a fresh e2e fixture and writes the sandbox options; run by runIdeForMcpE2e."
     fixture = providers.gradleProperty("mcpE2eFixture").orElse("jps")
@@ -185,6 +201,7 @@ intellijPlatformTesting {
                     port = providers.gradleProperty("mcpE2ePort").orElse("64399"),
                     awtToolkit = providers.gradleProperty("mcpE2eAwtToolkit").orElse(""),
                     gradleUserHome = mcpE2eGradleUserHome,
+                    gradleHome = mcpE2eGradleHome,
                 )
                 environment("GRADLE_USER_HOME", mcpE2eGradleUserHome.get())
                 argumentProviders += McpE2eOpenedProject(

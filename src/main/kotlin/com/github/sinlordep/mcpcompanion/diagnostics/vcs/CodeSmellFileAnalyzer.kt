@@ -6,6 +6,7 @@ import com.github.sinlordep.mcpcompanion.diagnostics.Diagnostic
 import com.github.sinlordep.mcpcompanion.diagnostics.FileAnalysis
 import com.github.sinlordep.mcpcompanion.diagnostics.FileAnalyzer
 import com.github.sinlordep.mcpcompanion.diagnostics.SourceFile
+import com.github.sinlordep.mcpcompanion.diagnostics.ide.ExternalAnnotatorPause
 import com.github.sinlordep.mcpcompanion.diagnostics.ide.FileAnalyzerProvider
 import com.intellij.codeInsight.CodeSmellInfo
 import com.intellij.codeInsight.daemon.ProblemHighlightFilter
@@ -40,6 +41,9 @@ class CodeSmellFileAnalyzerProvider : FileAnalyzerProvider {
  * checks), at warning severity and above: errors, warnings, and other severities ranked between or above them; weak
  * warnings and information are not reported. The detector's own ignore list drops failed-test markers.
  *
+ * External annotators are paused for the analysed files ([ExternalAnnotatorPause]): their pass made whole batches
+ * wait 60 s.
+ *
  * Threading: the detector blocks; it runs on a background thread under a progress indicator of ours, which the
  * coroutine's cancellation cancels. It must not run under a read lock. Documents are committed on the EDT first, so
  * that unsaved edits are analysed as the editor shows them.
@@ -53,7 +57,7 @@ internal class CodeSmellFileAnalyzer(private val project: Project) : FileAnalyze
         withContext(Dispatchers.EDT) { PsiDocumentManager.getInstance(project).commitAllDocuments() }
         val dumb = DumbService.getInstance(project)
         val indexing = dumb.modificationTracker.modificationCount
-        val smells = detect(eligible.keys.toList())
+        val smells = ExternalAnnotatorPause.getInstance().during(eligible.keys) { detect(eligible.keys.toList()) }
         val interrupted = dumb.isDumb || dumb.modificationTracker.modificationCount != indexing
         return if (interrupted) {
             FileAnalyzer.Batch.Interrupted

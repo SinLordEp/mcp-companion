@@ -36,7 +36,8 @@
 - `mc_diagnostics`: errors (and on request warnings) of one module, optionally with the modules it depends on or that
   depend on it, of a directory or of a list of files, found by the IDE's own analysis without building and without
   opening the files; grouped by file with line and column, totals per severity and per module, bounded and resumable
-  (`limit`, `offset`, `timeoutSeconds`), waiting until the IDE finished importing and indexing.
+  (`limit`, `offset`, `timeoutSeconds`), waiting until the IDE finished importing and indexing. External annotators
+  (external linters, XML schema validation) are not run for the analysed files.
 - `mc_build`: build one module with the modules it depends on, optionally also the modules that depend on it, through
   the IDE's own build path (also when building is delegated to Gradle or Maven); errors and warnings with file, line
   and column (from the IDE's compiler, or read from Gradle's and Maven's console output), the build tool's reason when

@@ -213,9 +213,8 @@ class CollectDiagnostics(private val environment: DiagnosticsEnvironment, privat
         const val MAX_FILES: Int = 500
 
         /**
-         * Files per analysis batch: a timeout loses at most one batch of work. Small on purpose: with about 18 or
-         * more files analysed at once, the platform's external-annotator pass of some files waited for its own 60 s
-         * deadline before it went on (seen end to end, docs/notes-step7.md); batches of 8 never did.
+         * Files per analysis batch: a timeout loses at most one batch of work. Measured on 2,000 generated files,
+         * batches of 8 and of 32 analyse at the same rate (docs/notes-step7.md), so the smaller, finer one is used.
          */
         const val BATCH_SIZE: Int = 8
 

@@ -111,12 +111,15 @@ A summary; details in the `docs/notes-*.md` files named in brackets.
   code generated during the build (missing generated classes show as errors), build script and dependency problems;
   where javac and the IDE judge an API differently the two disagree (seen: `new Integer(5)`, a removal warning in javac,
   a plain deprecation warning in the IDE). Weak warnings and information are never reported; the inspection id is
-  rarely available through the public API. Batches of 8 files; with many files at once the platform's
-  external-annotator pass could stall for 60 s (`notes-step7`).
+  rarely available through the public API. External annotators (XML schema validation, Javadoc HTML lint, KDoc links,
+  ESLint and other linters) are not run for the analysed files, because their pass made batches wait 60 s; about
+  30-50 files/s on a 16-core machine (`notes-step7`).
 - `mc_build`: positions of builds delegated to Gradle and Maven are read from the build tool's console (javac, kotlinc,
   Maven compiler lines); other failures come as the build tool's reason without position. A Maven-delegated build of
   one module does not build the modules it depends on in the same Maven run, so it fails with "Could not resolve
-  dependencies" unless they are installed. Builds started in the IDE at the same time are not coordinated
+  dependencies" unless they are installed. Messages are read only from the build's own compilations and build tool
+  tasks; another delegated build of the same project running at the same time is mixed in. Builds started in the IDE
+  at the same time are not coordinated
   (`notes-step7`).
 - Tested on Linux only (IntelliJ IDEA 2026.3); not run on Windows or macOS, and not in other IntelliJ-based IDEs.
 
@@ -150,7 +153,8 @@ copy of a fixture project under `build/` open. Options:
   sandbox IDE.
 - `-PmcpE2eFixture=gradle`: `src/mcpE2eFixtureGradle` (root, `app`, `lib` with JUnit tests, and the included build
   `src/mcpE2eFixtureGradleSibling`), built with an already unpacked local Gradle (`-PmcpE2eGradleHome=<dir>`, by
-  default the newest under the build's Gradle user home) and a private Gradle user home under `build/`.
+  default the newest under the build's Gradle user home), passed to the sandbox as the Gradle plugin's defaults and
+  run offline, and a private Gradle user home under `build/`: nothing is downloaded.
 - `-PmcpE2eFixture=maven`: `src/mcpE2eFixtureMaven` with a private local repository `build/mcp-e2e-m2`, so `~/.m2` is
   never used. `-PmcpE2eMavenBuild=maven` delegates building to Maven (default `ide`: the IDE builds the imported
   modules).

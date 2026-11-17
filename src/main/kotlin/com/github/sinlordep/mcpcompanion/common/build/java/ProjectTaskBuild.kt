@@ -1,5 +1,6 @@
 package com.github.sinlordep.mcpcompanion.common.build.java
 
+import com.github.sinlordep.mcpcompanion.common.build.BuildAttribution
 import com.github.sinlordep.mcpcompanion.common.build.BuildProblem
 import com.github.sinlordep.mcpcompanion.common.build.BuildResult
 import com.github.sinlordep.mcpcompanion.common.build.BuildRun
@@ -39,8 +40,9 @@ import kotlin.coroutines.resumeWithException
  * - Delegated builds report their messages to the Build tool window, whose listener API (`BuildProgressObservable`,
  *   `AbstractViewManager.addListener`) is `@ApiStatus.Experimental`. They do run as an execution, though, so their
  *   console output is read through `ExecutionManager.EXECUTION_TOPIC` and a process listener ([BuildToolConsole]),
- *   and the compiler lines in it are parsed. Every execution that starts while the build runs is read; only lines
- *   in a compiler's message format count.
+ *   and the compiler lines in it are parsed.
+ * - Only what belongs to this build is read ([BuildAttribution]): JPS compilations whose scope carries this build's
+ *   session id, executions of this project that run a build tool's task and are not listed run configurations.
  *
  * The IDE's own reload of changed classes after this build is vetoed ([IdeReloadVeto]), so a running debug session
  * never makes the IDE ask "reload changed classes?". Never opens a dialog itself; as with any build in the IDE, a
@@ -53,11 +55,12 @@ class ProjectTaskBuild(private val project: Project) {
     suspend fun run(scope: BuildScope): BuildRun {
         val lifetime = Disposer.newDisposable("mcp-companion build")
         try {
-            val context = ProjectTaskContext(Any())
+            val session = Any()
+            val context = ProjectTaskContext(session)
             IdeReloadVeto.install(project, lifetime) { it === context }
             val files = ProjectFiles.of(project)
-            val compiler = CompilerMessages(files)
-            val console = BuildToolConsole(files.paths, lifetime)
+            val compiler = CompilerMessages(files, session)
+            val console = BuildToolConsole(project, files.paths, lifetime)
             project.messageBus.connect(lifetime).apply {
                 subscribe(CompilerTopics.COMPILATION_STATUS, compiler)
                 subscribe(ExecutionManager.EXECUTION_TOPIC, console)
@@ -101,8 +104,9 @@ class ProjectTaskBuild(private val project: Project) {
         return BuildRun(result, ordered.take(MAX_PROBLEMS), source, (ordered.size - MAX_PROBLEMS).coerceAtLeast(0))
     }
 
-    /** Errors and warnings of JPS compilations that finish while the build runs. */
-    private class CompilerMessages(private val files: ProjectFiles) : CompilationStatusListener {
+    /** Errors and warnings of this build's JPS compilations ([session] is its `ProjectTaskContext` session id). */
+    private class CompilerMessages(private val files: ProjectFiles, private val session: Any) :
+        CompilationStatusListener {
         val reported = AtomicBoolean()
         private val collected = mutableListOf<BuildProblem>()
 
@@ -110,6 +114,8 @@ class ProjectTaskBuild(private val project: Project) {
         fun problems(): List<BuildProblem> = collected.toList()
 
         override fun compilationFinished(aborted: Boolean, errors: Int, warnings: Int, context: CompileContext) {
+            val compiledFor = context.compileScope.getUserData(ExecutionManager.EXECUTION_SESSION_ID_KEY)
+            if (!BuildAttribution.compilationBelongs(compiledFor, session)) return
             reported.set(true)
             val messages = CATEGORIES.flatMap { (category, severity) ->
                 context.getMessages(category).map { message ->
