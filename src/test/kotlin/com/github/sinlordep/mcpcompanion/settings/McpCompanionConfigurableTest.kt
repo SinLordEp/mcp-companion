@@ -3,12 +3,24 @@ package com.github.sinlordep.mcpcompanion.settings
 import com.github.sinlordep.mcpcompanion.common.consent.ConfirmationSetting
 import com.github.sinlordep.mcpcompanion.common.consent.ide.BraveModeSetting
 import com.github.sinlordep.mcpcompanion.guide.AgentGuide
+import com.github.sinlordep.mcpcompanion.testing.ServedTools
+import com.github.sinlordep.mcpcompanion.testing.THIRD_PARTY_PROBE_TOOL
+import com.github.sinlordep.mcpcompanion.testing.thirdPartyToolset
+import com.github.sinlordep.mcpcompanion.toolsets.CompanionToolset
+import com.github.sinlordep.mcpcompanion.toolsets.CompanionToolsetStates
 import com.github.sinlordep.mcpcompanion.toolsets.ToolsetOverview
+import com.github.sinlordep.mcpcompanion.yield.EquivalenceCatalog
+import com.github.sinlordep.mcpcompanion.yield.ExtensionPointOfficialToolGateway
+import com.github.sinlordep.mcpcompanion.yield.OfficialEquivalentPresent
 import com.github.sinlordep.mcpcompanion.yield.ToolsetState
+import com.github.sinlordep.mcpcompanion.yield.YieldDecider
 import com.intellij.mcpserver.settings.McpServerSettings
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.openapi.options.Configurable
+import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import com.intellij.testFramework.replaceService
 import com.intellij.ui.components.ActionLink
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.table.TableView
@@ -68,6 +80,31 @@ class McpCompanionConfigurableTest : BasePlatformTestCase() {
         withComponent(McpCompanionConfigurable(missing)) { component ->
             assertNull(UIUtil.findComponentOfType(component, ActionLink::class.java))
         }
+    }
+
+    /** A third-party plugin's tool named in the catalog leaves every row available; an official one does not. */
+    fun testThePageShowsAToolsetAvailableDespiteAThirdPartyToolOfACatalogName() {
+        val probe = ServedTools.register(thirdPartyToolset(), testRootDisposable)
+        ServedTools.waitUntil("the third-party tool is served") { THIRD_PARTY_PROBE_TOOL in ServedTools.names() }
+        val states = CompanionToolsetStates(
+            YieldDecider(
+                ExtensionPointOfficialToolGateway { it is CompanionToolset },
+                OfficialEquivalentPresent(EquivalenceCatalog.parse("status = $THIRD_PARTY_PROBE_TOOL")),
+            ),
+        )
+        ApplicationManager.getApplication()
+            .replaceService(CompanionToolsetStates::class.java, states, testRootDisposable)
+
+        withComponent(McpCompanionConfigurable()) { component ->
+            val table = UIUtil.findComponentOfType(component, TableView::class.java)!!
+            assertEquals(
+                setOf(ToolsetTableModel.stateText(ToolsetState.Available)),
+                (0 until table.rowCount).map { table.getValueAt(it, 1) }.toSet(),
+            )
+        }
+        // Let the server's recomputation for the removal finish here, not in a later test.
+        Disposer.dispose(probe)
+        ServedTools.waitUntil("the third-party tool is gone") { THIRD_PARTY_PROBE_TOOL !in ServedTools.names() }
     }
 
     fun testLaunchConfirmationIsEditableWithApplyAndReset() {

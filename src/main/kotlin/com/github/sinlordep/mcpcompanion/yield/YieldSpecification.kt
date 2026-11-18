@@ -1,7 +1,7 @@
 package com.github.sinlordep.mcpcompanion.yield
 
-/** What a yield rule looks at: one of our toolsets and the MCP tools that others provide right now. */
-data class YieldCandidate(val toolsetId: String, val foreignTools: Set<String>)
+/** What a yield rule looks at: one of our toolsets and the official MCP tools present right now. */
+data class YieldCandidate(val toolsetId: String, val officialTools: Set<String>)
 
 /**
  * One reason for a toolset to step aside (specification pattern). A rule returns the official tool names that make
@@ -31,5 +31,5 @@ fun interface YieldSpecification {
  */
 class OfficialEquivalentPresent(private val catalog: EquivalenceCatalog) : YieldSpecification {
     override fun reasonsToYield(candidate: YieldCandidate): Set<String> =
-        catalog.equivalentsOf(candidate.toolsetId).intersect(candidate.foreignTools)
+        catalog.equivalentsOf(candidate.toolsetId).intersect(candidate.officialTools)
 }

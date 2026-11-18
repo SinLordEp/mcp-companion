@@ -1,7 +1,7 @@
 package com.github.sinlordep.mcpcompanion.toolsets
 
 import com.github.sinlordep.mcpcompanion.yield.EquivalenceCatalog
-import com.github.sinlordep.mcpcompanion.yield.ExtensionPointForeignToolGateway
+import com.github.sinlordep.mcpcompanion.yield.ExtensionPointOfficialToolGateway
 import com.github.sinlordep.mcpcompanion.yield.OfficialEquivalentPresent
 import com.github.sinlordep.mcpcompanion.yield.ToolsetState
 import com.github.sinlordep.mcpcompanion.yield.YieldDecider
@@ -18,7 +18,7 @@ class CompanionToolsetStates internal constructor(private val decider: YieldDeci
 
     constructor() : this(
         YieldDecider(
-            foreignTools = ExtensionPointForeignToolGateway { it is CompanionToolset },
+            officialTools = ExtensionPointOfficialToolGateway { it is CompanionToolset },
             specification = OfficialEquivalentPresent(EquivalenceCatalog.bundled()),
         ),
     )

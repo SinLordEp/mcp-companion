@@ -38,7 +38,7 @@
    - 不为旧版本写兼容代码，不做反射适配。
 2. **只用 `McpToolset`、`@McpTool`、`@McpDescription` 这类公开接口**，包括 2026.3 新增的 `displayName()`、`isUserConfigurable()`。不碰 `impl` 包，不碰 `mcpToolFilterProvider`（它的签名带 `impl` 包的类，每个版本都在变）。这样 Marketplace 的 Plugin Verifier 不会报内部接口。
 3. **每个工具组是一个独立的 `McpToolset` 类**，它的 `isEnabled()` 返回"用户开着，并且官方没有提供同样的能力"。
-4. **"让开"的实现**：插件内置一张对照表（我们的工具组 → 官方工具名）。检查官方工具是否存在时，读取 `mcpToolset` 扩展点上所有不属于本插件的实现，用反射找带 `@McpTool` 注解的方法名。对照表随插件版本更新，不从网络下载。
+4. **"让开"的实现**：插件内置一张对照表（我们的工具组 → 官方工具名）。检查官方工具是否存在时，读取 `mcpToolset` 扩展点上所有不属于本插件、并且由 JetBrains 提供的实现（IDE 本身、IDE 自带的插件、JetBrains 开发的插件），用反射找带 `@McpTool` 注解的方法名。第三方插件的工具即使同名也不算官方，不会让我们让开。对照表随插件版本更新，不从网络下载。
 5. **设置页**：状态页加跳转按钮，见下面"已确定"一节；唯一可改的一项是"MCP 客户端启动运行配置前是否询问"，即官方 MCP Server 的 Brave 模式（2026-11-17，见 `docs/notes-consent.md`）。
 6. **工具按功能分组，一组一个 MCP 工具，用 `action` 参数区分动作**，总数控制在 6 个左右，省上下文。
 7. **语言 Kotlin，构建 Gradle Kotlin DSL + IntelliJ Platform Gradle Plugin 2.x**（模板已带）。

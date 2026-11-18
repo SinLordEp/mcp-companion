@@ -7,9 +7,9 @@ class YieldDeciderTest {
 
     private val catalog = EquivalenceCatalog(mapOf("nav" to setOf("find_usages"), "run" to setOf("run_anything")))
 
-    private class CountingGateway(private val names: Set<String>) : ForeignToolGateway {
+    private class CountingGateway(private val names: Set<String>) : OfficialToolGateway {
         var calls = 0
-        override fun foreignToolNames(): Set<String> = names.also { calls++ }
+        override fun officialToolNames(): Set<String> = names.also { calls++ }
     }
 
     @Test
@@ -22,7 +22,7 @@ class YieldDeciderTest {
     }
 
     @Test
-    fun `states of several toolsets read the foreign tools once`() {
+    fun `states of several toolsets read the official tools once`() {
         val gateway = CountingGateway(setOf("run_anything"))
         val states = YieldDecider(gateway, OfficialEquivalentPresent(catalog)).statesOf(listOf("nav", "run"))
         assertEquals(
@@ -33,7 +33,7 @@ class YieldDeciderTest {
     }
 
     @Test
-    fun `foreign tools are re-read on every decision`() {
+    fun `official tools are re-read on every decision`() {
         var present = emptySet<String>()
         val decider = YieldDecider({ present }, OfficialEquivalentPresent(catalog))
         assertEquals(ToolsetState.Available, decider.stateOf("nav"))

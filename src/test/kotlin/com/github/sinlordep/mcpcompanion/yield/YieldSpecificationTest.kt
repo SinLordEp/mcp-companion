@@ -9,7 +9,7 @@ class YieldSpecificationTest {
     private val catalog = EquivalenceCatalog(mapOf("nav" to setOf("find_usages", "find_implementations")))
     private val officialPresent = OfficialEquivalentPresent(catalog)
 
-    private fun candidate(vararg foreign: String) = YieldCandidate("nav", foreign.toSet())
+    private fun candidate(vararg official: String) = YieldCandidate("nav", official.toSet())
 
     private fun always(vararg reasons: String) = YieldSpecification { reasons.toSet() }
     private val never = YieldSpecification { emptySet() }
