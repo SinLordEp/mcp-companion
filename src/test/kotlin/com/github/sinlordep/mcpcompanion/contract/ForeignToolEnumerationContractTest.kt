@@ -8,7 +8,7 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 
 /**
  * Regression tests of the MCP server behaviour that stepping aside relies on (docs/spike-step0.md, Q2). If one fails
- * after an IDE update, the foreign-tool gateway in `yield/` no longer sees what the server serves.
+ * after an IDE update, the official-tool gateway in `yield/` no longer sees what the server serves.
  */
 class ForeignToolEnumerationContractTest : BasePlatformTestCase() {
 

@@ -1,13 +1,13 @@
 package com.github.sinlordep.mcpcompanion.yield
 
-/** Decides each toolset's [ToolsetState] from the foreign tools present and a [YieldSpecification]. */
-class YieldDecider(private val foreignTools: ForeignToolGateway, private val specification: YieldSpecification) {
+/** Decides each toolset's [ToolsetState] from the official tools present and a [YieldSpecification]. */
+class YieldDecider(private val officialTools: OfficialToolGateway, private val specification: YieldSpecification) {
 
     fun stateOf(toolsetId: String): ToolsetState = statesOf(listOf(toolsetId)).getValue(toolsetId)
 
-    /** States of several toolsets, reading the foreign tools once. */
+    /** States of several toolsets, reading the official tools once. */
     fun statesOf(toolsetIds: Collection<String>): Map<String, ToolsetState> {
-        val present = foreignTools.foreignToolNames()
+        val present = officialTools.officialToolNames()
         return toolsetIds.associateWith { id ->
             val reasons = specification.reasonsToYield(YieldCandidate(id, present))
             if (reasons.isEmpty()) ToolsetState.Available else ToolsetState.Yielded(reasons)

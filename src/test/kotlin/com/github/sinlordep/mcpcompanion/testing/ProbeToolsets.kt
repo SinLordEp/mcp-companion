@@ -28,6 +28,18 @@ class SecondForeignProbeToolset : McpToolset {
     suspend fun secondProbe(): String = "probe"
 }
 
+/**
+ * A toolset for a third-party plugin; load it through a [FakePluginClassLoader] to make it one. Loaded normally, it
+ * belongs to no plugin, like any test class.
+ */
+class ThirdPartyProbeToolset : McpToolset {
+    override fun isExperimental(): Boolean = false
+
+    @McpTool(name = THIRD_PARTY_PROBE_TOOL)
+    @McpDescription(description = "Test probe; never shipped.")
+    suspend fun thirdPartyProbe(): String = "probe"
+}
+
 /** One of "our" toolsets for tests; counts how often the server asks whether it is enabled. */
 class CompanionProbeToolset : CompanionToolset {
     val isEnabledCalls = AtomicInteger()
@@ -47,5 +59,6 @@ class CompanionProbeToolset : CompanionToolset {
 
 const val FOREIGN_PROBE_TOOL = "test_foreign_probe"
 const val SECOND_FOREIGN_PROBE_TOOL = "test_second_foreign_probe"
+const val THIRD_PARTY_PROBE_TOOL = "test_third_party_probe"
 const val COMPANION_PROBE_ID = "test-companion-probe"
 const val COMPANION_PROBE_TOOL = "mc_test_companion_probe"

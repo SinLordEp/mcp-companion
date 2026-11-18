@@ -28,8 +28,17 @@ still holds the step 0 results (one correction there, about the display, is mark
 - `isEnabled()` of our toolsets reads the foreign tool names on each call. The gateway iterates
   `McpToolset.EP.extensionList` (already instantiated, cheap) and caches the reflection result per class in a
   `ClassValue`, so it costs one map lookup per toolset. It never calls `isEnabled()` of other toolsets and never asks
-  the server for its tool list, so there is no recursion. `ExtensionPointForeignToolGatewayTest` proves both, and
+  the server for its tool list, so there is no recursion. `ExtensionPointOfficialToolGatewayTest` proves both, and
   that a server recomputation completes while our `isEnabled()` walks the same extension point.
+- **Only JetBrains' tools count (fix of 2026-11-18).** Step 1 read the tools of every other toolset, so a
+  third-party plugin on the same extension point could have made a toolset step aside. Now a toolset counts only when
+  its class belongs to the IDE itself (no plugin class loader), to a bundled plugin, or to a plugin developed by
+  JetBrains (`PluginManagerCore.isDevelopedByJetBrains(descriptor)`, which also covers JetBrains plugins from
+  Marketplace and updated copies of bundled plugins, whose `isBundled` is false). The owner comes from the class
+  loader (`PluginAwareClassLoader.getPluginDescriptor()`): `PluginManager.getPluginByClass`, which does the same, is
+  `@ApiStatus.Internal` in 263, and so are `PluginManagerCore.isUpdatedBundledPlugin` and
+  `ExtensionPointName.processWithPluginDescriptor`. In tests every plugin shares one class loader, so a third-party
+  plugin is simulated by loading a probe toolset through a test class loader with a fake descriptor.
 - `isEnabled()` never throws because of a foreign class. kotlin-reflect over another plugin's toolset can fail: a
   missing optional dependency (`NoClassDefFoundError`), Kotlin reflection limits, Java or synthetic classes.
   `McpToolNameReader` contains any such failure. The class then contributes no names, and a warning naming the

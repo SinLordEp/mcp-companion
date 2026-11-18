@@ -12,13 +12,13 @@ import javax.swing.table.DefaultTableCellRenderer
 import javax.swing.table.TableCellRenderer
 
 /**
- * Read-only table rows: one per toolset, with name, state and description. Name and state columns are as wide as
- * their longest text; the description takes the remaining width.
+ * Read-only table rows: one per toolset, with short name (the page is already titled MCP Companion), state and
+ * summary. Name and state columns are as wide as their longest text; the summary takes the remaining width.
  */
 class ToolsetTableModel(rows: List<ToolsetOverview>) :
     ListTableModel<ToolsetOverview>(
         arrayOf(
-            FittedColumn(McpCompanionBundle.message("settings.column.name"), rows) { it.displayName },
+            FittedColumn(McpCompanionBundle.message("settings.column.name"), rows) { it.shortName },
             FittedColumn(McpCompanionBundle.message("settings.column.state"), rows) { stateText(it.state) },
             DescriptionColumn(McpCompanionBundle.message("settings.column.description")),
         ),
@@ -44,7 +44,7 @@ class ToolsetTableModel(rows: List<ToolsetOverview>) :
 
     /** Long descriptions are cut by the column; the tooltip shows them in full. */
     private class DescriptionColumn(name: String) : ColumnInfo<ToolsetOverview, String>(name) {
-        override fun valueOf(item: ToolsetOverview): String = item.description
+        override fun valueOf(item: ToolsetOverview): String = item.summary
 
         override fun getRenderer(item: ToolsetOverview): TableCellRenderer = TooltipRenderer
     }
