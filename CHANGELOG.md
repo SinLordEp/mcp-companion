@@ -50,3 +50,5 @@
 ### Changed
 
 - `mc_run hotswap`: compile errors of builds delegated to Gradle or Maven now come with file, line and column.
+- Exposed Tools shows each MCP Companion tool under its group title without a group description that repeated the
+  tool's own; the MCP Companion settings page lists toolsets by their short names.

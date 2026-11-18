@@ -33,7 +33,8 @@ class CompanionToolsetStates internal constructor(private val decider: YieldDeci
             ToolsetOverview(
                 id = toolset.toolsetId,
                 displayName = toolset.displayName(),
-                description = toolset.displayDescription(),
+                shortName = toolset.shortName,
+                summary = toolset.summary,
                 state = states.getValue(toolset.toolsetId),
             )
         }
@@ -44,5 +45,13 @@ class CompanionToolsetStates internal constructor(private val decider: YieldDeci
     }
 }
 
-/** One of our toolsets as shown in `mc_status` and on the settings page. */
-data class ToolsetOverview(val id: String, val displayName: String, val description: String, val state: ToolsetState)
+/**
+ * One of our toolsets as shown in `mc_status` ([displayName]) and on the settings page ([shortName], [summary]).
+ */
+data class ToolsetOverview(
+    val id: String,
+    val displayName: String,
+    val shortName: String,
+    val summary: String,
+    val state: ToolsetState,
+)

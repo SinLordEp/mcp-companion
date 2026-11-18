@@ -22,9 +22,11 @@ class CompanionToolsetContractTest : BasePlatformTestCase() {
         assertNotEmpty(toolsets)
         assertEquals("ids are unique", toolsets.size, toolsets.map { it.toolsetId }.toSet().size)
         for (toolset in toolsets) {
-            for (text in listOf(toolset.displayName(), toolset.displayDescription())) {
+            for (text in listOf(toolset.shortName, toolset.summary)) {
                 assertFalse("${toolset.toolsetId}: '$text'", text.isBlank() || text.startsWith("!"))
             }
+            assertEquals("MCP Companion: ${toolset.shortName}", toolset.displayName())
+            assertNull("no group description on Exposed Tools", toolset.displayDescription())
             assertFalse(toolset.toolsetId, toolset.isExperimental())
         }
     }

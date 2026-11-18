@@ -38,16 +38,16 @@ class McpCompanionConfigurableTest : BasePlatformTestCase() {
         val table = UIUtil.findComponentOfType(component, TableView::class.java)!!
         assertEquals(
             listOf(
-                "MCP Companion: Status",
-                "MCP Companion: Find Usages",
-                "MCP Companion: Find Implementations",
-                "MCP Companion: Type Hierarchy",
-                "MCP Companion: Safe Delete",
-                "MCP Companion: Run Control",
-                "MCP Companion: Modules",
-                "MCP Companion: Build Sync",
-                "MCP Companion: Diagnostics",
-                "MCP Companion: Module Build",
+                "Status",
+                "Find Usages",
+                "Find Implementations",
+                "Type Hierarchy",
+                "Safe Delete",
+                "Run Control",
+                "Modules",
+                "Build Sync",
+                "Diagnostics",
+                "Module Build",
             ),
             (0 until table.rowCount).map { table.getValueAt(it, 0) },
         )
@@ -133,7 +133,7 @@ class McpCompanionConfigurableTest : BasePlatformTestCase() {
     }
 
     fun testYieldedStateNamesTheOfficialTools() {
-        val overview = ToolsetOverview("x", "X", "d", ToolsetState.Yielded(setOf("b_tool", "a_tool")))
+        val overview = ToolsetOverview("x", "X: x", "X", "d", ToolsetState.Yielded(setOf("b_tool", "a_tool")))
         assertEquals("Provided by official a_tool, b_tool", ToolsetTableModel.stateText(overview.state))
     }
 }
