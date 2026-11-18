@@ -2,8 +2,8 @@
 
 ![Build](https://github.com/SinLordEp/mcp-companion/workflows/Build/badge.svg)
 
-<!-- Marketplace version and download badges are added after the first upload, when the plugin has a Marketplace id;
-     see docs/RELEASING.md, "After the first upload". -->
+[![Version](https://img.shields.io/jetbrains/plugin/v/36214.svg)](https://plugins.jetbrains.com/plugin/36214)
+[![Downloads](https://img.shields.io/jetbrains/plugin/d/36214.svg)](https://plugins.jetbrains.com/plugin/36214)
 
 MCP Companion is an IntelliJ Platform plugin that adds code navigation, safe delete, run configuration control,
 module, diagnostics and build tools for AI agents to the MCP Server that is bundled with JetBrains IDEs. It complements the bundled server:
@@ -24,12 +24,12 @@ them (JetBrains Marketplace offers each IDE the newest compatible version). See 
 
 ## Installation
 
-- **From disk (now):** download `mcp-companion-<version>.zip` from the GitHub release or build it
+- **JetBrains Marketplace:** <kbd>Settings</kbd> > <kbd>Plugins</kbd> > <kbd>Marketplace</kbd>, search for
+  "MCP Companion", or use the [plugin page](https://plugins.jetbrains.com/plugin/36214-mcp-companion). The plugin loads
+  without an IDE restart.
+- **From disk:** download `mcp-companion-<version>.zip` from the GitHub release or build it
   (`./gradlew buildPlugin`, output in `build/distributions/`), then <kbd>Settings</kbd> > <kbd>Plugins</kbd> >
-  <kbd>⚙</kbd> > <kbd>Install Plugin from Disk...</kbd>. The plugin loads without an IDE restart. The IDE shows
-  "Cannot update plugin" for it until it is on JetBrains Marketplace.
-- **JetBrains Marketplace (after the first release):** <kbd>Settings</kbd> > <kbd>Plugins</kbd> >
-  <kbd>Marketplace</kbd>, search for "MCP Companion".
+  <kbd>⚙</kbd> > <kbd>Install Plugin from Disk...</kbd>. A plugin installed from disk is not updated by the IDE.
 
 ## Configuration
 
