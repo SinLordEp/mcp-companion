@@ -124,8 +124,8 @@ fail (the ZIP upload to the release and the changelog PR then do not run either)
 
 ## 5. After the first upload (fill in)
 
-- [ ] Marketplace numeric id: `__________` (from the plugin page URL `plugins.jetbrains.com/plugin/<id>-...`).
-- [ ] README: add the badges under the Build badge
+- [x] Marketplace numeric id: `36214` (from the plugin page URL `plugins.jetbrains.com/plugin/<id>-...`).
+- [x] README: add the badges under the Build badge
   ```markdown
   [![Version](https://img.shields.io/jetbrains/plugin/v/<id>.svg)](https://plugins.jetbrains.com/plugin/<id>)
   [![Downloads](https://img.shields.io/jetbrains/plugin/d/<id>.svg)](https://plugins.jetbrains.com/plugin/<id>)
