@@ -1,6 +1,6 @@
 ---
 name: mcp-companion
-description: Use when working in a project that is open in a JetBrains IDE whose MCP server exposes tools named mc_ (the MCP Companion plugin), to find usages, implementations and type hierarchies, check edits without a full build, build one module, run the application or tests through run configurations, sync Gradle or Maven after build file changes, and delete declarations safely.
+description: Use when working in a project that is open in a JetBrains IDE whose MCP server exposes tools named mc_ (the MCP Companion plugin), to find usages, implementations and type hierarchies, check edits without a full build, build one module, run the application or tests through run configurations, sync Gradle or Maven after build file changes, move classes, change method signatures and delete declarations safely.
 ---
 
 # Working with the IDE's MCP tools (MCP Companion)
@@ -26,9 +26,11 @@ The JetBrains IDE that has this project open serves MCP tools whose names start 
 
 Call `mc_sync sync` (Gradle, Maven) before `mc_diagnostics` or `mc_build`; until a sync succeeds, the IDE's model is out of date. `mc_modules list` then shows the result.
 
-## Before deleting a declaration
+## Refactoring
 
-Check `mc_find_usages`, or `mc_safe_delete` with `action=preview` (the default). `action=apply` deletes only when nothing blocks, as one undoable command.
+- Moving a class to another package or source root: `mc_move`. Changing a method's parameters, return type or visibility: `mc_change_signature`. Renaming: the built-in `rename_refactoring`. They update every reference in Java and Kotlin; do not move files or edit imports and call sites by hand.
+- Deleting a declaration: `mc_safe_delete`, or check `mc_find_usages` first.
+- Call each with `action=preview` (the default) first and read the conflicts and affected files; then `action=apply`, which changes the code only when nothing conflicts, as one undoable command. `CONFLICT` means nothing changed: change the code or the request first.
 
 ## Project boundaries
 

@@ -4,6 +4,17 @@
 
 ## [Unreleased]
 
+### Added
+
+- `mc_move`: move a top-level Java class to another package (created when missing), optionally into another source
+  root, with the IDE's Move refactoring; package and import statements and references in Java and Kotlin are
+  updated. `preview` (default) reports the affected files, the number of references and the conflicts the IDE finds;
+  `apply` moves only when there are none, as one undoable command, and returns the changed files. No dialog opens.
+- `mc_change_signature`: change a Java method's or constructor's parameters (add with a default value for existing
+  calls, remove, reorder, rename, retype), its return type or visibility with the IDE's Change Signature; call sites
+  in Java and Kotlin and overriding methods are updated. Same `preview` and `apply` as `mc_move`; a method that
+  overrides another is a conflict (change the topmost one).
+
 ### Changed
 
 - Exposed Tools shows each MCP Companion tool under its group title without a group description that repeated the

@@ -86,6 +86,8 @@
 | `mc_find_implementations` | — | 接口或抽象方法的实现、子类、重写方法、父方法 | `DefinitionsScopedSearch`、`ClassInheritorsSearch`、`OverridingMethodsSearch` |
 | `mc_type_hierarchy` | — | 一个类的父类链和子类树，限制深度 | `ClassInheritorsSearch`、`PsiClass.getSupers` |
 | `mc_safe_delete` | `preview`、`apply` | 先报告还有哪些引用，没有才删除 | `SafeDeleteProcessor` |
+| `mc_move` | `preview`、`apply` | 把顶层 Java 类移到另一个包（可选另一个源码根目录），更新 Java 和 Kotlin 里的全部引用；冲突先返回，有冲突不执行 | `JavaRefactoringFactory`、`MoveClassesOrPackagesProcessor` |
+| `mc_change_signature` | `preview`、`apply` | 改 Java 方法或构造器的参数、返回类型、可见性，更新全部调用处和重写方法；重写了别的方法的方法算冲突（改最顶层的） | `ChangeSignatureProcessor`、`ChangeSignatureUsageProcessor` |
 | `mc_run` | `processes`、`start`、`stop`、`restart`、`status`、`output`、`wait_ready`、`hotswap`、`tests` | Run Configuration 全生命周期。`output` 支持末尾 N 行、正则过滤和游标。热替换走 IDE 自己的构建路径（`ProjectTaskManager`），所以委托给 Gradle、Maven 的项目也能用。`tests`：测试运行的结论、计数和失败的测试（位置、消息、期望/实际值、截断的堆栈），运行中也能读（标为部分结果），可等待结束；`processes`、`status` 对测试运行附带摘要。Maven 运行在 263 没有结构化结果，`tests` 说明原因并指向 `output`。`start`、`restart` 和会重启的 `hotswap` 先在 IDE 里请用户确认（允许/拒绝），和官方 `execute_run_configuration` 一样由 MCP Server 的 Brave 模式决定是否询问；拒绝或 120 秒内未答返回 `DENIED` | `ExecutionListener`、`ProgramRunner`、`ProcessHandler`、`ProjectTaskManager`、`HotSwapManager`、`SMTRunnerEventsListener.TEST_STATUS`、`SMTestProxy` |
 | `mc_modules` | `list`、`graph`、`cycles` | 只读。模块及其内容根目录和文件夹（项目目录之外的根会标出）、带作用域的依赖图（JSON，或 `format=mermaid` 输出 Mermaid 流程图，有边数和节点数上限）、循环依赖。按模块构建不放在这里，而是单独的 `mc_build`（构建会改输出目录，而 `mc_modules` 标为只读） | `ModuleManager`、`ModuleRootManager` |
 | `mc_sync` | `status`、`sync` | 重新导入 Gradle（及其他 external system）和 Maven 项目，等待并返回结果；同一项目不会同时跑两次同步；Maven 只能整体同步 | `ExternalSystemUtil.refreshProject`、`MavenProjectsManager`、`MavenSyncListener` |
@@ -108,6 +110,8 @@
 src/main/kotlin/com/github/sinlordep/mcpcompanion/
   toolsets/        每个工具组一个 McpToolset 类
   navigation/      引用、实现、层级、安全删除的实现
+  move/            移动类（mc_move）
+  changesignature/ 修改签名（mc_change_signature）
   run/             运行控制、输出缓冲、就绪检测、热替换
   modules/         模块列表、依赖图（JSON、Mermaid）、环检测
   sync/            Maven、Gradle 重新导入
@@ -115,7 +119,7 @@ src/main/kotlin/com/github/sinlordep/mcpcompanion/
   build/           按模块构建（mc_build）
   yield/           官方工具对照表和检测
   settings/        设置状态和设置页
-  common/          符号定位、分页、结果模型、错误模型；共用的模块图（modulegraph）和构建网关（build）
+  common/          符号定位、分页、结果模型、错误模型；共用的模块图（modulegraph）、构建网关（build）和重构执行（refactoring）
 src/main/resources/META-INF/
   plugin.xml       核心
   mcp-companion-java.xml    依赖 Java 插件的部分（可选依赖）
@@ -198,6 +202,7 @@ MCP 适配层 (toolsets/)        只做参数解析、调用用例、把结果�
 | 5（已完成） | 发布准备：README、插件描述、图标、CHANGELOG、Plugin Verifier 通过、签名 | 版本 0.1.0；`check buildPlugin verifyPlugin` 全绿，Verifier 对 IU-263.7307.200 为 Compatible（下一版 EAP 尚未发布，出现后自动加入）；用一次性自签名证书验证了 `signPlugin` 和 `verifyPluginSignature`；构建好的 ZIP 从磁盘装进干净的 IDEA 2026.3（独立的配置目录，私有 Xvfb），无需重启即加载，`idea.log` 无错误，插件页、设置页、MCP 调用和启动确认在中英文下实测。`runIdeForMcpE2e` 的配置缓存问题已修（逻辑移到 `buildSrc`）。CI 只做了静态检查，推送后才能证明。细节见 `docs/notes-step5.md`，第 6 步的清单见 `docs/RELEASING.md` |
 | 6 | 发布到 Marketplace | 需要用户提供 Marketplace 令牌和签名证书，并明确同意发布 |
 | 7（已完成，待审查） | `mc_diagnostics`、`mc_build`、`mc_modules graph` 的 Mermaid 输出（替代 idea-mcp-ext 的 `get_aggregated_diagnostics` 和 `build_module_with_dependencies`），版本 0.2.0 | 第 0 步核实：官方 `build_project` 不能按模块构建，读取委托构建位置的 Build 窗口监听接口是 `@ApiStatus.Experimental`；官方 `lint_files` 用的是 `impl` 包。改用公开的 `CodeSmellDetector` 和构建工具控制台输出。构建代码（原 `run/java/ProjectBuild`）和模块图移到 `common/build`、`common/modulegraph`，热替换也因此能给出委托构建的错误位置。JPS、Gradle（多项目加 included build，另生成 20 个子项目测耗时）、Maven（IDE 构建和委托 Maven 构建）三个 fixture 实测，细节和限制见 `docs/notes-step7.md` |
+| 8（已完成，待审查） | `mc_move`、`mc_change_signature`：走 IDE 真重构的移动类和修改签名，版本 0.3.0 | 第 0 步核实：官方 263 只有 `rename_refactoring`；Java 用公开的 `JavaRefactoringFactory`、`Refactoring.findUsages/doRefactoring`、`MoveClassesOrPackagesProcessor.detectConflicts`、`ChangeSignatureProcessorBase.findUsages`、各语言 `ChangeSignatureUsageProcessor.findConflicts`、`BaseRefactoringProcessor.executeEx`，不走会弹窗的 `run()`/`preprocessUsages`，冲突在执行前返回；Kotlin 的 K2 重构处理器在 `visibility="internal"` 的内容模块里，所以 Kotlin 声明返回 `UNSUPPORTED`，Kotlin 里对 Java 声明的引用照常更新。公共的预览/应用/冲突/改动文件记录放在 `common/refactoring`，两个工具只提供各自的网关和语言扩展点（`classMove`、`signatureChange`）。Verifier 无新增警告；沙箱实测见 `docs/notes-step8.md` |
 
 每一步一个分支、一个 PR。
 
