@@ -6,6 +6,98 @@
 
 ### Added
 
+- `mc_spring_beans` (IntelliJ IDEA with the Spring plugin, a paid feature; the tool is not there without it): `list`
+  the Spring beans of a module or the project from the IDE's Spring model, with name, aliases, type, kind (component,
+  `@Bean` method, XML), scope, profiles, primary and the place of the definition, filtered by name or regex and by type
+  with subtypes, paged; `dependencies` of one bean (by name, class or place): what it gets injected through fields,
+  setters, constructor and `@Bean` method parameters, with the injection points that have several candidates or none,
+  and which beans receive it. While the IDE indexes, or when a module has no Spring context, the answer says so
+  instead of returning an empty list. Read-only.
+
+- `mc_move`: move a top-level Java class to another package (created when missing), optionally into another source
+  root, with the IDE's Move refactoring; package and import statements and references in Java and Kotlin are
+  updated. `preview` (default) reports the affected files, the number of references and the conflicts the IDE finds;
+  `apply` moves only when there are none, as one undoable command, and returns the changed files. No dialog opens.
+- `mc_change_signature`: change a Java method's or constructor's parameters (add with a default value for existing
+  calls, remove, reorder, rename, retype), its return type or visibility with the IDE's Change Signature; call sites
+  in Java and Kotlin and overriding methods are updated. Same `preview` and `apply` as `mc_move`; a method that
+  overrides another is a conflict (change the topmost one).
+- `mc_pull_up`: pull a field, method or nested class of a Java class up into its superclass or an interface with the
+  IDE's Pull Members Up, with more members of the class along (`withMembers`) and optionally as an abstract method
+  (`makeAbstract`); references to moved static members are requalified. Same `preview` and `apply` as `mc_move`:
+  conflicts (moved code using members left behind, the target already having the member, other subclasses lacking an
+  abstract method, Kotlin references to a moved static member) are reported before anything changes.
+- `mc_extract_method`: extract consecutive Java statements or one expression, given by lines and columns, into a new
+  method with the IDE's Extract Method, without an editor, template or dialog; the IDE infers parameters, return value
+  and exceptions, and `summary` shows the new signature. Code with several exits and a method of that signature in
+  the class are conflicts. Same `preview` and `apply`.
+- `mc_run start_at`: run or debug code without a run configuration, like the IDE's Run gutter icon: a test method,
+  test class, test directory or main function, by path and line or by qualified name. The IDE's own producers
+  decide (JUnit, TestNG, Gradle test tasks when tests run with Gradle, Maven, Application, Kotlin); a matching
+  configuration is reused, otherwise a temporary one is made. Several candidates are listed instead of a popup;
+  the process gets a handle like `start` (output, `wait_ready`, `tests`, `stop`), and the IDE asks first unless
+  brave mode is on.
+- `mc_quick_fix`: the IDE's quick fixes for the problems of a file, without opening it. `list` gives each problem
+  with its fixes and stable ids, and says which ones need the user (dialogs, templates, editor-only fixes);
+  `apply` applies one as an undoable command and returns the changed files; an id from before an edit is refused.
+- `mc_file_structure`: the outline of one file from the IDE's Structure view, without opening it, for every language
+  that has one (Java, Kotlin, XML, JSON, YAML, Markdown, library classes, ...): each element with its tree id, depth,
+  name, kind, signature, modifiers (JVM languages) and lines; depth and kind filters, paging.
+- `mc_local_history`: labels in the IDE's Local History (`label`, `labels`), the changes of a file or directory since
+  a label or a point in time as unified diffs (`diff`, `preview`), and `revert`: a file gets its content back as one
+  undoable command, a directory is reverted to a label by the IDE's own revert.
+- `mc_vcs_history`: through the IDE's VCS integration, read only: `log` of a file or directory (or the commits that
+  last changed some lines), `blame` as line segments with their commits, `diff` of one file between two revisions or
+  against the working copy, with size limits and paging.
+- `mc_structural_search`: the IDE's Structural Search, read only: finds code by its syntax tree from a template
+  with `$Name$` variables (`$Instance$.equals($Arg$)`, empty catch blocks, methods of a shape) in Java, Kotlin or
+  any other language with Structural Search support, with constraints per variable (text, type, count, target),
+  or runs one of the IDE's built-in or saved templates by name (`templates` lists them). Matches with location,
+  text and variable values, in project, module, directory or file scope, paged; the IDE's message for a template
+  it cannot compile.
+
+### Changed
+
+- The `scope` of `mc_find_usages` and `mc_find_implementations` also takes `file:<path>`.
+- Exposed Tools shows each MCP Companion tool under its group title without a group description that repeated the
+  tool's own; the MCP Companion settings page lists toolsets by their short names.
+
+### Fixed
+
+- `mc_run stop` and `restart`: a process that ignores the graceful stop (SIGINT; also a process that inherited the
+  ignored signal from its parent, e.g. an IDE started from a background job) is now killed after the grace period
+  (`timeoutSeconds`, default 10), as the IDE's Stop button does when pressed again; before, the stop waited and left
+  it running unless `force=true` was passed. `outcome` says whether the process ended after the graceful stop, was
+  killed, or why it is still alive (its handler cannot be killed). `force=true` now kills at once.
+- A tool steps aside only for tools that JetBrains ships (the IDE, its bundled plugins and plugins developed by
+  JetBrains), no longer for a third-party plugin's tool that happens to have the same name.
+
+## [0.2.0] - 2026-11-18
+
+### Added
+
+- `mc_diagnostics`: errors (and on request warnings) of one module, optionally with the modules it depends on or that
+  depend on it, of a directory or of a list of files, found by the IDE's own analysis without building and without
+  opening the files; grouped by file with line and column, totals per severity and per module, bounded and resumable
+  (`limit`, `offset`, `timeoutSeconds`), waiting until the IDE finished importing and indexing. External annotators
+  (external linters, XML schema validation) are not run for the analysed files.
+- `mc_build`: build one module with the modules it depends on, optionally also the modules that depend on it, through
+  the IDE's own build path (also when building is delegated to Gradle or Maven); errors and warnings with file, line
+  and column (from the IDE's compiler, or read from Gradle's and Maven's console output), the build tool's reason when
+  a build fails before compiling, a timeout after which the build goes on, `status`, one build at a time.
+- `mc_modules graph format=mermaid`: the dependency graph as a Mermaid flowchart.
+- An optional guide for AI agents on how the tools work together (check loop after edits, sync after build file
+  changes, paging, consent): Settings | Tools | MCP Companion | Copy Guide puts it on the clipboard for `AGENTS.md` or
+  `CLAUDE.md`; the repository also has it as the Claude skill `skills/mcp-companion`.
+
+### Changed
+
+- `mc_run hotswap`: compile errors of builds delegated to Gradle or Maven now come with file, line and column.
+
+## [0.1.0] - 2026-11-17
+
+### Added
+
 - MCP tools for AI agents on the IDE's built-in MCP Server, next to the built-in tools; their names start with `mc_`.
   A tool steps aside by itself when the IDE ships an official tool with the same capability.
 - `mc_find_usages`: every reference to a symbol, in the project or also in libraries, with a
@@ -33,27 +125,7 @@
 - Locations in results use the path form of the built-in MCP tools, so they can be passed to `read_file`.
 - Settings | Tools | MCP Companion: the state of every tool, a link to the MCP Server's tool page where tools are
   switched on and off, and the brave mode setting. English and Simplified Chinese.
-- `mc_diagnostics`: errors (and on request warnings) of one module, optionally with the modules it depends on or that
-  depend on it, of a directory or of a list of files, found by the IDE's own analysis without building and without
-  opening the files; grouped by file with line and column, totals per severity and per module, bounded and resumable
-  (`limit`, `offset`, `timeoutSeconds`), waiting until the IDE finished importing and indexing. External annotators
-  (external linters, XML schema validation) are not run for the analysed files.
-- `mc_build`: build one module with the modules it depends on, optionally also the modules that depend on it, through
-  the IDE's own build path (also when building is delegated to Gradle or Maven); errors and warnings with file, line
-  and column (from the IDE's compiler, or read from Gradle's and Maven's console output), the build tool's reason when
-  a build fails before compiling, a timeout after which the build goes on, `status`, one build at a time.
-- `mc_modules graph format=mermaid`: the dependency graph as a Mermaid flowchart.
-- An optional guide for AI agents on how the tools work together (check loop after edits, sync after build file
-  changes, paging, consent): Settings | Tools | MCP Companion | Copy Guide puts it on the clipboard for `AGENTS.md` or
-  `CLAUDE.md`; the repository also has it as the Claude skill `skills/mcp-companion`.
 
-### Changed
-
-- `mc_run hotswap`: compile errors of builds delegated to Gradle or Maven now come with file, line and column.
-- Exposed Tools shows each MCP Companion tool under its group title without a group description that repeated the
-  tool's own; the MCP Companion settings page lists toolsets by their short names.
-
-### Fixed
-
-- A tool steps aside only for tools that JetBrains ships (the IDE, its bundled plugins and plugins developed by
-  JetBrains), no longer for a third-party plugin's tool that happens to have the same name.
+[Unreleased]: https://github.com/SinLordEp/mcp-companion/compare/0.2.0...HEAD
+[0.2.0]: https://github.com/SinLordEp/mcp-companion/compare/0.1.0...0.2.0
+[0.1.0]: https://github.com/SinLordEp/mcp-companion/commits/0.1.0

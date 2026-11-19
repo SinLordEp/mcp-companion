@@ -38,6 +38,7 @@ class TestResultsTest {
         tests,
         { false },
         FakeConsent(),
+        FakeCodeRuns(),
         clock,
         Mutex(),
     )

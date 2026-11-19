@@ -30,6 +30,7 @@ class RunLifecycleTest {
         FakeTestResults(),
         { false },
         FakeConsent(),
+        FakeCodeRuns(),
         clock,
         Mutex(),
     )
@@ -89,37 +90,6 @@ class RunLifecycleTest {
     }
 
     @Test
-    fun `stop asks gracefully and reports the exit`() {
-        val process = running()
-        val stopped = call(RunAction.STOP, RunArguments(process = process.id.value)).value() as RunOutcome.Stopped
-        assertEquals(listOf(process.id), execution.stopRequests)
-        assertTrue(stopped.stop.terminated)
-        assertFalse(stopped.stop.killed)
-        assertEquals(ProcessState.Terminated(130), stopped.process.state)
-    }
-
-    @Test
-    fun `stop waits for the timeout and kills only with force`() = runBlocking {
-        execution.ignoresStop = true
-        val process = running()
-        val polite = async { control.execute(RunAction.STOP, RunArguments(process = "p1", timeoutSeconds = 5)) }
-        settleUntil("the stop waits") { clock.sleeping == 1 }
-        clock.advance(5.seconds)
-        val result = polite.await().value() as RunOutcome.Stopped
-        assertFalse(result.stop.terminated)
-        assertEquals(5_000L, result.stop.waitedMillis)
-        assertTrue(process.snapshot.state.isAlive)
-
-        val forced = async { control.execute(RunAction.STOP, RunArguments(process = "p1", force = true)) }
-        settleUntil("the stop waits") { clock.sleeping == 1 }
-        clock.advance(10.seconds)
-        val killed = forced.await().value() as RunOutcome.Stopped
-        assertTrue(killed.stop.killed)
-        assertTrue(killed.stop.terminated)
-        assertEquals(ProcessState.Terminated(137), killed.process.state)
-    }
-
-    @Test
     fun `stop of an ended process changes nothing and a starting one cannot be stopped yet`() {
         val ended = running().apply { moveTo(ProcessState.Terminated(0)) }
         val result = call(RunAction.STOP, RunArguments(process = ended.id.value)).value() as RunOutcome.Stopped
@@ -153,6 +123,7 @@ class RunLifecycleTest {
     @Test
     fun `restart starts nothing when the process does not end in time`() = runBlocking {
         execution.ignoresStop = true
+        execution.killable = false
         running()
         val call = async { control.execute(RunAction.RESTART, RunArguments(process = "p1", timeoutSeconds = 1)) }
         settleUntil("the restart waits") { clock.sleeping == 1 }

@@ -7,8 +7,8 @@
     <!-- The one source of the description (the build does not take it from README.md). Marketplace shows the first
          sentence on the plugin card: keep it a plain English summary. The change notes come from CHANGELOG.md. -->
     <description><![CDATA[
-<p>Adds code navigation, safe delete, run configuration control, module, diagnostics and build tools for AI agents to
-the IDE's built-in MCP Server.</p>
+<p>Adds code navigation, structural search, Spring bean, refactoring, quick fix, run control, module, diagnostics,
+build, file outline and history tools for AI agents to the IDE's built-in MCP Server.</p>
 
 <p>MCP Companion complements the bundled <i>MCP Server</i> plugin, which must be enabled. Its tools appear next to the
 built-in ones for every MCP client connected to the IDE, and their names start with <code>mc_</code>. It does not
@@ -21,11 +21,30 @@ tool steps aside by itself (checked at IDE start and when plugins are installed,
     filter and paging.</li>
   <li><code>mc_find_implementations</code>: implementations, inheritors and overriding methods, or the supertypes and
     super methods.</li>
+  <li><code>mc_structural_search</code>: find code by its structure, not its text, with the IDE's Structural
+    Search: templates with variables such as <code>$Instance$.equals($Arg$)</code> and constraints on them, or
+    the IDE's built-in templates; read only.</li>
+  <li><code>mc_spring_beans</code>: the Spring beans of a module or the project from the IDE's Spring model (name,
+    type, kind, scope, profiles, place of definition), and for one bean what it gets injected and which beans receive
+    it, with injection points that have several candidates or none; read only. Needs IntelliJ IDEA with the Spring
+    plugin (a paid feature).</li>
   <li><code>mc_type_hierarchy</code>: supertypes and subtypes of a class, with depth and size limits (JVM
     languages).</li>
   <li><code>mc_safe_delete</code>: <code>preview</code> lists what still uses a declaration; <code>apply</code> deletes
     it only when nothing does, as one undoable command.</li>
-  <li><code>mc_run</code>: start, stop and restart existing run configurations (run or debug), read their console
+  <li><code>mc_move</code>: move a Java class to another package or source root with the IDE's Move refactoring,
+    updating every reference in Java and Kotlin; preview first, applied only without conflicts.</li>
+  <li><code>mc_change_signature</code>: add, remove, reorder, rename or retype a Java method's parameters, or change
+    its return type or visibility, updating every call and overriding method; preview first, applied only without
+    conflicts.</li>
+  <li><code>mc_pull_up</code>: move a field, method or nested class of a Java class up into its superclass or an
+    interface with the IDE's Pull Members Up, optionally as an abstract method; conflicts such as members left behind
+    are reported first, and nothing changes while there are any.</li>
+  <li><code>mc_extract_method</code>: turn Java statements or an expression, given by lines and columns, into a new
+    method with the IDE's Extract Method, which infers parameters and return value; preview first, applied only
+    without conflicts.</li>
+  <li><code>mc_run</code>: start, stop and restart existing run configurations (run or debug), or run a test method,
+    test class, test directory or main function directly from the code like the Run gutter icon, read the console
     output, wait until they are ready, hot-swap changed classes into a JVM debug session, and read test results
     (counts, failed tests with message and stack trace), also while the tests are running.</li>
   <li><code>mc_modules</code>: modules with their content roots and folders, the dependency graph with scopes (also as
@@ -34,18 +53,31 @@ tool steps aside by itself (checked at IDE start and when plugins are installed,
     IDE's own analysis without building, with line and column and totals per module.</li>
   <li><code>mc_build</code>: build one module with what it depends on, instead of the whole project, and get the
     errors with file, line and column, also when the build is delegated to Gradle or Maven.</li>
+  <li><code>mc_quick_fix</code>: list the IDE's quick fixes for the problems of a file (add an import, add throws,
+    make a class abstract, ...) and apply one as an undoable command, without opening the file; fixes that would
+    ask for input are refused.</li>
+  <li><code>mc_file_structure</code>: the outline of a file from the IDE's Structure view (classes, methods, fields,
+    nested types with their lines), so that an agent reads only the part of a large file it needs.</li>
+  <li><code>mc_local_history</code>: put a label in the IDE's Local History before a risky change, compare a file or
+    directory with a label or a point in time, and revert to it as an undoable command.</li>
+  <li><code>mc_vcs_history</code>: commit history of a file or of some of its lines, blame, and diffs between
+    revisions or against the working copy, through the IDE's VCS integration.</li>
   <li><code>mc_sync</code>: re-import Gradle and Maven projects after build file changes and report the result.</li>
   <li><code>mc_status</code>: plugin version, IDE build and the state of each MCP Companion tool.</li>
 </ul>
 
 <h3>Safety</h3>
 <ul>
-  <li>Before <code>mc_run</code> starts or restarts a process, the IDE asks you to allow or deny it, as the built-in
+  <li>Before <code>mc_run</code> starts or restarts a process (also from code), the IDE asks you to allow or deny it, as the built-in
     <code>execute_run_configuration</code> does. Whether the IDE asks is the MCP Server's brave mode, which is off by
     default.</li>
-  <li><code>mc_run</code> only runs run configurations that exist in the project, never arbitrary commands.</li>
+  <li><code>mc_run</code> only runs run configurations of the project or the code of the project (as the IDE's
+    temporary configurations), never arbitrary commands.</li>
   <li><code>mc_safe_delete</code> refuses to delete a declaration that is still used or that lies outside the
     project.</li>
+  <li><code>mc_move</code>, <code>mc_change_signature</code>, <code>mc_pull_up</code> and
+    <code>mc_extract_method</code> refuse to change code while the IDE reports conflicts; every change is one undoable
+    command, as is each fix <code>mc_quick_fix</code> applies and each revert of <code>mc_local_history</code>.</li>
   <li><code>mc_run</code>, <code>mc_sync</code> and <code>mc_build</code> refuse to run anything in a project that
     is not trusted.</li>
 </ul>
@@ -76,6 +108,11 @@ plugin version follows; IDEs of earlier major versions keep the last plugin vers
     <!-- The platform's VCS support (alias of its content module intellij.platform.vcs.impl): CodeSmellDetector, the
          batch code analysis of mc_diagnostics. -->
     <depends optional="true" config-file="mcp-companion-vcs.xml">com.intellij.modules.vcs</depends>
+    <!-- The IDE's Structural Search (its content module intellij.platform.structuralSearch), for
+         mc_structural_search. -->
+    <depends optional="true" config-file="mcp-companion-structural-search.xml">com.intellij.structuralSearch</depends>
+    <!-- The IDE's Spring plugin (a paid IntelliJ IDEA feature), for mc_spring_beans; see mcp-companion-spring.xml. -->
+    <depends optional="true" config-file="mcp-companion-spring.xml">com.intellij.spring</depends>
 
     <resource-bundle>messages.McpCompanionBundle</resource-bundle>
 
@@ -98,6 +135,9 @@ plugin version follows; IDEs of earlier major versions keep the last plugin vers
         <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.hotSwapSupport"
                         interface="com.github.sinlordep.mcpcompanion.run.ide.HotSwapSupport"
                         dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.codeRunGuard"
+                        interface="com.github.sinlordep.mcpcompanion.run.ide.CodeRunGuard"
+                        dynamic="true"/>
         <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.testResultsSupport"
                         interface="com.github.sinlordep.mcpcompanion.run.ide.TestResultsSupport"
                         dynamic="true"/>
@@ -116,6 +156,24 @@ plugin version follows; IDEs of earlier major versions keep the last plugin vers
         <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.fileAnalyzer"
                         interface="com.github.sinlordep.mcpcompanion.diagnostics.ide.FileAnalyzerProvider"
                         dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.classMove"
+                        interface="com.github.sinlordep.mcpcompanion.move.psi.ClassMoveSupport"
+                        dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.deferredFixes"
+                        interface="com.github.sinlordep.mcpcompanion.quickfix.psi.DeferredFixProvider"
+                        dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.declarationFacts"
+                        interface="com.github.sinlordep.mcpcompanion.structure.psi.DeclarationFactsProvider"
+                        dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.signatureChange"
+                        interface="com.github.sinlordep.mcpcompanion.changesignature.psi.SignatureChangeSupport"
+                        dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.pullUp"
+                        interface="com.github.sinlordep.mcpcompanion.pullup.psi.PullUpSupport"
+                        dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.methodExtraction"
+                        interface="com.github.sinlordep.mcpcompanion.extractmethod.psi.MethodExtractionSupport"
+                        dynamic="true"/>
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
@@ -125,10 +183,10 @@ plugin version follows; IDEs of earlier major versions keep the last plugin vers
                                  bundle="messages.McpCompanionBundle"
                                  key="settings.display.name"
                                  dynamic="true"/>
-        <!-- mc_diagnostics: no external annotators for the files it analyses, while it analyses them
+        <!-- mc_diagnostics, mc_quick_fix: no external annotators for the files they analyse, while they analyse them
              (see ExternalAnnotatorPause). -->
         <daemon.externalAnnotatorsFilter
-                implementation="com.github.sinlordep.mcpcompanion.diagnostics.ide.PausedExternalAnnotatorsFilter"/>
+                implementation="com.github.sinlordep.mcpcompanion.common.analysis.ide.PausedExternalAnnotatorsFilter"/>
     </extensions>
 
     <!-- mc_run: every start in the project, also those the user makes in the IDE, feeds the process tracker. -->
@@ -145,10 +203,22 @@ plugin version follows; IDEs of earlier major versions keep the last plugin vers
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.implementations.FindImplementationsToolset"/>
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.hierarchy.TypeHierarchyToolset"/>
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.safedelete.SafeDeleteToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.move.MoveToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.changesignature.ChangeSignatureToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.pullup.PullUpToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.extractmethod.ExtractMethodToolset"/>
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.run.RunToolset"/>
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.modules.ModulesToolset"/>
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.sync.SyncToolset"/>
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.diagnostics.DiagnosticsToolset"/>
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.build.BuildToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.quickfix.QuickFixToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.structure.FileStructureToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.localhistory.LocalHistoryToolset"/>
+        <!-- mc_vcs_history is registered in mcp-companion-vcs.xml: it needs the platform's VCS support. -->
+        <!-- mc_structural_search is registered in mcp-companion-structural-search.xml: it needs Structural
+             Search. -->
+        <!-- mc_spring_beans is registered in mcp-companion-spring-ultimate.xml: it needs the Spring plugin and
+             IntelliJ IDEA's paid features. -->
     </extensions>
 </idea-plugin>

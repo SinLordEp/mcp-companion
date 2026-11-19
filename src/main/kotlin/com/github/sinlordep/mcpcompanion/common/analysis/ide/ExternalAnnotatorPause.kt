@@ -1,4 +1,4 @@
-package com.github.sinlordep.mcpcompanion.diagnostics.ide
+package com.github.sinlordep.mcpcompanion.common.analysis.ide
 
 import com.intellij.lang.ExternalAnnotatorsFilter
 import com.intellij.lang.annotation.ExternalAnnotator
@@ -9,7 +9,8 @@ import com.intellij.psi.PsiFile
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * Keeps the IDE's external annotators away from the files `mc_diagnostics` analyses, while it analyses them.
+ * Keeps the IDE's external annotators away from the files a batch analysis without an editor (`mc_diagnostics`,
+ * `mc_quick_fix`) analyses, while it analyses them.
  *
  * Why: the batch analysis creates an `ExternalToolPass` for every file that has an external annotator, which in
  * IntelliJ IDEA is every file (ESLint's annotator is registered for all languages). The pass hands its work to the

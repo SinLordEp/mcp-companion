@@ -33,6 +33,7 @@ class WaitReadyTest {
             portOpen.get()
         },
         FakeConsent(),
+        FakeCodeRuns(),
         clock,
         Mutex(),
     )

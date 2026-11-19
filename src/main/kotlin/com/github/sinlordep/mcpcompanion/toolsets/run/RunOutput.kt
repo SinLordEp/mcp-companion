@@ -84,6 +84,8 @@ data class ProcessOutput(
     val reason: String? = null,
     val configuration: String? = null,
     val type: String? = null,
+    /** True when the configuration is one of the IDE's temporary ones (start_at made it); absent otherwise. */
+    val temporary: Boolean? = null,
     val startedAt: String,
     val endedAt: String? = null,
     val pid: Long? = null,
@@ -126,6 +128,7 @@ data class ProcessOutput(
                 reason = (state as? ProcessState.NotStarted)?.reason,
                 configuration = snapshot.configuration?.name,
                 type = snapshot.configuration?.typeId,
+                temporary = snapshot.configuration?.temporary?.takeIf { it },
                 startedAt = snapshot.startedAt.toString(),
                 endedAt = snapshot.endedAt?.toString(),
                 pid = snapshot.pid,
@@ -144,17 +147,30 @@ data class ProcessOutput(
     }
 }
 
+/**
+ * outcome: ended (after the graceful stop), killed (ignored it and was killed after the grace period, or force),
+ * detached, not_running, not_killable, alive_after_kill or still_alive (the last three: terminated=false).
+ */
 @Serializable
 data class StopOutput(
-    /** stopping, detaching (attached processes) or not_running. */
+    /** stopping, detaching (attached processes), killing (force) or not_running. */
     val request: String,
+    val outcome: String,
     val terminated: Boolean,
     val killed: Boolean,
     val waitedMs: Long,
+    /** Why the process is still alive, when terminated is false. */
+    val reason: String? = null,
 ) {
     companion object {
-        fun from(stop: StopResult) =
-            StopOutput(stop.request.name.lowercase(), stop.terminated, stop.killed, stop.waitedMillis)
+        fun from(stop: StopResult) = StopOutput(
+            request = stop.request.name.lowercase(),
+            outcome = stop.outcome.name.lowercase(),
+            terminated = stop.terminated,
+            killed = stop.killed,
+            waitedMs = stop.waitedMillis,
+            reason = stop.outcome.reason.takeUnless { stop.terminated },
+        )
     }
 }
 

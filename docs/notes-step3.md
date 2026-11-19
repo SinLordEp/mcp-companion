@@ -170,10 +170,21 @@ runner in the test IDE that produces it and is covered by reading). A later star
 
 ### Stop
 
-What the IDE's Stop does: `ProcessHandler.destroyProcess()` (for a Java process, SIGINT to the process tree first), or
-`detachProcess()` when the handler detaches by default (attached processes). Then the wait for the end on the clock;
-`force=true` kills afterwards (`KillableProcess.killProcess`). A process still in its before-launch phase cannot be
-stopped yet (`CONFLICT`); there is no public way to cancel a scheduled start.
+What the IDE's Stop does: `ProcessHandler.destroyProcess()` (for a local process `KillableProcessHandler` sends
+SIGINT to the process tree first), or `detachProcess()` when the handler detaches by default (attached processes).
+A process that ignores SIGINT survives it: on Unix a process whose parent ignores SIGINT inherits the ignored signal,
+and a JVM started so installs no SIGINT handler (seen in step 9: tests run by a Gradle started from a background
+job). The IDE's Stop button then turns into a kill on the next press (`KillableProcess.killProcess`, SIGKILL to the
+tree). `stop` does the same on the clock (step 10): the graceful stop, a wait of `timeoutSeconds` (the grace period,
+default 10 s), then `killProcess` when the handler is a `KillableProcess` with `canKillProcess()` (both public, not
+annotated), and a further wait of 5 s. `outcome` tells which: `ended`, `killed`, `detached`, `not_running`, or with
+`terminated=false` `not_killable` (a handler that cannot be killed, e.g. one that is not an OS process handler),
+`alive_after_kill`, `still_alive` (an attached process did not detach). An attached process is never killed.
+`force=true` kills at once (`request=killing`), falling back to the graceful stop for a handler that cannot be killed.
+`restart` uses the same stop and starts nothing while the process is alive. A process still in its before-launch
+phase cannot be stopped yet (`CONFLICT`); there is no public way to cancel a scheduled start. Tested with a program
+started as `sh -c 'trap "" INT; exec java ...'` (`RunToolsetTest`), and the whole `RunToolsetTest` with SIGINT
+ignored for Gradle itself.
 
 ### Hot swap
 

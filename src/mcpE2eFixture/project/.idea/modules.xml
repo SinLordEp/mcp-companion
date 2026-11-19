@@ -10,6 +10,9 @@
       <module fileurl="file://$PROJECT_DIR$/buildok/buildok.iml" filepath="$PROJECT_DIR$/buildok/buildok.iml" />
       <module fileurl="file://$PROJECT_DIR$/buildbad/buildbad.iml" filepath="$PROJECT_DIR$/buildbad/buildbad.iml" />
       <module fileurl="file://$PROJECT_DIR$/javaconly/javaconly.iml" filepath="$PROJECT_DIR$/javaconly/javaconly.iml" />
+      <module fileurl="file://$PROJECT_DIR$/kotlinfix/kotlinfix.iml" filepath="$PROJECT_DIR$/kotlinfix/kotlinfix.iml" />
+      <module fileurl="file://$PROJECT_DIR$/quickfix/quickfix.iml" filepath="$PROJECT_DIR$/quickfix/quickfix.iml" />
+      <module fileurl="file://$PROJECT_DIR$/springbeans/springbeans.iml" filepath="$PROJECT_DIR$/springbeans/springbeans.iml" />
     </modules>
   </component>
 </project>

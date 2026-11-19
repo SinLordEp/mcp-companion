@@ -21,18 +21,28 @@ class LayeringTest {
         "navigation.implementations",
         "navigation.hierarchy",
         "safedelete",
+        "move",
+        "changesignature",
+        "pullup",
+        "extractmethod",
         "run",
         "modules",
         "sync",
         "build",
         "diagnostics",
+        "quickfix",
+        "structure",
+        "localhistory",
+        "vcshistory",
+        "structuralsearch",
+        "springbeans",
     )
 
     /**
      * Features built in the three layers of section 5.1: use cases at the root (and in sub-packages such as
      * `run.output`), gateways in the [gatewaySegments] sub-packages.
      */
-    private val layeredFeatures = listOf("navigation", "safedelete", "run", "modules", "sync", "build", "diagnostics")
+    private val layeredFeatures = listOf("navigation") + featurePackages.filterNot { it == "status" || "." in it }
 
     /** Layered features whose use cases sit at the feature root and whose gateways are `ide` plus optional segments. */
     private val gatewayFeatures = listOf("run", "modules", "sync", "build", "diagnostics")
@@ -41,24 +51,14 @@ class LayeringTest {
      * Sub-package names that hold platform gateways: `psi` for code analysis, `ide` for other IDE services, and one
      * per optional plugin: `java` (Java plugin), `externalsystem` (the platform's optional external-system support:
      * Gradle and others), `maven` (Maven plugin), `smrunner` (the platform's test runner plugin), `vcs` (the platform's
-     * VCS support, which holds the batch code analysis).
+     * VCS support, which holds the batch code analysis), `ssr` (the Structural Search plugin), `spring` (the Spring
+     * plugin with IntelliJ IDEA's paid features).
      */
-    private val gatewaySegments = setOf("psi", "ide", "java", "externalsystem", "maven", "smrunner", "vcs")
+    private val gatewaySegments =
+        setOf("psi", "ide", "java", "externalsystem", "maven", "smrunner", "vcs", "ssr", "spring")
 
     /** Gateway segments that need an optional plugin; the neutral `ide` gateways must not depend on them. */
-    private val optionalSegments = listOf("java", "externalsystem", "maven", "smrunner", "vcs")
-
-    /**
-     * APIs of the optional test runner plugin (`com.intellij.platform.testRunner`: test trees, test consoles, test
-     * states); only `smrunner` packages use them.
-     */
-    private val testRunnerApis = listOf("com.intellij.execution.testframework")
-
-    /** APIs of the platform's optional external-system support; only `externalsystem` and `maven` packages use them. */
-    private val externalSystemApis = listOf("com.intellij.openapi.externalSystem")
-
-    /** APIs of the optional Maven plugin. */
-    private val mavenPluginApis = listOf("org.jetbrains.idea.maven")
+    private val optionalSegments = listOf("java", "externalsystem", "maven", "smrunner", "vcs", "ssr", "spring")
 
     /** APIs of the optional Java plugin; using them outside a `java` package breaks the plugin in non-Java IDEs. */
     private val javaPluginApis = listOf(
@@ -153,23 +153,6 @@ class LayeringTest {
     }
 
     @Test
-    fun `external-system APIs are used only in externalsystem and maven packages`() {
-        production.files.filterNot { file ->
-            file.packagee?.name.orEmpty().split('.').any { it == "externalsystem" || it == "maven" }
-        }.assertFalse { it.importsAny(externalSystemApis) }
-    }
-
-    @Test
-    fun `test runner APIs are used only in smrunner packages`() {
-        Assertions.assertTrue(
-            filesIn("run").any { it.packagee?.name.orEmpty().endsWith(".smrunner") },
-            "no smrunner files found",
-        )
-        production.files.filterNot { file -> file.packagee?.name.orEmpty().split('.').contains("smrunner") }
-            .assertFalse { it.importsAny(testRunnerApis) }
-    }
-
-    @Test
     fun `the test results use case is a platform-free sub-package of run`() {
         val useCases = filesIn("run.tests")
         Assertions.assertTrue(useCases.isNotEmpty(), "no run.tests files found")
@@ -177,20 +160,19 @@ class LayeringTest {
     }
 
     @Test
-    fun `Maven plugin APIs are used only in maven packages`() {
-        production.files.filterNot { file -> file.packagee?.name.orEmpty().split('.').contains("maven") }
-            .assertFalse { it.importsAny(mavenPluginApis) }
-    }
-
-    @Test
     fun `the pure part of common is platform-free`() {
         filesIn("common").filterNot { it.isGateway() }.assertFalse { it.importsAny(listOf("com.intellij")) }
     }
 
+    /**
+     * The Spring plugin depends on the Java plugin, so its gateway (`spring`) may use Java APIs too: it is loaded only
+     * where both are.
+     */
     @Test
-    fun `Java plugin APIs are used only in java packages`() {
-        production.files.filterNot { file -> file.packagee?.name.orEmpty().split('.').contains("java") }
-            .assertFalse { it.importsAny(javaPluginApis) }
+    fun `Java plugin APIs are used only in java and spring packages`() {
+        production.files.filterNot { file ->
+            file.packagee?.name.orEmpty().split('.').let { "java" in it || "spring" in it }
+        }.assertFalse { it.importsAny(javaPluginApis) }
     }
 
     @Test

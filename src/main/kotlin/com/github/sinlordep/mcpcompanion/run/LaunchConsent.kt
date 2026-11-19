@@ -18,7 +18,15 @@ data class LaunchRequest(
     val purpose: LaunchPurpose,
     /** True when a running process of the configuration is stopped before the launch. */
     val stopsRunning: Boolean = false,
+    /** Set when the configuration was derived from code (`start_at`) rather than chosen by name. */
+    val origin: LaunchOrigin? = null,
 )
+
+/**
+ * Where a launch from code comes from: the [location] as the client gave it; [temporary] when the configuration was
+ * made for this launch as a temporary one.
+ */
+data class LaunchOrigin(val location: String, val temporary: Boolean)
 
 /** The user's answer to a [LaunchRequest]. */
 sealed interface ConsentAnswer {

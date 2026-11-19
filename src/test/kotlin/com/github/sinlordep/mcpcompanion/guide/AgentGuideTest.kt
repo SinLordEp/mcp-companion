@@ -15,7 +15,7 @@ class AgentGuideTest {
         assertTrue(guide.startsWith("# "))
         assertTrue("ends with a newline", guide.endsWith("\n"))
         val lines = guide.lines().size
-        assertTrue("$lines lines", lines in 30..50)
+        assertTrue("$lines lines", lines in 30..55)
     }
 
     @Test

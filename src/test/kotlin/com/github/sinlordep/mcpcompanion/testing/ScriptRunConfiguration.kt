@@ -29,9 +29,9 @@ import javax.swing.JPanel
  * A run configuration for platform tests: runs a single-file Java program ([source]) with the test JVM's own `java`,
  * through the platform's default Run runner. No Java plugin machinery, no build.
  */
-class ScriptConfigurationType :
+class ScriptConfigurationType(id: String = ID) :
     SimpleConfigurationType(
-        ID,
+        id,
         "MCP test script",
         null,
         NotNullLazyValue.createValue {
@@ -51,6 +51,12 @@ class ScriptConfiguration(project: Project, factory: ConfigurationFactory) :
 
     var source: File? = null
     var arguments: List<String> = emptyList()
+
+    /**
+     * Unix only: the program starts with SIGINT ignored, as a process does whose parent ignores it (a JVM then installs
+     * no SIGINT handler), so the IDE's graceful stop does not end it.
+     */
+    var ignoresInterrupt: Boolean = false
 
     /** A runner gets no state and silently starts nothing, as `GenericProgramRunner` does for a null state. */
     var withoutState: Boolean = false
@@ -80,16 +86,29 @@ class ScriptConfiguration(project: Project, factory: ConfigurationFactory) :
         object : CommandLineState(environment) {
             override fun startProcess(): ProcessHandler {
                 val java = File(System.getProperty("java.home"), "bin/java").path
-                val commandLine = GeneralCommandLine(listOf(java, checkNotNull(source).path) + arguments)
+                val program = listOf(java, checkNotNull(source).path) + arguments
+                val command = if (ignoresInterrupt) listOf("/bin/sh", "-c", IGNORE_SIGINT, "sh") + program else program
+                val commandLine = GeneralCommandLine(command)
                 return KillableColoredProcessHandler(commandLine)
             }
         }
 }
 
-/** Registers [ScriptConfigurationType] and creates script configurations in [project]. */
-class ScriptConfigurations(private val project: Project, parent: Disposable) {
+/** Ignores SIGINT, then replaces the shell with the program (same process id, the disposition is inherited). */
+private const val IGNORE_SIGINT = "trap '' INT; exec \"\$@\""
 
-    private val type = ScriptConfigurationType()
+/**
+ * Registers [ScriptConfigurationType] and creates script configurations in [project]. A test that relies on the
+ * run manager finding its configurations by type passes a [typeId] of its own: the light project's run manager
+ * outlives a test and keeps the type instance it first saw for an id.
+ */
+class ScriptConfigurations(
+    private val project: Project,
+    parent: Disposable,
+    typeId: String = ScriptConfigurationType.ID,
+) {
+
+    val type = ScriptConfigurationType(typeId)
 
     init {
         ConfigurationType.CONFIGURATION_TYPE_EP.point.registerExtension(type, parent)
@@ -101,24 +120,31 @@ class ScriptConfigurations(private val project: Project, parent: Disposable) {
         program: String,
         vararg arguments: String,
         parallel: Boolean = false,
+        ignoresInterrupt: Boolean = false,
     ): RunnerAndConfigurationSettings {
-        val file = File.createTempFile("McpScript", ".java").apply {
-            deleteOnExit()
-            writeText(program)
-        }
+        val file = programFile(program)
         val settings = RunManager.getInstance(project).createConfiguration(name, type)
         (settings.configuration as ScriptConfiguration).apply {
             source = file
             this.arguments = arguments.toList()
             isAllowRunningInParallel = parallel
+            this.ignoresInterrupt = ignoresInterrupt
         }
         RunManager.getInstance(project).addConfiguration(settings)
         return settings
     }
 
+    /** A real file with [program], for configurations that run it. */
+    fun programFile(program: String): File = File.createTempFile("McpScript", ".java").apply {
+        deleteOnExit()
+        writeText(program)
+    }
+
     fun removeAll() {
         val manager = RunManager.getInstance(project)
-        manager.allSettings.filter { it.type === type }.forEach(manager::removeConfiguration)
+        // By configuration class, not type instance: temporary configurations made from code in an earlier test of the
+        // shared light project have the type instance of that test.
+        manager.allSettings.filter { it.configuration is ScriptConfiguration }.forEach(manager::removeConfiguration)
     }
 
     companion object {

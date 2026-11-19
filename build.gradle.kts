@@ -3,6 +3,7 @@ import mcpcompanion.e2e.McpE2eJvmArguments
 import mcpcompanion.e2e.McpE2eLayout
 import mcpcompanion.e2e.McpE2eOpenedProject
 import mcpcompanion.e2e.PrepareMcpE2eSandbox
+import mcpcompanion.e2e.SandboxSubscription
 import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 import org.jetbrains.intellij.platform.gradle.models.ProductRelease
@@ -25,8 +26,16 @@ kotlin {
 // Only the latest major IDE version is supported; see docs/PLAN.md section 3.
 val supportedMajorBuild = 263
 
+// Spring Framework and Spring Boot jars for mc_spring_beans: the library of the Spring application in the unit tests and
+// in the e2e fixture's springbeans module. Never on a classpath of the build or the plugin; resolved only when used.
+val springFixtureLibrary: Configuration by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+}
+
 dependencies {
     testImplementation("junit:junit:4.13.2")
+    springFixtureLibrary("org.springframework.boot:spring-boot-autoconfigure:3.5.5")
 
     // kotlin-stdlib and kotlinx-serialization(-json) are provided by the platform at runtime and are not bundled:
     // kotlin.stdlib.default.dependency=false in gradle.properties, and no kotlinx-serialization library dependency here.
@@ -45,6 +54,12 @@ dependencies {
         // Optional at runtime (META-INF/mcp-companion-vcs.xml); its content module intellij.platform.vcs.impl holds
         // CodeSmellDetector, the batch code analysis of mc_diagnostics.
         bundledPlugin("com.intellij.platform.vcs")
+        // Optional at runtime (META-INF/mcp-companion-structural-search.xml); its content module
+        // intellij.platform.structuralSearch holds the matcher of mc_structural_search.
+        bundledPlugin("com.intellij.structuralSearch")
+        // Optional at runtime (META-INF/mcp-companion-spring.xml); its content module intellij.spring holds the bean
+        // model of mc_spring_beans. A paid feature: it works only in an IDE with a subscription.
+        bundledPlugin("com.intellij.spring")
         testFramework(TestFrameworkType.Platform)
         testBundledPlugins("com.intellij.modules.ultimate")
         pluginVerifier()
@@ -88,6 +103,12 @@ intellijPlatform {
         // A pre-release version such as 1.2.0-beta.1 goes to the Marketplace channel "beta"; 1.2.0 goes to "default".
         channels = listOf(version.toString().substringAfter('-', "").substringBefore('.').ifEmpty { "default" })
     }
+    // Optional licence for every sandbox the plugin prepares (prepareSandbox, the test sandboxes, runIdeForMcpE2e's):
+    // the developer's own idea.key, named by an absolute path in ~/.gradle/gradle.properties. Without it the sandboxes
+    // run without IntelliJ IDEA's paid features (Spring, HTTP Client), as on CI. See buildSrc SandboxSubscription.
+    subscriptionKey = layout.file(
+        providers.gradleProperty(SandboxSubscription.PROPERTY).map { SandboxSubscription.keyFile(it) },
+    )
 }
 
 // verifyPluginSignature reads signPlugin's output but does not depend on it (IntelliJ Platform Gradle Plugin 2.20.1).
@@ -147,6 +168,13 @@ testing {
 // directory, so the task reruns when the skill changes.
 tasks.test {
     inputs.files(fileTree("skills")).withPropertyName("skills")
+    // SpringBeansToolsetTest reads a small Spring Boot application with the real Spring jars (as library of the test
+    // project, never on the test's own classpath).
+    val springLibrary: FileCollection = springFixtureLibrary
+    inputs.files(springLibrary).withPropertyName("springLibrary")
+    jvmArgumentProviders += CommandLineArgumentProvider {
+        listOf("-DmcpCompanion.springLibrary=" + springLibrary.files.joinToString(File.pathSeparator))
+    }
 }
 
 tasks.named("check") {
@@ -156,7 +184,7 @@ tasks.named("check") {
 // ---- Sandbox IDE for manual and end-to-end checks ------------------------------------------------------------------
 //   ./gradlew runIdeForMcpE2e [-PmcpE2ePort=64399] [-PmcpE2eAwtToolkit=XToolkit] [-PmcpE2eFixture=jps|gradle|maven]
 //                             [-PmcpE2eLaunchConfirmation=skip|ask] [-PmcpE2eGradleHome=<unpacked Gradle>]
-//                             [-PmcpE2eMavenBuild=ide|maven]
+//                             [-PmcpE2eMavenBuild=ide|maven] [-PmcpE2eVcs=none|git]
 // The bundled MCP server is force-enabled on a fixed loopback port and the sandbox opens only a throwaway copy of a
 // fixture under build/. Endpoints: http://127.0.0.1:<port>/sse (SSE) and http://127.0.0.1:<port>/stream (Streamable
 // HTTP). The logic lives in buildSrc/src/main/kotlin/mcpcompanion/e2e; see README.md, Development.
@@ -179,6 +207,7 @@ val mcpE2eGradleHome: Provider<String> = providers.gradleProperty("mcpE2eFixture
 }
 
 val prepareMcpE2eSandbox = tasks.register<PrepareMcpE2eSandbox>("prepareMcpE2eSandbox") {
+    springLibrary.from(springFixtureLibrary)
     description = "Copies a fresh e2e fixture and writes the sandbox options; run by runIdeForMcpE2e."
     fixture = providers.gradleProperty("mcpE2eFixture").orElse("jps")
     launchConfirmation = providers.gradleProperty("mcpE2eLaunchConfirmation").orElse("skip")
@@ -186,6 +215,10 @@ val prepareMcpE2eSandbox = tasks.register<PrepareMcpE2eSandbox>("prepareMcpE2eSa
     mavenDelegatedBuild = providers.gradleProperty("mcpE2eMavenBuild").orElse("ide").map {
         require(it == "ide" || it == "maven") { "mcpE2eMavenBuild must be ide or maven, was $it" }
         it == "maven"
+    }
+    gitRepository = providers.gradleProperty("mcpE2eVcs").orElse("none").map {
+        require(it == "none" || it == "git") { "mcpE2eVcs must be none or git, was $it" }
+        it == "git"
     }
     gradleUserHome = gradle.gradleUserHomeDir
     fixtureSources = layout.projectDirectory.dir("src")

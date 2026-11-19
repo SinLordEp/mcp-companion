@@ -1,0 +1,7 @@
+<!-- Loaded only when the IDE's Spring plugin is present (optional dependency in plugin.xml). Its bean model lives in
+     the content module intellij.spring, which loads only with IntelliJ IDEA's paid features
+     (com.intellij.modules.ultimate); without them the plugin itself may still be there, so the toolset is registered
+     one level deeper, in mcp-companion-spring-ultimate.xml. -->
+<idea-plugin>
+    <depends optional="true" config-file="mcp-companion-spring-ultimate.xml">com.intellij.modules.ultimate</depends>
+</idea-plugin>

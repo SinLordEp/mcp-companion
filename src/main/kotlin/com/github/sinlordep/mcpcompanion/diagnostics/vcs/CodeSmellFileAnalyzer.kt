@@ -1,12 +1,12 @@
 package com.github.sinlordep.mcpcompanion.diagnostics.vcs
 
+import com.github.sinlordep.mcpcompanion.common.analysis.ide.ExternalAnnotatorPause
 import com.github.sinlordep.mcpcompanion.common.build.ProblemSeverity
 import com.github.sinlordep.mcpcompanion.common.paths.psi.ProjectFiles
 import com.github.sinlordep.mcpcompanion.diagnostics.Diagnostic
 import com.github.sinlordep.mcpcompanion.diagnostics.FileAnalysis
 import com.github.sinlordep.mcpcompanion.diagnostics.FileAnalyzer
 import com.github.sinlordep.mcpcompanion.diagnostics.SourceFile
-import com.github.sinlordep.mcpcompanion.diagnostics.ide.ExternalAnnotatorPause
 import com.github.sinlordep.mcpcompanion.diagnostics.ide.FileAnalyzerProvider
 import com.intellij.codeInsight.CodeSmellInfo
 import com.intellij.codeInsight.daemon.ProblemHighlightFilter

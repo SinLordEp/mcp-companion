@@ -7,12 +7,21 @@
                 implementation="com.github.sinlordep.mcpcompanion.common.source.java.JvmLocalDeclarationDetector"/>
         <safeDeleteSupport
                 implementation="com.github.sinlordep.mcpcompanion.safedelete.java.JvmSafeDeleteSupport"/>
+        <classMove implementation="com.github.sinlordep.mcpcompanion.move.java.JavaClassMoveSupport"/>
+        <signatureChange
+                implementation="com.github.sinlordep.mcpcompanion.changesignature.java.JavaSignatureChangeSupport"/>
+        <pullUp implementation="com.github.sinlordep.mcpcompanion.pullup.java.JavaPullUpSupport"/>
+        <methodExtraction
+                implementation="com.github.sinlordep.mcpcompanion.extractmethod.java.JavaMethodExtractionSupport"/>
         <superDeclarations
                 implementation="com.github.sinlordep.mcpcompanion.navigation.implementations.java.JvmSuperDeclarationProvider"/>
         <typeHierarchy
                 implementation="com.github.sinlordep.mcpcompanion.navigation.hierarchy.java.JvmTypeHierarchyProvider"/>
         <hotSwapSupport implementation="com.github.sinlordep.mcpcompanion.run.java.JvmHotSwapSupport"/>
+        <codeRunGuard implementation="com.github.sinlordep.mcpcompanion.run.java.JvmAbstractTestGuard"/>
+        <deferredFixes implementation="com.github.sinlordep.mcpcompanion.quickfix.java.JavaDeferredFixes"/>
         <moduleFacts implementation="com.github.sinlordep.mcpcompanion.modules.java.JvmModuleFacts"/>
+        <declarationFacts implementation="com.github.sinlordep.mcpcompanion.structure.java.JvmDeclarationFacts"/>
         <moduleBuilder implementation="com.github.sinlordep.mcpcompanion.build.java.JvmModuleBuilderProvider"/>
     </extensions>
 </idea-plugin>

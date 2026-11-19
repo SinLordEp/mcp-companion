@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="CompilerConfiguration">
-    <!-- The fixture has no Kotlin standard library; the Kotlin file only serves the navigation tools. -->
+    <!-- The fixture module has no Kotlin standard library; its Kotlin files only serve the navigation and refactoring
+         tools (only the kotlinfix module compiles Kotlin). -->
     <excludeFromCompile>
       <file url="file://$PROJECT_DIR$/src/rules/Settings.kt" />
+      <file url="file://$PROJECT_DIR$/src/refac/OrderReport.kt" />
     </excludeFromCompile>
   </component>
 </project>

@@ -86,10 +86,20 @@
 | `mc_find_implementations` | — | 接口或抽象方法的实现、子类、重写方法、父方法 | `DefinitionsScopedSearch`、`ClassInheritorsSearch`、`OverridingMethodsSearch` |
 | `mc_type_hierarchy` | — | 一个类的父类链和子类树，限制深度 | `ClassInheritorsSearch`、`PsiClass.getSupers` |
 | `mc_safe_delete` | `preview`、`apply` | 先报告还有哪些引用，没有才删除 | `SafeDeleteProcessor` |
-| `mc_run` | `processes`、`start`、`stop`、`restart`、`status`、`output`、`wait_ready`、`hotswap`、`tests` | Run Configuration 全生命周期。`output` 支持末尾 N 行、正则过滤和游标。热替换走 IDE 自己的构建路径（`ProjectTaskManager`），所以委托给 Gradle、Maven 的项目也能用。`tests`：测试运行的结论、计数和失败的测试（位置、消息、期望/实际值、截断的堆栈），运行中也能读（标为部分结果），可等待结束；`processes`、`status` 对测试运行附带摘要。Maven 运行在 263 没有结构化结果，`tests` 说明原因并指向 `output`。`start`、`restart` 和会重启的 `hotswap` 先在 IDE 里请用户确认（允许/拒绝），和官方 `execute_run_configuration` 一样由 MCP Server 的 Brave 模式决定是否询问；拒绝或 120 秒内未答返回 `DENIED` | `ExecutionListener`、`ProgramRunner`、`ProcessHandler`、`ProjectTaskManager`、`HotSwapManager`、`SMTRunnerEventsListener.TEST_STATUS`、`SMTestProxy` |
+| `mc_move` | `preview`、`apply` | 把顶层 Java 类移到另一个包（可选另一个源码根目录），更新 Java 和 Kotlin 里的全部引用；冲突先返回，有冲突不执行 | `JavaRefactoringFactory`、`MoveClassesOrPackagesProcessor` |
+| `mc_change_signature` | `preview`、`apply` | 改 Java 方法或构造器的参数、返回类型、可见性，更新全部调用处和重写方法；重写了别的方法的方法算冲突（改最顶层的） | `ChangeSignatureProcessor`、`ChangeSignatureUsageProcessor` |
+| `mc_pull_up` | `preview`、`apply` | 把 Java 类的字段、方法或嵌套类上移到父类或接口（`targetClass`，默认父类），`withMembers` 一起移动同类的其他成员，`makeAbstract` 让方法在目标里成为抽象方法、方法体留在子类；对被移动静态成员的 Java 引用改成目标类限定；冲突（用到留下的成员、目标已有同名成员、其他子类缺实现、Kotlin 对被移动静态成员的引用）先返回，有冲突不执行；不做下推，不替换与被移动方法重复的代码 | `PullUpProcessor.moveMembersToBase/moveFieldInitializations`、`PullUpConflictsUtil.checkConflicts`、`PullUpHelper`（Java 的 `updateUsage`）、`MemberInfo` |
+| `mc_extract_method` | `preview`、`apply` | 把一个 Java 文件里按起止行列给出的一段连续语句或一个表达式提取成新方法（`methodName`、`visibility`、`makeStatic`），参数、返回值和异常由 IDE 推断，`summary` 给出新方法签名和实际提取的范围；不是完整语句或表达式返回 `INVALID_ARGUMENT`，多个出口和同签名方法是冲突；不用编辑器、模板或对话框；不替换重复代码 | `ExtractSelector`、`ExtractMethodPipeline.findAllOptionsToExtract/withForcedStatic`、`MethodExtractor.prepareRefactoringElements/extractMethod`、`ConflictsUtil.checkMethodConflicts` |
+| `mc_run` | `processes`、`start`、`start_at`、`stop`、`restart`、`status`、`output`、`wait_ready`、`hotswap`、`tests` | Run Configuration 全生命周期。`start_at`：不需要事先存在运行配置，按位置（`path`+`line` 或 `qualifiedName`，也可以是目录）运行或调试测试方法、测试类、目录下的测试或 main，相当于行号旁的运行图标；由 IDE 的 `RunConfigurationProducer` 决定（JUnit、Gradle 测试任务、Maven、Application、Kotlin），已有匹配配置就复用，否则建 IDE 的临时配置；多个候选返回 `AMBIGUOUS` 并列出，不弹窗；抽象类里的测试（IDE 会问运行哪个子类）返回 `UNSUPPORTED`。`output` 支持末尾 N 行、正则过滤和游标。热替换走 IDE 自己的构建路径（`ProjectTaskManager`），所以委托给 Gradle、Maven 的项目也能用。`tests`：测试运行的结论、计数和失败的测试（位置、消息、期望/实际值、截断的堆栈），运行中也能读（标为部分结果），可等待结束；`processes`、`status` 对测试运行附带摘要。Maven 运行在 263 没有结构化结果，`tests` 说明原因并指向 `output`。`start`、`restart` 和会重启的 `hotswap` 先在 IDE 里请用户确认（允许/拒绝），和官方 `execute_run_configuration` 一样由 MCP Server 的 Brave 模式决定是否询问；拒绝或 120 秒内未答返回 `DENIED` | `ExecutionListener`、`ProgramRunner`、`ProcessHandler`、`ProjectTaskManager`、`HotSwapManager`、`SMTRunnerEventsListener.TEST_STATUS`、`SMTestProxy` |
 | `mc_modules` | `list`、`graph`、`cycles` | 只读。模块及其内容根目录和文件夹（项目目录之外的根会标出）、带作用域的依赖图（JSON，或 `format=mermaid` 输出 Mermaid 流程图，有边数和节点数上限）、循环依赖。按模块构建不放在这里，而是单独的 `mc_build`（构建会改输出目录，而 `mc_modules` 标为只读） | `ModuleManager`、`ModuleRootManager` |
 | `mc_sync` | `status`、`sync` | 重新导入 Gradle（及其他 external system）和 Maven 项目，等待并返回结果；同一项目不会同时跑两次同步；Maven 只能整体同步 | `ExternalSystemUtil.refreshProject`、`MavenProjectsManager`、`MavenSyncListener` |
 | `mc_diagnostics` | — | 只读。不构建就列出一个模块（可加上它依赖的或依赖它的模块）、一个目录或一组文件的问题：IDE 编辑器里看到的分析（语言自身的错误检查和项目启用的检查），文件不必打开；默认只列错误，可加警告；按文件分组，带行列号，按严重程度和模块汇总；每次最多分析 500 个文件，有时间上限，超时如实返回 `partial` 和继续的位置；等导入和索引完成后再分析。看不到只有真正编译才发现的问题（编译器限制、注解处理器、构建时生成的代码、构建脚本） | `CodeSmellDetector`（平台 VCS 模块，可选依赖）、`ProblemHighlightFilter`、`Observation.awaitConfiguration` |
+| `mc_quick_fix` | `list`、`apply` | 一个项目文件里 IDE 报的问题及其快速修复（Alt+Enter 针对该问题的修复），不打开文件；每个修复有在同一文件内容下可复现的 id，标明能否自动应用或需要用户的原因；`apply` 只应用一个修复，作为一个可撤销的全局命令，返回改动的文件；文件改过后旧 id 返回 `CONFLICT`。只自动应用 `ModCommand` 形式的修复（先算出改动再执行，能识别选择、模板、对话框）；老式只能在编辑器里执行的修复列出但拒绝（`UNSUPPORTED`）。没有一键全部修复 | `MainPassesRunner`、`HighlightInfo.findRegisteredQuickFix`、`ModCommandAction.perform`、`ModCommandExecutor.executeInBatch`、`ImportClassFix`（Java） |
+| `mc_file_structure` | — | 只读。文件的大纲（IDE 结构视图）：类、方法、字段、构造器、嵌套类型（其他语言为 XML 标签、JSON 键、Markdown 标题等），每项带树形 id、深度、名称、种类、签名、修饰（JVM 语言）和行号；可限深度、按种类过滤、分页；不打开编辑器 | `LanguageStructureViewBuilder`、`TreeBasedStructureViewBuilder.createStructureViewModel(null)`、UAST |
+| `mc_local_history` | `label`、`labels`、`diff`、`preview`、`revert` | IDE 本地历史，只用公开接口：打标签、列出本工具打的标签、文件或目录与标签或时间点的差异、恢复（文件为一个可撤销命令，目录用 IDE 自己的恢复到标签）。修订列表在平台内部实现里，不提供 | `LocalHistory.putSystemLabel`、`isLabelValid`、`getByteContent`、`revertToLabel`、`Label.getByteContent` |
+| `mc_vcs_history` | `log`、`blame`、`diff` | 只读。经 IDE 的 VCS 抽象：文件或目录的提交历史（或某些行最后一次修改的提交）、逐行追溯、单个文件两个修订之间或对工作区的差异；有上限和分页 | `VcsHistoryProvider.reportAppendableHistory`、`AnnotationProvider.annotate`、`VcsFileRevision.loadContent` |
+| `mc_structural_search` | `search`、`templates` | 只读。IDE 的结构化搜索：按语法结构（带 `$变量$` 的模板）而不是文本找代码，变量可加文本正则、表达式类型、数量、目标约束；也可按名字运行 IDE 内置或用户保存的模板（`templates` 列出）。范围为项目、项目加库、模块、目录或文件；匹配带路径、行列、结束行、该行文本、所在声明、匹配文本和变量的值，排序后分页，最多 10000 个；模板编译失败返回 IDE 的信息。不做替换 | `Matcher.validate`、`Matcher.findMatches`、`MatchOptions`、`MatchVariableConstraint`、`StructuralSearchUtil.getSuitableFileTypes`、`ConfigurationManager.getAllConfigurations` |
+| `mc_spring_beans` | `list`、`dependencies` | 只读。IDE 的 Spring 模型（需要带 Spring 插件和付费功能的 IntelliJ IDEA；没有时工具不出现）：`list` 列出某个模块或整个项目的 Bean（名称、别名、类型、来源种类、作用域、profile、primary、定义位置），按名称子串/正则、按类型（含子类型）过滤，默认只列项目里定义的 Bean，按名称排序分页；`dependencies` 按名称、类或定义位置选一个 Bean，列出它的注入点（字段、setter、方法、构造器参数、`@Bean` 方法参数）及注入的 Bean，多个候选标 `ambiguous`、没有候选标 `none`，以及注入了它的项目 Bean；模型未就绪时返回 `indexing` 或 `no_spring_model`，不返回误导的空列表。端点交给官方 `spring_web_endpoints` 等。XML 里写的注入不读 | `SpringManager.getAllModels/getCombinedModel`、`CommonSpringModel.getAllCommonBeans`、`SpringModelSearchers.findBeans`、`SpringAutowireUtils.getAutowireAnnotationProperties/isAutowiredByAnnotation` |
 | `mc_build` | `build`、`status` | 只构建一个模块及其依赖（可加上依赖它的模块），走 IDE 自己的构建路径，委托给 Gradle、Maven 的项目同样适用；返回结果、包含的模块、耗时、带文件和行列号的错误（JPS 来自编译器消息，Gradle/Maven 来自构建工具控制台输出的解析）；超时后构建继续，`status` 查看结果；同一项目同时只允许一次构建，第二个请求被拒绝；不受信任的项目拒绝；不弹对话框，调试会话不会被问"是否重新加载类" | `ProjectTaskManager.createModulesBuildTask`、`CompilerTopics`、`ExecutionManager.EXECUTION_TOPIC`、`HotSwapUI` 否决监听 |
 
 符号定位方式：统一接受"文件路径 + 行号 + 列号"或"全限定名"两种。
@@ -107,20 +117,33 @@
 ```
 src/main/kotlin/com/github/sinlordep/mcpcompanion/
   toolsets/        每个工具组一个 McpToolset 类
-  navigation/      引用、实现、层级、安全删除的实现
+  navigation/      引用、实现、层级的实现
+  safedelete/      安全删除（mc_safe_delete）
+  move/            移动类（mc_move）
+  changesignature/ 修改签名（mc_change_signature）
+  pullup/          上移成员（mc_pull_up）
+  extractmethod/   提取方法（mc_extract_method）
   run/             运行控制、输出缓冲、就绪检测、热替换
   modules/         模块列表、依赖图（JSON、Mermaid）、环检测
   sync/            Maven、Gradle 重新导入
   diagnostics/     不构建的代码问题（mc_diagnostics）
   build/           按模块构建（mc_build）
+  quickfix/        快速修复（mc_quick_fix）
+  structure/       文件大纲（mc_file_structure）
+  localhistory/    本地历史（mc_local_history）
+  vcshistory/      VCS 历史、追溯、差异（mc_vcs_history）
+  structuralsearch/ 结构化搜索（mc_structural_search），平台实现在 ssr/（可选依赖结构化搜索插件）
   yield/           官方工具对照表和检测
   settings/        设置状态和设置页
-  common/          符号定位、分页、结果模型、错误模型；共用的模块图（modulegraph）和构建网关（build）
+  common/          符号定位、分页、结果模型、错误模型；共用的模块图（modulegraph）、构建网关（build）、重构执行（refactoring）、可撤销的改动命令（edits）和无编辑器分析时暂停外部注解器（analysis）
 src/main/resources/META-INF/
   plugin.xml       核心
   mcp-companion-java.xml    依赖 Java 插件的部分（可选依赖）
   mcp-companion-maven.xml   依赖 Maven 插件的部分（可选依赖）
-  mcp-companion-gradle.xml  依赖 Gradle 插件的部分（可选依赖）
+  mcp-companion-external-system.xml  依赖平台 external system 支持（Gradle 等）的部分（可选依赖）
+  mcp-companion-test-runner.xml      依赖测试运行器插件的部分（可选依赖）
+  mcp-companion-vcs.xml              依赖平台 VCS 支持的部分（可选依赖）
+  mcp-companion-structural-search.xml 依赖结构化搜索插件的部分（可选依赖）
 src/test/          单元测试和 fixture 项目
 ```
 
@@ -198,6 +221,12 @@ MCP 适配层 (toolsets/)        只做参数解析、调用用例、把结果�
 | 5（已完成） | 发布准备：README、插件描述、图标、CHANGELOG、Plugin Verifier 通过、签名 | 版本 0.1.0；`check buildPlugin verifyPlugin` 全绿，Verifier 对 IU-263.7307.200 为 Compatible（下一版 EAP 尚未发布，出现后自动加入）；用一次性自签名证书验证了 `signPlugin` 和 `verifyPluginSignature`；构建好的 ZIP 从磁盘装进干净的 IDEA 2026.3（独立的配置目录，私有 Xvfb），无需重启即加载，`idea.log` 无错误，插件页、设置页、MCP 调用和启动确认在中英文下实测。`runIdeForMcpE2e` 的配置缓存问题已修（逻辑移到 `buildSrc`）。CI 只做了静态检查，推送后才能证明。细节见 `docs/notes-step5.md`，第 6 步的清单见 `docs/RELEASING.md` |
 | 6 | 发布到 Marketplace | 需要用户提供 Marketplace 令牌和签名证书，并明确同意发布 |
 | 7（已完成，待审查） | `mc_diagnostics`、`mc_build`、`mc_modules graph` 的 Mermaid 输出（替代 idea-mcp-ext 的 `get_aggregated_diagnostics` 和 `build_module_with_dependencies`），版本 0.2.0 | 第 0 步核实：官方 `build_project` 不能按模块构建，读取委托构建位置的 Build 窗口监听接口是 `@ApiStatus.Experimental`；官方 `lint_files` 用的是 `impl` 包。改用公开的 `CodeSmellDetector` 和构建工具控制台输出。构建代码（原 `run/java/ProjectBuild`）和模块图移到 `common/build`、`common/modulegraph`，热替换也因此能给出委托构建的错误位置。JPS、Gradle（多项目加 included build，另生成 20 个子项目测耗时）、Maven（IDE 构建和委托 Maven 构建）三个 fixture 实测，细节和限制见 `docs/notes-step7.md` |
+| 8（已完成，待审查） | `mc_move`、`mc_change_signature`：走 IDE 真重构的移动类和修改签名，版本 0.3.0 | 第 0 步核实：官方 263 只有 `rename_refactoring`；Java 用公开的 `JavaRefactoringFactory`、`Refactoring.findUsages/doRefactoring`、`MoveClassesOrPackagesProcessor.detectConflicts`、`ChangeSignatureProcessorBase.findUsages`、各语言 `ChangeSignatureUsageProcessor.findConflicts`、`BaseRefactoringProcessor.executeEx`，不走会弹窗的 `run()`/`preprocessUsages`，冲突在执行前返回；Kotlin 的 K2 重构处理器在 `visibility="internal"` 的内容模块里，所以 Kotlin 声明返回 `UNSUPPORTED`，Kotlin 里对 Java 声明的引用照常更新。公共的预览/应用/冲突/改动文件记录放在 `common/refactoring`，两个工具只提供各自的网关和语言扩展点（`classMove`、`signatureChange`）。Verifier 无新增警告；沙箱实测见 `docs/notes-step8.md` |
+| 9（已完成，待审查） | `mc_run start_at`（不需要运行配置，按代码位置运行或调试）、`mc_quick_fix`（列出并应用 IDE 的快速修复），版本仍为 0.3.0 | 第 0 步核实：官方 `execute_run_configuration`、`xdebug_start_debugger_session` 能按 `filePath`+`line` 建临时配置运行，但不返回句柄，不能等待、读测试结果、停止，不接受目录或全限定名，因此 `start_at` 不重复；官方 `get_file_problems`、`lint_files` 只报问题不带修复，没有应用修复的工具。运行用公开的 `ConfigurationContext(PsiElement).getConfigurationsFromContext()`，跳过会弹窗的 `onFirstRun` 和选择弹窗；快速修复用 `MainPassesRunner`（`impl` 包、未标注）得到带修复的 `HighlightInfo`，只执行 `ModCommand` 形式的修复。JPS、Gradle（委托测试）、Maven（IDE 运行与委托 Maven）沙箱实测，中英文确认对话框和设置页截图。共用的可撤销命令下沉到 `common/edits`，外部注解器暂停下沉到 `common/analysis`。细节和限制见 `docs/notes-step9.md` |
+| 10（已完成，待审查） | `mc_file_structure`（文件大纲）、`mc_local_history`（本地历史标签、差异、恢复）、`mc_vcs_history`（提交历史、追溯、差异）；修复 `mc_run stop` 对忽略 SIGINT 的进程（宽限期后强杀）和构建内存（`org.gradle.jvmargs`），版本仍为 0.3.0 | 第 0 步核实：官方 263 没有文件大纲、本地历史或提交历史/追溯/差异工具（只有 `get_symbol_info`、`search_symbol`、`generate_psi_tree`、`git_status`、`get_repositories` 和变更列表工具）。大纲用公开的结构视图模型，语言无关，JVM 的种类和修饰走 UAST 扩展点；本地历史只用公开的 `LocalHistory`/`Label`：修订列表在可选产品模块 `intellij.platform.lvcs.impl` 里（入口 `LocalHistoryImpl` 为 `@Internal`，不在插件类路径上），所以不做；VCS 用平台 VCS 抽象，不用 `DiffProvider.createFileContent`（Git 的实现对未知修订弹模态错误框）。差异渲染共用 `common/diff`，后台可取消执行共用 `common/progress`。沙箱实测（临时 Git 仓库副本、虚构作者）、中英文设置页和撤销提示截图。细节和限制见 `docs/notes-step10.md` |
+| 11（已完成，待审查） | `mc_structural_search`（结构化搜索）；Spring 视图和 HTTP Client 核实后未做，版本仍为 0.3.0 | 第 0 步核实：官方 263 只有按文本、正则、符号名、文件名的搜索，没有按语法结构的搜索；结构化搜索用公开的 `intellij.platform.structuralSearch`（可见性 public，用到的成员都未标注），模板编译用 `Matcher.validate`（失败返回 IDE 的信息，`NoMatchFoundException` 视为没有匹配），搜索在自己的进度指示器下运行，可取消，不弹窗。`common/scope` 加了 `file:<path>`。Spring 与 HTTP Client 都属于 IDE 的付费 Ultimate 功能：没有订阅的沙箱 IDE（IntelliJ Platform Gradle Plugin 在没有 `subscriptionKey` 时禁用 `com.intellij.modules.ultimate`）里 Spring 模型和 HTTP Client 都不工作，无法在沙箱里实测，因此不做；另外有订阅时官方已有 `spring_web_endpoints` 等端点工具，HTTP Client 的执行接口是 `@Internal`/`@Experimental`，`start_at` 指向 `.http` 请求需要许可证。沙箱实测、细节和限制见 `docs/notes-step11.md`。Spring Bean 视图已在第 13 步用带许可证的沙箱补做；HTTP Client 在第 13 步复查后仍不做 |
+| 13（已完成，待审查） | 可选的沙箱许可证（Gradle 属性 `mcpCompanion.sandboxSubscriptionKey`，许可证文件不进仓库）；`mc_spring_beans`（Spring Bean 列表和注入关系）；HTTP Client 只做一次探测，不新增工具；版本仍为 0.3.0 | 许可证经构建插件的 `intellijPlatform.subscriptionKey` 交给所有沙箱准备任务，没有该属性时构建、测试与以前完全相同（CI 即此情形）；带许可证的沙箱里 Ultimate 和 Spring 模块不再被排除，不带时排除且工具不出现。第 0 步核实：官方带许可证时只有 Spring Web 端点和 Spring Boot 配置工具，没有 Bean 列表或注入关系的等价物。只用公开的 `intellij.spring`（`SpringManager`、`CommonSpringModel`、`SpringModelSearchers`、`SpringBeanPointer`、`SpringAutowireUtils` 等，均未标注），注册分两层可选依赖（`com.intellij.spring` 再加 `com.intellij.modules.ultimate`），因为没有许可证时 Spring 插件在而 `intellij.spring` 模块被排除；构造器和 `@Bean` 方法参数按类型取候选，再按 Spring 规则（限定符、fallback、primary、名称）判定 `resolved`/`ambiguous`/`none`/`all`；XML 里写的注入不读。单元测试里用真实 Spring jar 作测试项目的库，Spring 模型在单元测试中可用、无需许可证。HTTP Client：`start_at` 能运行 `.http` 请求，但响应只在它自己的控制台里，`mc_run output` 读不到，因此不做。沙箱实测、中英文设置页截图（20 行），细节和限制见 `docs/notes-step13.md` |
+| 12（已完成，待审查） | `mc_pull_up`（上移成员）、`mc_extract_method`（提取方法）；内联核实后未做，0.3.0 的最后一步，版本仍为 0.3.0 | 第 0 步核实：官方 263 没有内联、上移/下移、提取方法的工具。内联方法和内联常量的冲突分析只在 `@ApiStatus.Internal` 的 `InlineMethodProcessorUtil` 和 `@OverrideOnly` 的 `preprocessUsages` 里（处理器的非 Java 内联器也只在那里初始化，交互入口会弹模态进度），所以不做；内联局部变量有公开的 `ModCommand` 路径，单独不值一个工具，记录在笔记。上移用公开的 `PullUpConflictsUtil.checkConflicts` 在执行前取冲突，执行走处理器公开的 `moveMembersToBase`、`moveFieldInitializations` 和 Java 的 `updateUsage`，不走 `performRefactoring`（其中的重复代码替换会弹窗）；Kotlin 对被移动静态成员的引用算冲突（Kotlin 的上移助手对 Java 目标类会抛 `ClassCastException`）。下移的用法和冲突分析在 `@Internal` 的 `PushDownDelegate` 里，不做。提取方法用新实现（`extractMethod.newImpl`）里未标注的公开步骤，不需要编辑器和模板。公共抽象扩展为按目标泛化（`RefactoringTargets`：符号或代码范围），`PreparedRefactoring` 和输出加 `summary`，`Visibility` 下沉到 `common/refactoring`。Verifier 无新增警告；沙箱实测、中英文设置页截图，细节和限制见 `docs/notes-step12.md` |
 
 每一步一个分支、一个 PR。
 

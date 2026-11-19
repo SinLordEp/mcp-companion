@@ -146,6 +146,41 @@ class FakeConsent(var required: Boolean = false, var answer: ConsentAnswer = Con
     }
 }
 
+/**
+ * Run configurations from code in memory. [candidates] answers every location (recorded in [locations]); a new
+ * candidate becomes a temporary configuration of [execution] on [register], and [unregister] removes it again.
+ */
+class FakeCodeRuns(private val execution: FakeExecution? = null) : CodeRunGateway {
+    var candidates: List<CodeConfiguration> = emptyList()
+    var failure: ToolResult.Failure? = null
+    val locations = mutableListOf<CodeLocation>()
+    val registered = mutableListOf<ConfigurationRef>()
+    val unregistered = mutableListOf<ConfigurationRef>()
+
+    override suspend fun configurationsAt(location: CodeLocation): ToolResult<List<CodeConfiguration>> {
+        locations += location
+        return failure ?: ToolResult.success(candidates)
+    }
+
+    override suspend fun register(candidate: CodeConfiguration): ToolResult<ConfigurationRef> {
+        val configuration = candidate.configuration
+        if (!candidate.existing) {
+            registered += configuration
+            execution?.configurations?.add(configuration)
+        }
+        return ToolResult.success(configuration)
+    }
+
+    override suspend fun unregister(configuration: ConfigurationRef) {
+        unregistered += configuration
+        execution?.configurations?.remove(configuration)
+    }
+}
+
+/** A candidate of [FakeCodeRuns]. */
+fun codeConfiguration(configuration: ConfigurationRef, existing: Boolean = false, refusal: String? = null) =
+    CodeConfiguration(configuration, existing, refusal, object : CodeConfigurationHandle {})
+
 fun <T> ToolResult<T>.value(): T =
     (this as? ToolResult.Success)?.value ?: throw AssertionError("expected success: $this")
 

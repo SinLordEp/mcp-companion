@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <!-- Spring Framework and Spring Boot from Gradle's dependency cache (build.gradle.kts, springFixtureLibrary);
+       runIdeForMcpE2e copies the jars into lib/spring. -->
+  <library name="spring">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/lib/spring" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+    <jarDirectory url="file://$PROJECT_DIR$/lib/spring" recursive="false" />
+  </library>
+</component>
