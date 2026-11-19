@@ -7,8 +7,8 @@
     <!-- The one source of the description (the build does not take it from README.md). Marketplace shows the first
          sentence on the plugin card: keep it a plain English summary. The change notes come from CHANGELOG.md. -->
     <description><![CDATA[
-<p>Adds code navigation, structural search, refactoring, quick fix, run control, module, diagnostics, build, file
-outline and history tools for AI agents to the IDE's built-in MCP Server.</p>
+<p>Adds code navigation, structural search, Spring bean, refactoring, quick fix, run control, module, diagnostics,
+build, file outline and history tools for AI agents to the IDE's built-in MCP Server.</p>
 
 <p>MCP Companion complements the bundled <i>MCP Server</i> plugin, which must be enabled. Its tools appear next to the
 built-in ones for every MCP client connected to the IDE, and their names start with <code>mc_</code>. It does not
@@ -24,6 +24,10 @@ tool steps aside by itself (checked at IDE start and when plugins are installed,
   <li><code>mc_structural_search</code>: find code by its structure, not its text, with the IDE's Structural
     Search: templates with variables such as <code>$Instance$.equals($Arg$)</code> and constraints on them, or
     the IDE's built-in templates; read only.</li>
+  <li><code>mc_spring_beans</code>: the Spring beans of a module or the project from the IDE's Spring model (name,
+    type, kind, scope, profiles, place of definition), and for one bean what it gets injected and which beans receive
+    it, with injection points that have several candidates or none; read only. Needs IntelliJ IDEA with the Spring
+    plugin (a paid feature).</li>
   <li><code>mc_type_hierarchy</code>: supertypes and subtypes of a class, with depth and size limits (JVM
     languages).</li>
   <li><code>mc_safe_delete</code>: <code>preview</code> lists what still uses a declaration; <code>apply</code> deletes
@@ -107,6 +111,8 @@ plugin version follows; IDEs of earlier major versions keep the last plugin vers
     <!-- The IDE's Structural Search (its content module intellij.platform.structuralSearch), for
          mc_structural_search. -->
     <depends optional="true" config-file="mcp-companion-structural-search.xml">com.intellij.structuralSearch</depends>
+    <!-- The IDE's Spring plugin (a paid IntelliJ IDEA feature), for mc_spring_beans; see mcp-companion-spring.xml. -->
+    <depends optional="true" config-file="mcp-companion-spring.xml">com.intellij.spring</depends>
 
     <resource-bundle>messages.McpCompanionBundle</resource-bundle>
 
@@ -212,5 +218,7 @@ plugin version follows; IDEs of earlier major versions keep the last plugin vers
         <!-- mc_vcs_history is registered in mcp-companion-vcs.xml: it needs the platform's VCS support. -->
         <!-- mc_structural_search is registered in mcp-companion-structural-search.xml: it needs Structural
              Search. -->
+        <!-- mc_spring_beans is registered in mcp-companion-spring-ultimate.xml: it needs the Spring plugin and
+             IntelliJ IDEA's paid features. -->
     </extensions>
 </idea-plugin>

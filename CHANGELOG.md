@@ -6,6 +6,14 @@
 
 ### Added
 
+- `mc_spring_beans` (IntelliJ IDEA with the Spring plugin, a paid feature; the tool is not there without it): `list`
+  the Spring beans of a module or the project from the IDE's Spring model, with name, aliases, type, kind (component,
+  `@Bean` method, XML), scope, profiles, primary and the place of the definition, filtered by name or regex and by type
+  with subtypes, paged; `dependencies` of one bean (by name, class or place): what it gets injected through fields,
+  setters, constructor and `@Bean` method parameters, with the injection points that have several candidates or none,
+  and which beans receive it. While the IDE indexes, or when a module has no Spring context, the answer says so
+  instead of returning an empty list. Read-only.
+
 - `mc_move`: move a top-level Java class to another package (created when missing), optionally into another source
   root, with the IDE's Move refactoring; package and import statements and references in Java and Kotlin are
   updated. `preview` (default) reports the affected files, the number of references and the conflicts the IDE finds;

@@ -4,6 +4,9 @@ Date: 2026-11-19. IntelliJ IDEA 2026.3 (IU-263.7307.200). Planned: three indepen
 when public API carries it and the sandbox IDE proves it. Built: `mc_structural_search`. Not built: the Spring view
 (`mc_spring`) and the HTTP Client. The reasons are below; nothing of the two is in the code.
 
+Update (step 13, `docs/notes-step13.md`): with a licence for the sandboxes the Spring bean half was built as
+`mc_spring_beans`; the HTTP Client was probed again and still not built.
+
 ## Step 0: what the bundled server offers
 
 `StructuralSearchContractTest` pins the official tools of the test setup whose names touch searching, frameworks or

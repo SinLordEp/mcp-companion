@@ -26,8 +26,16 @@ kotlin {
 // Only the latest major IDE version is supported; see docs/PLAN.md section 3.
 val supportedMajorBuild = 263
 
+// Spring Framework and Spring Boot jars for mc_spring_beans: the library of the Spring application in the unit tests and
+// in the e2e fixture's springbeans module. Never on a classpath of the build or the plugin; resolved only when used.
+val springFixtureLibrary: Configuration by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+}
+
 dependencies {
     testImplementation("junit:junit:4.13.2")
+    springFixtureLibrary("org.springframework.boot:spring-boot-autoconfigure:3.5.5")
 
     // kotlin-stdlib and kotlinx-serialization(-json) are provided by the platform at runtime and are not bundled:
     // kotlin.stdlib.default.dependency=false in gradle.properties, and no kotlinx-serialization library dependency here.
@@ -49,6 +57,9 @@ dependencies {
         // Optional at runtime (META-INF/mcp-companion-structural-search.xml); its content module
         // intellij.platform.structuralSearch holds the matcher of mc_structural_search.
         bundledPlugin("com.intellij.structuralSearch")
+        // Optional at runtime (META-INF/mcp-companion-spring.xml); its content module intellij.spring holds the bean
+        // model of mc_spring_beans. A paid feature: it works only in an IDE with a subscription.
+        bundledPlugin("com.intellij.spring")
         testFramework(TestFrameworkType.Platform)
         testBundledPlugins("com.intellij.modules.ultimate")
         pluginVerifier()
@@ -157,6 +168,13 @@ testing {
 // directory, so the task reruns when the skill changes.
 tasks.test {
     inputs.files(fileTree("skills")).withPropertyName("skills")
+    // SpringBeansToolsetTest reads a small Spring Boot application with the real Spring jars (as library of the test
+    // project, never on the test's own classpath).
+    val springLibrary: FileCollection = springFixtureLibrary
+    inputs.files(springLibrary).withPropertyName("springLibrary")
+    jvmArgumentProviders += CommandLineArgumentProvider {
+        listOf("-DmcpCompanion.springLibrary=" + springLibrary.files.joinToString(File.pathSeparator))
+    }
 }
 
 tasks.named("check") {
@@ -189,6 +207,7 @@ val mcpE2eGradleHome: Provider<String> = providers.gradleProperty("mcpE2eFixture
 }
 
 val prepareMcpE2eSandbox = tasks.register<PrepareMcpE2eSandbox>("prepareMcpE2eSandbox") {
+    springLibrary.from(springFixtureLibrary)
     description = "Copies a fresh e2e fixture and writes the sandbox options; run by runIdeForMcpE2e."
     fixture = providers.gradleProperty("mcpE2eFixture").orElse("jps")
     launchConfirmation = providers.gradleProperty("mcpE2eLaunchConfirmation").orElse("skip")

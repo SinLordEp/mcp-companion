@@ -2,11 +2,13 @@ package mcpcompanion.e2e
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
+import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
@@ -42,6 +44,13 @@ abstract class PrepareMcpE2eSandbox : DefaultTask() {
 
     @get:Internal
     abstract val gradleUserHome: DirectoryProperty
+
+    /**
+     * The jars of the JPS fixture's `spring` library (Spring Framework and Spring Boot, resolved by Gradle from its
+     * dependency cache or Maven Central), copied into its `lib/spring` for the `springbeans` module.
+     */
+    @get:InputFiles
+    abstract val springLibrary: ConfigurableFileCollection
 
     /** The project's `src` directory, which holds the fixture sources. */
     @get:Internal
@@ -107,6 +116,7 @@ abstract class PrepareMcpE2eSandbox : DefaultTask() {
         // The Kotlin standard library of the sandbox IDE's Kotlin plugin, for the kotlinfix module (mc_run start_at).
         platformDirectory.get().asFile.resolve("plugins/Kotlin/kotlinc/lib/kotlin-stdlib.jar")
             .copyTo(layout.jpsFixture.resolve("lib/kotlin-stdlib.jar"), overwrite = true)
+        springLibrary.files.forEach { it.copyTo(layout.jpsFixture.resolve("lib/spring/${it.name}"), overwrite = true) }
     }
 
     private fun prepareGradleFixture(layout: McpE2eLayout, junit: Map<String, File>) {

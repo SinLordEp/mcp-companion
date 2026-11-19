@@ -29,8 +29,8 @@ class StructuralSearchContractTest : BasePlatformTestCase() {
      * subscription), the Spring MVC plugin's `intellij.spring.mvc.ai` module adds `spring_web_controllers`,
      * `spring_web_endpoints`, `spring_web_endpoint_info` and `spring_webflux_functional_routes`, and the OpenAPI plugin
      * `swagger_endpoints` and `swagger_endpoint_info`: the HTTP endpoints of step 11's planned Spring tool are official
-     * already. Nothing lists Spring beans or their injections, or sends an HTTP request. A new name here may duplicate
-     * `mc_structural_search` (add a catalog entry) or the Spring or HTTP Client tools step 11 did not build.
+     * already. Nothing lists Spring beans or their injections (`mc_spring_beans` does, step 13), or sends an HTTP
+     * request. A new name here may duplicate `mc_structural_search` or `mc_spring_beans` (add a catalog entry).
      */
     fun testTheOfficialSearchFrameworkAndHttpToolsAreTheAnalysedOnes() {
         val related = Regex("search|find|struct|pattern|match|spring|bean|endpoint|http|request|rest|url|inspection")

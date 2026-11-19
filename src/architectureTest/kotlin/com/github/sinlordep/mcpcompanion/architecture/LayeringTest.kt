@@ -35,6 +35,7 @@ class LayeringTest {
         "localhistory",
         "vcshistory",
         "structuralsearch",
+        "springbeans",
     )
 
     /**
@@ -50,12 +51,14 @@ class LayeringTest {
      * Sub-package names that hold platform gateways: `psi` for code analysis, `ide` for other IDE services, and one
      * per optional plugin: `java` (Java plugin), `externalsystem` (the platform's optional external-system support:
      * Gradle and others), `maven` (Maven plugin), `smrunner` (the platform's test runner plugin), `vcs` (the platform's
-     * VCS support, which holds the batch code analysis), `ssr` (the Structural Search plugin).
+     * VCS support, which holds the batch code analysis), `ssr` (the Structural Search plugin), `spring` (the Spring
+     * plugin with IntelliJ IDEA's paid features).
      */
-    private val gatewaySegments = setOf("psi", "ide", "java", "externalsystem", "maven", "smrunner", "vcs", "ssr")
+    private val gatewaySegments =
+        setOf("psi", "ide", "java", "externalsystem", "maven", "smrunner", "vcs", "ssr", "spring")
 
     /** Gateway segments that need an optional plugin; the neutral `ide` gateways must not depend on them. */
-    private val optionalSegments = listOf("java", "externalsystem", "maven", "smrunner", "vcs", "ssr")
+    private val optionalSegments = listOf("java", "externalsystem", "maven", "smrunner", "vcs", "ssr", "spring")
 
     /** APIs of the optional Java plugin; using them outside a `java` package breaks the plugin in non-Java IDEs. */
     private val javaPluginApis = listOf(
@@ -161,10 +164,15 @@ class LayeringTest {
         filesIn("common").filterNot { it.isGateway() }.assertFalse { it.importsAny(listOf("com.intellij")) }
     }
 
+    /**
+     * The Spring plugin depends on the Java plugin, so its gateway (`spring`) may use Java APIs too: it is loaded only
+     * where both are.
+     */
     @Test
-    fun `Java plugin APIs are used only in java packages`() {
-        production.files.filterNot { file -> file.packagee?.name.orEmpty().split('.').contains("java") }
-            .assertFalse { it.importsAny(javaPluginApis) }
+    fun `Java plugin APIs are used only in java and spring packages`() {
+        production.files.filterNot { file ->
+            file.packagee?.name.orEmpty().split('.').let { "java" in it || "spring" in it }
+        }.assertFalse { it.importsAny(javaPluginApis) }
     }
 
     @Test

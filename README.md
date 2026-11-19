@@ -5,8 +5,8 @@
 [![Version](https://img.shields.io/jetbrains/plugin/v/36214.svg)](https://plugins.jetbrains.com/plugin/36214)
 [![Downloads](https://img.shields.io/jetbrains/plugin/d/36214.svg)](https://plugins.jetbrains.com/plugin/36214)
 
-MCP Companion is an IntelliJ Platform plugin that adds code navigation, structural search, refactoring (move class,
-change signature, pull members up, extract method, safe delete), quick fix, run configuration control, module,
+MCP Companion is an IntelliJ Platform plugin that adds code navigation, structural search, Spring beans, refactoring
+(move class, change signature, pull members up, extract method, safe delete), quick fix, run configuration control, module,
 diagnostics, build, file outline and history tools for AI agents to the MCP Server that is bundled with JetBrains IDEs. It complements the bundled server: it never duplicates a built-in tool, and each of its
 tools steps aside by itself when the IDE ships an official tool with the same capability.
 
@@ -18,7 +18,8 @@ tools steps aside by itself when the IDE ships an official tool with the same ca
   facts, `mc_build`, `mc_move`, `mc_change_signature`, `mc_pull_up`, `mc_extract_method`, Java's "Import class" in
   `mc_quick_fix`), Gradle and other external systems, Maven, the test runner
   (`mc_run tests`), the platform's VCS support (`mc_diagnostics`, whose batch analysis lives there, and
-  `mc_vcs_history`) and Structural Search (`mc_structural_search`).
+  `mc_vcs_history`), Structural Search (`mc_structural_search`) and Spring (`mc_spring_beans`: IntelliJ IDEA with
+  the Spring plugin and its paid features, i.e. a subscription; without them the tool is not there).
 
 Only the latest major IDE version is supported (`since-build` 263, no `until-build`). When a new major version needs
 changes, a new plugin version raises `since-build`; IDEs of earlier versions keep the last plugin version that supports
@@ -68,6 +69,7 @@ All names start with `mc_`. Each tool is its own toolset, so an official replace
 | `mc_file_structure` | Read-only. The outline of one file from the IDE's Structure view, without reading or opening it: classes, methods, constructors, fields, nested types (and XML tags, JSON keys, Markdown headers, ... in other languages; library classes too), each with a tree id, depth, name, kind, signature, modifiers (JVM languages) and lines; `maxDepth`, `kinds`, paging. |
 | `mc_local_history` | The IDE's Local History through its public API: `label` puts a named label before a risky change, `labels` lists the labels the tool put, `diff` and `preview` compare a file or directory with its state at a label or a time (unified diffs), `revert` restores a file (one undoable command) or reverts a directory to a label (the IDE's own revert). The history's list of change sets is internal to the platform and not offered. |
 | `mc_structural_search` | Read-only. The IDE's Structural Search without its dialog: `search` finds code by its syntax tree from a template with `$Name$` variables (e.g. `$Instance$.equals($Arg$)`) in the language of `fileType` (Java by default; Kotlin, XML, ... as installed), with constraints per variable (text regex, expression type, count, target); or runs a built-in or saved template by name. Each match with path, line, column, end line, line text, enclosing declaration, text and the variables' values; `scope` project, module, directory or file; paged in a stable order. `templates` lists the IDE's templates. The IDE's compile message for a bad template. No replace. |
+| `mc_spring_beans` | Read-only. The IDE's Spring model (needs IntelliJ IDEA with the Spring plugin, a paid feature): `list` the beans of a module or the project (name, aliases, type, kind: component, `@Bean` method, XML or other, scope, profiles, primary, place of definition), filtered by name part or regex and by type with subtypes, only project beans unless `includeLibraries`; paged by name. `dependencies` of one bean (by name, class or place): its injection points (fields, setters, methods, constructor and `@Bean` method parameters) with the injected bean, or `ambiguous` with the candidates, or `none`, and the project's beans it is injected into. `status` says `indexing` or `no_spring_model` instead of an empty list. HTTP endpoints are the official `spring_web_endpoints` and related tools. |
 | `mc_vcs_history` | Read-only, through the IDE's VCS integration (Git and others): `log` of a file or directory (or the commits that last changed some lines), `blame` as line segments with their commits, `diff` of one file between revisions or against the working copy; bounded and paged. |
 
 Symbols are given by path, line and column or by fully qualified name (`com.example.Foo#member`). Paths in results use
@@ -84,7 +86,7 @@ left to `get_project_modules` and `get_project_dependencies`.
 ## Guide for AI agents
 
 Tool descriptions explain one tool at a time; the plugin cannot tell an MCP client how the tools fit together. The
-optional agent guide does that in about 40 lines of English, written for the agent: when to prefer the IDE's tools over
+optional agent guide does that in about 50 lines of English, written for the agent: when to prefer the IDE's tools over
 shell commands, the check loop after edits (`mc_diagnostics` and `mc_quick_fix`, then `mc_build`, `mc_run hotswap`
 or `restart`, `mc_run start_at` and `tests`), `mc_sync` after build file changes, paging and timeouts, consent and project boundaries. Nothing needs
 it; it only helps an agent choose. Three ways to get it:
@@ -175,10 +177,15 @@ A summary; details in the `docs/notes-*.md` files named in brackets.
   External annotators are not run. Messages and fix names come in the IDE's language (`notes-step9`).
 - `mc_structural_search` reports the match as the IDE finds it (a declaration template matches the whole
   declaration); texts are cut at 400 characters, variables at 20 values of 200 characters; at most 10000 matches
-  per search; template names are in the IDE's language; compiled library classes without sources gave no matches.
-  Spring and HTTP Client tools were examined and not built: both need the IDE's paid Ultimate features, which a
-  development sandbox without a subscription does not load, and the Spring endpoint list is already an official
-  tool there (`notes-step11`).
+  per search; template names are in the IDE's language; compiled library classes without sources gave no matches
+  (`notes-step11`).
+- `mc_spring_beans` reads annotated injection points with the IDE's own candidates; constructor and `@Bean` method
+  parameters get the beans of their type, decided by Spring's rules (qualifier, fallback, primary, name) as far as
+  this tool follows them. Injections written in XML (`<property ref>`, `<constructor-arg>`, `autowire`) are not
+  read, and `injectedInto` searches at most 2000 project beans. Spring web endpoints are left to the official tools.
+  The HTTP Client was examined again with a licence: `mc_run start_at` runs a request of an `.http` file, but the
+  response goes to the IDE's own console, not to `mc_run output`, so no HTTP Client tool was built
+  (`notes-step13`).
 - Tested on Linux only (IntelliJ IDEA 2026.3); not run on Windows or macOS, and not in other IntelliJ-based IDEs.
 
 ## Development
@@ -216,7 +223,9 @@ copy of a fixture project under `build/` open. Options:
   (`kotlinfix`, with the Kotlin standard library of the sandbox IDE), for `mc_quick_fix` the module `quickfix`, and
   for `mc_structural_search` `src/search/Accounts.java` (equals calls, an empty catch block, println calls), for
   `mc_pull_up` `src/hier` and `src/garage` (a class hierarchy used from Java and Kotlin), for `mc_extract_method`
-  `src/extract/Invoice.java`. Its JDK is the sandbox IDE's own runtime, defined in the sandbox's JDK table; JUnit 4 is copied from the
+  `src/extract/Invoice.java`, for `mc_spring_beans` the module `springbeans` (a small Spring Boot application with
+  an XML context; Gradle resolves the Spring jars into its `lib/spring`, and it needs the optional sandbox licence
+  above). Its JDK is the sandbox IDE's own runtime, defined in the sandbox's JDK table; JUnit 4 is copied from the
   sandbox IDE. `-PmcpE2eVcs=git` makes the copy a Git repository with three commits of `src/history/Ledger.java` by
   the fictitious "Test Author" (for `mc_vcs_history`); the user's Git configuration is not read.
 - `-PmcpE2eFixture=gradle`: `src/mcpE2eFixtureGradle` (root, `app`, `lib` with JUnit tests, and the included build

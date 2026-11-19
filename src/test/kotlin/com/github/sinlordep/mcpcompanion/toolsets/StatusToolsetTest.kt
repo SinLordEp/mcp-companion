@@ -58,6 +58,7 @@ class StatusToolsetTest : BasePlatformTestCase() {
                 "quick_fix",
                 "file_structure",
                 "local_history",
+                "spring_beans",
                 "structural_search",
                 "vcs_history",
             ),

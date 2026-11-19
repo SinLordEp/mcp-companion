@@ -67,6 +67,7 @@ class McpCompanionConfigurableTest : BasePlatformTestCase() {
                 "Quick Fix",
                 "File Structure",
                 "Local History",
+                "Spring Beans",
                 "Structural Search",
                 "VCS History",
             ),

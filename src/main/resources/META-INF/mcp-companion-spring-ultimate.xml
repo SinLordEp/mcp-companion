@@ -1,0 +1,7 @@
+<!-- Loaded only when both the Spring plugin and IntelliJ IDEA's paid features are present: the content module
+     intellij.spring (SpringManager, the bean model, SpringAutowireUtils) behind mc_spring_beans. -->
+<idea-plugin>
+    <extensions defaultExtensionNs="com.intellij.mcpServer">
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.springbeans.SpringBeansToolset"/>
+    </extensions>
+</idea-plugin>

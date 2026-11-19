@@ -1,6 +1,6 @@
 ---
 name: mcp-companion
-description: Use when working in a project that is open in a JetBrains IDE whose MCP server exposes tools named mc_ (the MCP Companion plugin), to find usages, implementations and type hierarchies, search code by its structure, check edits without a full build, build one module, run the application, tests or a single test method (with or without a run configuration), apply the IDE's quick fixes, sync Gradle or Maven after build file changes, move classes, change method signatures, pull members up, extract methods and delete declarations safely, outline large files, label and restore the Local History, and read commit history, blame and diffs.
+description: Use when working in a project that is open in a JetBrains IDE whose MCP server exposes tools named mc_ (the MCP Companion plugin), to find usages, implementations and type hierarchies, search code by its structure, check edits without a full build, build one module, run the application, tests or a single test method (with or without a run configuration), apply the IDE's quick fixes, sync Gradle or Maven after build file changes, move classes, change method signatures, pull members up, extract methods and delete declarations safely, outline large files, label and restore the Local History, read commit history, blame and diffs, and list Spring beans with their injections.
 ---
 
 # Working with the IDE's MCP tools (MCP Companion)
@@ -16,6 +16,7 @@ The JetBrains IDE that has this project open serves MCP tools whose names start 
 - Module names, content roots and dependencies: `mc_modules`.
 - Reading a large file: `mc_file_structure` first (classes, methods, fields with their lines, from the IDE's Structure view), then `read_file` only the lines you need instead of the whole file.
 - Where code came from and why: `mc_vcs_history` (`log` of a file or of some lines, `blame`, `diff` against a revision) instead of running the VCS in a shell.
+- Spring beans and their wiring (IntelliJ IDEA with the Spring plugin, a paid feature): `mc_spring_beans` instead of reading configuration classes by hand. `action=list` with `name`, `type` or `module`; `action=dependencies` with `bean` shows what a bean gets injected (`ambiguous` or `none` is what Spring would refuse at start) and which beans receive it. `status=no_spring_model` or `indexing` is not an empty result. HTTP endpoints: the official `spring_web_endpoints`.
 
 ## Before a large or risky change
 

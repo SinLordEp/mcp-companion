@@ -80,10 +80,12 @@ class RefactoringLayersTest {
         }
     }
 
+    /** The Spring gateway (`spring`) reads Java PSI too; the Spring plugin is loaded only where the Java plugin is. */
     @Test
-    fun `Java refactoring APIs are used only in java packages`() {
-        production.files.filterNot { file -> file.packagee?.name.orEmpty().split('.').contains("java") }
-            .assertFalse { it.importsAny(javaRefactoringApis) }
+    fun `Java refactoring APIs are used only in java and spring packages`() {
+        production.files.filterNot { file ->
+            file.packagee?.name.orEmpty().split('.').let { "java" in it || "spring" in it }
+        }.assertFalse { it.importsAny(javaRefactoringApis) }
     }
 
     @Test
