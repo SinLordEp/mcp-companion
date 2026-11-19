@@ -24,6 +24,15 @@
 - `mc_quick_fix`: the IDE's quick fixes for the problems of a file, without opening it. `list` gives each problem
   with its fixes and stable ids, and says which ones need the user (dialogs, templates, editor-only fixes);
   `apply` applies one as an undoable command and returns the changed files; an id from before an edit is refused.
+- `mc_file_structure`: the outline of one file from the IDE's Structure view, without opening it, for every language
+  that has one (Java, Kotlin, XML, JSON, YAML, Markdown, library classes, ...): each element with its tree id, depth,
+  name, kind, signature, modifiers (JVM languages) and lines; depth and kind filters, paging.
+- `mc_local_history`: labels in the IDE's Local History (`label`, `labels`), the changes of a file or directory since
+  a label or a point in time as unified diffs (`diff`, `preview`), and `revert`: a file gets its content back as one
+  undoable command, a directory is reverted to a label by the IDE's own revert.
+- `mc_vcs_history`: through the IDE's VCS integration, read only: `log` of a file or directory (or the commits that
+  last changed some lines), `blame` as line segments with their commits, `diff` of one file between two revisions or
+  against the working copy, with size limits and paging.
 
 ### Changed
 

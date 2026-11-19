@@ -1,6 +1,6 @@
 ---
 name: mcp-companion
-description: Use when working in a project that is open in a JetBrains IDE whose MCP server exposes tools named mc_ (the MCP Companion plugin), to find usages, implementations and type hierarchies, check edits without a full build, build one module, run the application, tests or a single test method (with or without a run configuration), apply the IDE's quick fixes, sync Gradle or Maven after build file changes, move classes, change method signatures and delete declarations safely.
+description: Use when working in a project that is open in a JetBrains IDE whose MCP server exposes tools named mc_ (the MCP Companion plugin), to find usages, implementations and type hierarchies, check edits without a full build, build one module, run the application, tests or a single test method (with or without a run configuration), apply the IDE's quick fixes, sync Gradle or Maven after build file changes, move classes, change method signatures and delete declarations safely, outline large files, label and restore the Local History, and read commit history, blame and diffs.
 ---
 
 # Working with the IDE's MCP tools (MCP Companion)
@@ -14,6 +14,12 @@ The JetBrains IDE that has this project open serves MCP tools whose names start 
 - Compiling: `mc_build` for one module instead of building everything; `build_project` only when the whole project must build.
 - Running the application or tests: `mc_run` instead of a shell command: `start` for an existing run configuration, `start_at` for a test method, test class, test directory or main function without one (like the IDE's Run gutter icon; it may create a temporary run configuration, never a saved one).
 - Module names, content roots and dependencies: `mc_modules`.
+- Reading a large file: `mc_file_structure` first (classes, methods, fields with their lines, from the IDE's Structure view), then `read_file` only the lines you need instead of the whole file.
+- Where code came from and why: `mc_vcs_history` (`log` of a file or of some lines, `blame`, `diff` against a revision) instead of running the VCS in a shell.
+
+## Before a large or risky change
+
+Put a Local History label: `mc_local_history action=label name="before ..."`. If the change goes wrong, `action=diff` (or `preview`) with `path` and `label` shows what changed since, and `action=revert` restores it (a file: its content then; a directory: everything under it), as one undoable command. Without a label, `time` names the state at a point in time (files only for `revert`). The Local History also covers changes that were never committed.
 
 ## After editing code
 

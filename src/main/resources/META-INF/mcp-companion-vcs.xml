@@ -1,7 +1,11 @@
 <!-- Loaded only when the platform's VCS support is present (optional dependency in plugin.xml): its content module
-     intellij.platform.vcs.impl holds CodeSmellDetector, which mc_diagnostics uses to analyse files without an editor. -->
+     intellij.platform.vcs.impl holds CodeSmellDetector, which mc_diagnostics uses to analyse files without an editor,
+     and the VCS abstraction (history, annotation and diff providers) behind mc_vcs_history. -->
 <idea-plugin>
     <extensions defaultExtensionNs="com.github.sinlordep.mcpcompanion">
         <fileAnalyzer implementation="com.github.sinlordep.mcpcompanion.diagnostics.vcs.CodeSmellFileAnalyzerProvider"/>
+    </extensions>
+    <extensions defaultExtensionNs="com.intellij.mcpServer">
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.vcshistory.VcsHistoryToolset"/>
     </extensions>
 </idea-plugin>

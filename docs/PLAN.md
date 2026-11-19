@@ -93,6 +93,9 @@
 | `mc_sync` | `status`、`sync` | 重新导入 Gradle（及其他 external system）和 Maven 项目，等待并返回结果；同一项目不会同时跑两次同步；Maven 只能整体同步 | `ExternalSystemUtil.refreshProject`、`MavenProjectsManager`、`MavenSyncListener` |
 | `mc_diagnostics` | — | 只读。不构建就列出一个模块（可加上它依赖的或依赖它的模块）、一个目录或一组文件的问题：IDE 编辑器里看到的分析（语言自身的错误检查和项目启用的检查），文件不必打开；默认只列错误，可加警告；按文件分组，带行列号，按严重程度和模块汇总；每次最多分析 500 个文件，有时间上限，超时如实返回 `partial` 和继续的位置；等导入和索引完成后再分析。看不到只有真正编译才发现的问题（编译器限制、注解处理器、构建时生成的代码、构建脚本） | `CodeSmellDetector`（平台 VCS 模块，可选依赖）、`ProblemHighlightFilter`、`Observation.awaitConfiguration` |
 | `mc_quick_fix` | `list`、`apply` | 一个项目文件里 IDE 报的问题及其快速修复（Alt+Enter 针对该问题的修复），不打开文件；每个修复有在同一文件内容下可复现的 id，标明能否自动应用或需要用户的原因；`apply` 只应用一个修复，作为一个可撤销的全局命令，返回改动的文件；文件改过后旧 id 返回 `CONFLICT`。只自动应用 `ModCommand` 形式的修复（先算出改动再执行，能识别选择、模板、对话框）；老式只能在编辑器里执行的修复列出但拒绝（`UNSUPPORTED`）。没有一键全部修复 | `MainPassesRunner`、`HighlightInfo.findRegisteredQuickFix`、`ModCommandAction.perform`、`ModCommandExecutor.executeInBatch`、`ImportClassFix`（Java） |
+| `mc_file_structure` | — | 只读。文件的大纲（IDE 结构视图）：类、方法、字段、构造器、嵌套类型（其他语言为 XML 标签、JSON 键、Markdown 标题等），每项带树形 id、深度、名称、种类、签名、修饰（JVM 语言）和行号；可限深度、按种类过滤、分页；不打开编辑器 | `LanguageStructureViewBuilder`、`TreeBasedStructureViewBuilder.createStructureViewModel(null)`、UAST |
+| `mc_local_history` | `label`、`labels`、`diff`、`preview`、`revert` | IDE 本地历史，只用公开接口：打标签、列出本工具打的标签、文件或目录与标签或时间点的差异、恢复（文件为一个可撤销命令，目录用 IDE 自己的恢复到标签）。修订列表在平台内部实现里，不提供 | `LocalHistory.putSystemLabel`、`isLabelValid`、`getByteContent`、`revertToLabel`、`Label.getByteContent` |
+| `mc_vcs_history` | `log`、`blame`、`diff` | 只读。经 IDE 的 VCS 抽象：文件或目录的提交历史（或某些行最后一次修改的提交）、逐行追溯、单个文件两个修订之间或对工作区的差异；有上限和分页 | `VcsHistoryProvider.reportAppendableHistory`、`AnnotationProvider.annotate`、`VcsFileRevision.loadContent` |
 | `mc_build` | `build`、`status` | 只构建一个模块及其依赖（可加上依赖它的模块），走 IDE 自己的构建路径，委托给 Gradle、Maven 的项目同样适用；返回结果、包含的模块、耗时、带文件和行列号的错误（JPS 来自编译器消息，Gradle/Maven 来自构建工具控制台输出的解析）；超时后构建继续，`status` 查看结果；同一项目同时只允许一次构建，第二个请求被拒绝；不受信任的项目拒绝；不弹对话框，调试会话不会被问"是否重新加载类" | `ProjectTaskManager.createModulesBuildTask`、`CompilerTopics`、`ExecutionManager.EXECUTION_TOPIC`、`HotSwapUI` 否决监听 |
 
 符号定位方式：统一接受"文件路径 + 行号 + 列号"或"全限定名"两种。
@@ -119,6 +122,9 @@ src/main/kotlin/com/github/sinlordep/mcpcompanion/
   diagnostics/     不构建的代码问题（mc_diagnostics）
   build/           按模块构建（mc_build）
   quickfix/        快速修复（mc_quick_fix）
+  structure/       文件大纲（mc_file_structure）
+  localhistory/    本地历史（mc_local_history）
+  vcshistory/      VCS 历史、追溯、差异（mc_vcs_history）
   yield/           官方工具对照表和检测
   settings/        设置状态和设置页
   common/          符号定位、分页、结果模型、错误模型；共用的模块图（modulegraph）、构建网关（build）、重构执行（refactoring）、可撤销的改动命令（edits）和无编辑器分析时暂停外部注解器（analysis）
@@ -206,6 +212,7 @@ MCP 适配层 (toolsets/)        只做参数解析、调用用例、把结果�
 | 7（已完成，待审查） | `mc_diagnostics`、`mc_build`、`mc_modules graph` 的 Mermaid 输出（替代 idea-mcp-ext 的 `get_aggregated_diagnostics` 和 `build_module_with_dependencies`），版本 0.2.0 | 第 0 步核实：官方 `build_project` 不能按模块构建，读取委托构建位置的 Build 窗口监听接口是 `@ApiStatus.Experimental`；官方 `lint_files` 用的是 `impl` 包。改用公开的 `CodeSmellDetector` 和构建工具控制台输出。构建代码（原 `run/java/ProjectBuild`）和模块图移到 `common/build`、`common/modulegraph`，热替换也因此能给出委托构建的错误位置。JPS、Gradle（多项目加 included build，另生成 20 个子项目测耗时）、Maven（IDE 构建和委托 Maven 构建）三个 fixture 实测，细节和限制见 `docs/notes-step7.md` |
 | 8（已完成，待审查） | `mc_move`、`mc_change_signature`：走 IDE 真重构的移动类和修改签名，版本 0.3.0 | 第 0 步核实：官方 263 只有 `rename_refactoring`；Java 用公开的 `JavaRefactoringFactory`、`Refactoring.findUsages/doRefactoring`、`MoveClassesOrPackagesProcessor.detectConflicts`、`ChangeSignatureProcessorBase.findUsages`、各语言 `ChangeSignatureUsageProcessor.findConflicts`、`BaseRefactoringProcessor.executeEx`，不走会弹窗的 `run()`/`preprocessUsages`，冲突在执行前返回；Kotlin 的 K2 重构处理器在 `visibility="internal"` 的内容模块里，所以 Kotlin 声明返回 `UNSUPPORTED`，Kotlin 里对 Java 声明的引用照常更新。公共的预览/应用/冲突/改动文件记录放在 `common/refactoring`，两个工具只提供各自的网关和语言扩展点（`classMove`、`signatureChange`）。Verifier 无新增警告；沙箱实测见 `docs/notes-step8.md` |
 | 9（已完成，待审查） | `mc_run start_at`（不需要运行配置，按代码位置运行或调试）、`mc_quick_fix`（列出并应用 IDE 的快速修复），版本仍为 0.3.0 | 第 0 步核实：官方 `execute_run_configuration`、`xdebug_start_debugger_session` 能按 `filePath`+`line` 建临时配置运行，但不返回句柄，不能等待、读测试结果、停止，不接受目录或全限定名，因此 `start_at` 不重复；官方 `get_file_problems`、`lint_files` 只报问题不带修复，没有应用修复的工具。运行用公开的 `ConfigurationContext(PsiElement).getConfigurationsFromContext()`，跳过会弹窗的 `onFirstRun` 和选择弹窗；快速修复用 `MainPassesRunner`（`impl` 包、未标注）得到带修复的 `HighlightInfo`，只执行 `ModCommand` 形式的修复。JPS、Gradle（委托测试）、Maven（IDE 运行与委托 Maven）沙箱实测，中英文确认对话框和设置页截图。共用的可撤销命令下沉到 `common/edits`，外部注解器暂停下沉到 `common/analysis`。细节和限制见 `docs/notes-step9.md` |
+| 10（已完成，待审查） | `mc_file_structure`（文件大纲）、`mc_local_history`（本地历史标签、差异、恢复）、`mc_vcs_history`（提交历史、追溯、差异）；修复 `mc_run stop` 对忽略 SIGINT 的进程（宽限期后强杀）和构建内存（`org.gradle.jvmargs`），版本仍为 0.3.0 | 第 0 步核实：官方 263 没有文件大纲、本地历史或提交历史/追溯/差异工具（只有 `get_symbol_info`、`search_symbol`、`generate_psi_tree`、`git_status`、`get_repositories` 和变更列表工具）。大纲用公开的结构视图模型，语言无关，JVM 的种类和修饰走 UAST 扩展点；本地历史只用公开的 `LocalHistory`/`Label`：修订列表在可选产品模块 `intellij.platform.lvcs.impl` 里（入口 `LocalHistoryImpl` 为 `@Internal`，不在插件类路径上），所以不做；VCS 用平台 VCS 抽象，不用 `DiffProvider.createFileContent`（Git 的实现对未知修订弹模态错误框）。差异渲染共用 `common/diff`，后台可取消执行共用 `common/progress`。沙箱实测（临时 Git 仓库副本、虚构作者）、中英文设置页和撤销提示截图。细节和限制见 `docs/notes-step10.md` |
 
 每一步一个分支、一个 PR。
 

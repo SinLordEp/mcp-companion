@@ -16,7 +16,8 @@ tools steps aside by itself when the IDE ships an official tool with the same ca
 - The bundled *MCP Server* plugin, enabled. MCP clients connect to the IDE through it.
 - Optional parts load only where the IDE has them: Java (type hierarchy, super declarations, hot swap, JVM module
   facts, `mc_build`, `mc_move`, `mc_change_signature`, Java's "Import class" in `mc_quick_fix`), Gradle and other external systems, Maven, the test runner
-  (`mc_run tests`) and the platform's VCS support (`mc_diagnostics`, whose batch analysis lives there).
+  (`mc_run tests`) and the platform's VCS support (`mc_diagnostics`, whose batch analysis lives there, and
+  `mc_vcs_history`).
 
 Only the latest major IDE version is supported (`since-build` 263, no `until-build`). When a new major version needs
 changes, a new plugin version raises `since-build`; IDEs of earlier versions keep the last plugin version that supports
@@ -61,6 +62,9 @@ All names start with `mc_`. Each tool is its own toolset, so an official replace
 | `mc_diagnostics` | Read-only. Problems without building: the analysis an editor shows (the language's error checks and the project's enabled inspections), run on files that need not be open. Scope: one `module` (with `include=dependencies` or `dependents`), a `directory` or `files`; `minSeverity` error (default) or warning. Grouped by file with line and column; totals per severity and per module; `limit` files per call (default 100, max 500) from `offset`, `timeoutSeconds`; `partial` and `nextOffset` say where to continue. |
 | `mc_quick_fix` | The IDE's quick fixes (Alt+Enter) for the problems of one project file, without opening it: `list` (default) the problems (optionally of some lines) with their fixes, each with an id, marked applicable or with the reason it needs the user; `apply` one fix by id as one undoable command and return the changed files. Ids belong to the file's current content: after any edit, `apply` answers `CONFLICT` and you list again. Fixes that open a dialog, a popup or a template, create files or work only in an editor are refused (`UNSUPPORTED`). No fix-all. |
 | `mc_build` | `build` one module with the modules it depends on (`includeDependents`: also the modules that depend on it), through the IDE's build path, so Gradle and Maven delegation applies; returns the outcome, the modules included, the duration and the errors (and with `includeWarnings` the warnings) with file, line and column; after `timeoutSeconds` the build goes on and `status` reports it. One build at a time; refused in an untrusted project. |
+| `mc_file_structure` | Read-only. The outline of one file from the IDE's Structure view, without reading or opening it: classes, methods, constructors, fields, nested types (and XML tags, JSON keys, Markdown headers, ... in other languages; library classes too), each with a tree id, depth, name, kind, signature, modifiers (JVM languages) and lines; `maxDepth`, `kinds`, paging. |
+| `mc_local_history` | The IDE's Local History through its public API: `label` puts a named label before a risky change, `labels` lists the labels the tool put, `diff` and `preview` compare a file or directory with its state at a label or a time (unified diffs), `revert` restores a file (one undoable command) or reverts a directory to a label (the IDE's own revert). The history's list of change sets is internal to the platform and not offered. |
+| `mc_vcs_history` | Read-only, through the IDE's VCS integration (Git and others): `log` of a file or directory (or the commits that last changed some lines), `blame` as line segments with their commits, `diff` of one file between revisions or against the working copy; bounded and paged. |
 
 Symbols are given by path, line and column or by fully qualified name (`com.example.Foo#member`). Paths in results use
 the form of the bundled server's own tools (relative to the project directory, `..` for content roots outside it,
@@ -188,7 +192,8 @@ copy of a fixture project under `build/` open. Options:
   `mc_run`), JUnit configurations `AllTests`, `SlowTest`, `BadJvmTest`, and modules `cyclea`/`cycleb` that depend on
   each other; for `start_at` an abstract test class and a test class with a `main` (`testfix`), a Kotlin `main`
   (`kotlinfix`, with the Kotlin standard library of the sandbox IDE), and for `mc_quick_fix` the module `quickfix`. Its JDK is the sandbox IDE's own runtime, defined in the sandbox's JDK table; JUnit 4 is copied from the
-  sandbox IDE.
+  sandbox IDE. `-PmcpE2eVcs=git` makes the copy a Git repository with three commits of `src/history/Ledger.java` by
+  the fictitious "Test Author" (for `mc_vcs_history`); the user's Git configuration is not read.
 - `-PmcpE2eFixture=gradle`: `src/mcpE2eFixtureGradle` (root, `app`, `lib` with JUnit tests, and the included build
   `src/mcpE2eFixtureGradleSibling`), built with an already unpacked local Gradle (`-PmcpE2eGradleHome=<dir>`, by
   default the newest under the build's Gradle user home), passed to the sandbox as the Gradle plugin's defaults and

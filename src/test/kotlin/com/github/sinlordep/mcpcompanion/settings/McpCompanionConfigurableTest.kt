@@ -63,6 +63,9 @@ class McpCompanionConfigurableTest : BasePlatformTestCase() {
                 "Diagnostics",
                 "Module Build",
                 "Quick Fix",
+                "File Structure",
+                "Local History",
+                "VCS History",
             ),
             (0 until table.rowCount).map { table.getValueAt(it, 0) },
         )

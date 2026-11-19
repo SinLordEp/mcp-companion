@@ -18,6 +18,7 @@
         <codeRunGuard implementation="com.github.sinlordep.mcpcompanion.run.java.JvmAbstractTestGuard"/>
         <deferredFixes implementation="com.github.sinlordep.mcpcompanion.quickfix.java.JavaDeferredFixes"/>
         <moduleFacts implementation="com.github.sinlordep.mcpcompanion.modules.java.JvmModuleFacts"/>
+        <declarationFacts implementation="com.github.sinlordep.mcpcompanion.structure.java.JvmDeclarationFacts"/>
         <moduleBuilder implementation="com.github.sinlordep.mcpcompanion.build.java.JvmModuleBuilderProvider"/>
     </extensions>
 </idea-plugin>

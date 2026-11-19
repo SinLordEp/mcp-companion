@@ -1,20 +1,15 @@
 package com.github.sinlordep.mcpcompanion.quickfix.psi
 
 import com.github.sinlordep.mcpcompanion.common.analysis.ide.ExternalAnnotatorPause
+import com.github.sinlordep.mcpcompanion.common.progress.ide.runUnderIndicator
 import com.intellij.codeInsight.daemon.impl.HighlightInfo
 import com.intellij.codeInsight.daemon.impl.MainPassesRunner
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.application.EDT
-import com.intellij.openapi.progress.ProgressManager
-import com.intellij.openapi.progress.util.ProgressIndicatorBase
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.Computable
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.awaitCancellation
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
@@ -36,29 +31,10 @@ internal class FileHighlighting(private val project: Project) {
         return ExternalAnnotatorPause.getInstance().during(listOf(file)) { run(file) }
     }
 
-    private suspend fun run(file: VirtualFile): List<HighlightInfo> = coroutineScope {
-        val indicator = ProgressIndicatorBase()
-        val canceller = launch {
-            try {
-                awaitCancellation()
-            } finally {
-                indicator.cancel()
-            }
-        }
-        try {
-            withContext(Dispatchers.IO) {
-                ProgressManager.getInstance().runProcess(
-                    Computable {
-                        MainPassesRunner(project, TITLE, null)
-                            .runMainPasses(listOf(file), HighlightSeverity.WEAK_WARNING)
-                            .values.flatten()
-                    },
-                    indicator,
-                )
-            }
-        } finally {
-            canceller.cancel()
-        }
+    private suspend fun run(file: VirtualFile): List<HighlightInfo> = runUnderIndicator {
+        MainPassesRunner(project, TITLE, null)
+            .runMainPasses(listOf(file), HighlightSeverity.WEAK_WARNING)
+            .values.flatten()
     }
 
     private companion object {

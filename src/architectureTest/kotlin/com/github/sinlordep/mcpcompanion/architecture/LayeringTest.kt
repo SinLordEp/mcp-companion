@@ -29,6 +29,9 @@ class LayeringTest {
         "build",
         "diagnostics",
         "quickfix",
+        "structure",
+        "localhistory",
+        "vcshistory",
     )
 
     /**

@@ -36,6 +36,10 @@ abstract class PrepareMcpE2eSandbox : DefaultTask() {
     @get:Input
     abstract val mavenDelegatedBuild: Property<Boolean>
 
+    /** JPS fixture: whether its copy becomes a Git repository with a few commits (`-PmcpE2eVcs=git`). */
+    @get:Input
+    abstract val gitRepository: Property<Boolean>
+
     @get:Internal
     abstract val gradleUserHome: DirectoryProperty
 
@@ -74,7 +78,7 @@ abstract class PrepareMcpE2eSandbox : DefaultTask() {
         val junit = junitJars()
         prepareJpsFixture(layout, junit)
         when (McpE2eFixture.parse(fixture.get())) {
-            McpE2eFixture.JPS -> Unit
+            McpE2eFixture.JPS -> if (gitRepository.get()) GitFixture.initialise(layout.jpsFixture)
             McpE2eFixture.GRADLE -> prepareGradleFixture(layout, junit)
             McpE2eFixture.MAVEN -> prepareMavenFixture(layout)
         }

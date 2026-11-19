@@ -54,6 +54,9 @@ class StatusToolsetTest : BasePlatformTestCase() {
                 "diagnostics",
                 "build",
                 "quick_fix",
+                "file_structure",
+                "local_history",
+                "vcs_history",
             ),
             output.toolsets.map { it.id },
         )

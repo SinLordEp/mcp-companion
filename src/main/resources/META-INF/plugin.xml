@@ -7,8 +7,8 @@
     <!-- The one source of the description (the build does not take it from README.md). Marketplace shows the first
          sentence on the plugin card: keep it a plain English summary. The change notes come from CHANGELOG.md. -->
     <description><![CDATA[
-<p>Adds code navigation, refactoring, quick fix, run control, module, diagnostics and build tools for AI agents to the
-IDE's built-in MCP Server.</p>
+<p>Adds code navigation, refactoring, quick fix, run control, module, diagnostics, build, file outline and history
+tools for AI agents to the IDE's built-in MCP Server.</p>
 
 <p>MCP Companion complements the bundled <i>MCP Server</i> plugin, which must be enabled. Its tools appear next to the
 built-in ones for every MCP client connected to the IDE, and their names start with <code>mc_</code>. It does not
@@ -43,6 +43,12 @@ tool steps aside by itself (checked at IDE start and when plugins are installed,
   <li><code>mc_quick_fix</code>: list the IDE's quick fixes for the problems of a file (add an import, add throws,
     make a class abstract, ...) and apply one as an undoable command, without opening the file; fixes that would
     ask for input are refused.</li>
+  <li><code>mc_file_structure</code>: the outline of a file from the IDE's Structure view (classes, methods, fields,
+    nested types with their lines), so that an agent reads only the part of a large file it needs.</li>
+  <li><code>mc_local_history</code>: put a label in the IDE's Local History before a risky change, compare a file or
+    directory with a label or a point in time, and revert to it as an undoable command.</li>
+  <li><code>mc_vcs_history</code>: commit history of a file or of some of its lines, blame, and diffs between
+    revisions or against the working copy, through the IDE's VCS integration.</li>
   <li><code>mc_sync</code>: re-import Gradle and Maven projects after build file changes and report the result.</li>
   <li><code>mc_status</code>: plugin version, IDE build and the state of each MCP Companion tool.</li>
 </ul>
@@ -57,7 +63,8 @@ tool steps aside by itself (checked at IDE start and when plugins are installed,
   <li><code>mc_safe_delete</code> refuses to delete a declaration that is still used or that lies outside the
     project.</li>
   <li><code>mc_move</code> and <code>mc_change_signature</code> refuse to change code while the IDE reports
-    conflicts; every change is one undoable command, as is each fix <code>mc_quick_fix</code> applies.</li>
+    conflicts; every change is one undoable command, as is each fix <code>mc_quick_fix</code> applies and each revert
+    of <code>mc_local_history</code>.</li>
   <li><code>mc_run</code>, <code>mc_sync</code> and <code>mc_build</code> refuse to run anything in a project that
     is not trusted.</li>
 </ul>
@@ -137,6 +144,9 @@ plugin version follows; IDEs of earlier major versions keep the last plugin vers
         <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.deferredFixes"
                         interface="com.github.sinlordep.mcpcompanion.quickfix.psi.DeferredFixProvider"
                         dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.declarationFacts"
+                        interface="com.github.sinlordep.mcpcompanion.structure.psi.DeclarationFactsProvider"
+                        dynamic="true"/>
         <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.signatureChange"
                         interface="com.github.sinlordep.mcpcompanion.changesignature.psi.SignatureChangeSupport"
                         dynamic="true"/>
@@ -177,5 +187,8 @@ plugin version follows; IDEs of earlier major versions keep the last plugin vers
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.diagnostics.DiagnosticsToolset"/>
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.build.BuildToolset"/>
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.quickfix.QuickFixToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.structure.FileStructureToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.localhistory.LocalHistoryToolset"/>
+        <!-- mc_vcs_history is registered in mcp-companion-vcs.xml: it needs the platform's VCS support. -->
     </extensions>
 </idea-plugin>
