@@ -52,12 +52,15 @@ interface ExecutionGateway {
     /** What the IDE's Stop does: ask [process] to end (or detach, for attached processes). */
     fun requestStop(process: TrackedProcess): StopRequest
 
-    /** Kills [process] at once; false when it cannot be killed. */
+    /**
+     * Kills [process] at once, as the IDE's Stop button does when pressed on a process that is already terminating;
+     * false when its handler cannot be killed.
+     */
     fun kill(process: TrackedProcess): Boolean
 }
 
-/** How a stop request was carried out. */
-enum class StopRequest { STOPPING, DETACHING, NOT_RUNNING }
+/** How a stop request was carried out: the graceful stop, a detach (attached processes), a kill (`force`). */
+enum class StopRequest { STOPPING, DETACHING, KILLING, NOT_RUNNING }
 
 /** Gateway boundary: reloading changed code into a running debug session (JVM HotSwap). */
 fun interface HotSwapGateway {

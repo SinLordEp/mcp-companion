@@ -52,6 +52,12 @@ class ScriptConfiguration(project: Project, factory: ConfigurationFactory) :
     var source: File? = null
     var arguments: List<String> = emptyList()
 
+    /**
+     * Unix only: the program starts with SIGINT ignored, as a process does whose parent ignores it (a JVM then installs
+     * no SIGINT handler), so the IDE's graceful stop does not end it.
+     */
+    var ignoresInterrupt: Boolean = false
+
     /** A runner gets no state and silently starts nothing, as `GenericProgramRunner` does for a null state. */
     var withoutState: Boolean = false
 
@@ -80,11 +86,16 @@ class ScriptConfiguration(project: Project, factory: ConfigurationFactory) :
         object : CommandLineState(environment) {
             override fun startProcess(): ProcessHandler {
                 val java = File(System.getProperty("java.home"), "bin/java").path
-                val commandLine = GeneralCommandLine(listOf(java, checkNotNull(source).path) + arguments)
+                val program = listOf(java, checkNotNull(source).path) + arguments
+                val command = if (ignoresInterrupt) listOf("/bin/sh", "-c", IGNORE_SIGINT, "sh") + program else program
+                val commandLine = GeneralCommandLine(command)
                 return KillableColoredProcessHandler(commandLine)
             }
         }
 }
+
+/** Ignores SIGINT, then replaces the shell with the program (same process id, the disposition is inherited). */
+private const val IGNORE_SIGINT = "trap '' INT; exec \"\$@\""
 
 /**
  * Registers [ScriptConfigurationType] and creates script configurations in [project]. A test that relies on the
@@ -109,6 +120,7 @@ class ScriptConfigurations(
         program: String,
         vararg arguments: String,
         parallel: Boolean = false,
+        ignoresInterrupt: Boolean = false,
     ): RunnerAndConfigurationSettings {
         val file = programFile(program)
         val settings = RunManager.getInstance(project).createConfiguration(name, type)
@@ -116,6 +128,7 @@ class ScriptConfigurations(
             source = file
             this.arguments = arguments.toList()
             isAllowRunningInParallel = parallel
+            this.ignoresInterrupt = ignoresInterrupt
         }
         RunManager.getInstance(project).addConfiguration(settings)
         return settings

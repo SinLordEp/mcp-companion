@@ -26,7 +26,7 @@ class StartProcess(private val configurations: ConfigurationResolver, private va
     }
 }
 
-/** `stop`: what the IDE's Stop does, waiting for the end; `force` kills a process that outlives the timeout. */
+/** `stop`: the graceful stop, then a kill after the grace period (`timeoutSeconds`); `force` kills at once. */
 class StopProcess(private val processes: ProcessResolver, private val lifecycle: ProcessLifecycle) :
     RunActionHandler {
 

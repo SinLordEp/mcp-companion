@@ -33,11 +33,35 @@ sealed interface RunOutcome {
         RunOutcome
 }
 
-/**
- * How a stop went. [terminated] is false when the process was still alive when the wait ended; [killed] when it was
- * killed after the graceful stop did not end it in time.
- */
-data class StopResult(val request: StopRequest, val terminated: Boolean, val killed: Boolean, val waitedMillis: Long)
+/** How a stop went: what was asked of the process, how it ended (or why it did not), and how long it took. */
+data class StopResult(val request: StopRequest, val outcome: StopOutcome, val waitedMillis: Long) {
+    val terminated: Boolean get() = outcome.ended
+    val killed: Boolean get() = outcome == StopOutcome.KILLED
+}
+
+/** How a stop ended. [ended] is true when the process is gone (or detached); [reason] says why it is not. */
+enum class StopOutcome(val ended: Boolean, val reason: String) {
+    /** The process ended within the grace period after the graceful stop. */
+    ENDED(true, "it ended after the graceful stop"),
+
+    /** It ignored the graceful stop within the grace period and was killed. */
+    KILLED(true, "it was killed"),
+
+    /** An attached process was detached; the process itself keeps running outside the IDE. */
+    DETACHED(true, "it was detached"),
+
+    /** It had ended before. */
+    NOT_RUNNING(true, "it was not running"),
+
+    /** It ignored the graceful stop, and its process handler cannot be killed. */
+    NOT_KILLABLE(false, "it ignored the graceful stop and its process cannot be killed from the IDE"),
+
+    /** It was killed but did not report its end in time. */
+    ALIVE_AFTER_KILL(false, "it did not end after it was killed"),
+
+    /** An attached process did not detach in time. */
+    STILL_ALIVE(false, "it did not detach in time"),
+}
 
 /** Which readiness condition ended `wait_ready`, with the matching line for output conditions. */
 data class Readiness(

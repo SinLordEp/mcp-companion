@@ -6,12 +6,9 @@ import com.github.sinlordep.mcpcompanion.common.result.ToolResult
 import com.github.sinlordep.mcpcompanion.common.result.flatMap
 import com.github.sinlordep.mcpcompanion.common.result.map
 import com.github.sinlordep.mcpcompanion.common.time.Clock
-import com.github.sinlordep.mcpcompanion.common.time.withTimeout
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 
 /**
  * Starting, stopping and restarting, shared by `start`, `stop`, `restart` and `hotswap`. Holds the rules where the IDE
@@ -30,6 +27,8 @@ class ProcessLifecycle(
     private val startLock: Mutex,
 ) {
 
+    private val stopper = ProcessStop(execution, clock)
+
     /**
      * Atomic per project: two concurrent starts of a configuration that does not allow parallel runs start one. The
      * question is asked under the lock, so concurrent launches are asked one after the other and a later one sees the
@@ -41,25 +40,10 @@ class ProcessLifecycle(
         origin: LaunchOrigin? = null,
     ): ToolResult<TrackedProcess> = launch(LaunchRequest(configuration, executor, LaunchPurpose.START, origin = origin))
 
-    /**
-     * What the IDE's Stop does, then waits up to [timeout] for the end; with [force], kills a process that is still
-     * alive then.
-     */
-    suspend fun stop(process: TrackedProcess, timeout: Duration, force: Boolean): ToolResult<StopResult> {
-        if (process.snapshot.state.hasEnded) {
-            return ToolResult.success(StopResult(StopRequest.NOT_RUNNING, true, false, 0))
-        }
+    /** See [ProcessStop.stop]. */
+    suspend fun stop(process: TrackedProcess, grace: Duration, force: Boolean): ToolResult<StopResult> {
         stillStarting(process)?.let { return it }
-        val began = clock.now()
-        val request = execution.requestStop(process)
-        var ended = awaitEnd(process, timeout)
-        var killed = false
-        if (!ended && force && execution.kill(process)) {
-            killed = true
-            ended = awaitEnd(process, KILL_WAIT)
-        }
-        val waited = clock.now().toEpochMilli() - began.toEpochMilli()
-        return ToolResult.success(StopResult(request, ended, killed, waited))
+        return ToolResult.success(stopper.stop(process, grace, force))
     }
 
     /**
@@ -68,7 +52,7 @@ class ProcessLifecycle(
      */
     suspend fun restart(
         process: TrackedProcess,
-        timeout: Duration,
+        grace: Duration,
         force: Boolean,
         purpose: LaunchPurpose = LaunchPurpose.RESTART,
     ): ToolResult<RunOutcome.Restarted> {
@@ -97,10 +81,10 @@ class ProcessLifecycle(
         stillStarting(process)?.let { return it }
         val request = LaunchRequest(configuration, snapshot.executor, purpose, stopsRunning = true)
         return startLock.withLock { permitted(request) }
-            .flatMap { stop(process, timeout, force) }
+            .flatMap { stop(process, grace, force) }
             .flatMap { stop ->
                 if (!stop.terminated) {
-                    stillRunning(process, timeout)
+                    stillRunning(process, stop)
                 } else {
                     launchPermitted(request).map { RunOutcome.Restarted(it.snapshot, process.snapshot, stop) }
                 }
@@ -147,16 +131,14 @@ class ProcessLifecycle(
         )
     }
 
-    private suspend fun awaitEnd(process: TrackedProcess, timeout: Duration): Boolean =
-        clock.withTimeout(timeout) { process.snapshots.first { it.state.hasEnded } } != null
-
-    private fun stillRunning(process: TrackedProcess, timeout: Duration): ToolResult<Nothing> = ToolResult.failure(
+    private fun stillRunning(process: TrackedProcess, stop: StopResult): ToolResult<Nothing> = ToolResult.failure(
         ErrorCode.CONFLICT,
-        "${process.id} did not end within ${timeout.inWholeSeconds} s after the stop request; nothing was started.",
-        "Retry with a longer timeoutSeconds, or with force=true to kill it.",
+        "${process.id} is still alive after ${stop.waitedMillis / MILLIS_PER_SECOND} s: ${stop.outcome.reason}. " +
+            "Nothing was started.",
+        "Stop it in the IDE or end it from outside, then retry.",
     )
 
     private companion object {
-        val KILL_WAIT: Duration = 5.seconds
+        const val MILLIS_PER_SECOND = 1000
     }
 }

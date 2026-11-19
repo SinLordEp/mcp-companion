@@ -32,6 +32,11 @@
 
 ### Fixed
 
+- `mc_run stop` and `restart`: a process that ignores the graceful stop (SIGINT; also a process that inherited the
+  ignored signal from its parent, e.g. an IDE started from a background job) is now killed after the grace period
+  (`timeoutSeconds`, default 10), as the IDE's Stop button does when pressed again; before, the stop waited and left
+  it running unless `force=true` was passed. `outcome` says whether the process ended after the graceful stop, was
+  killed, or why it is still alive (its handler cannot be killed). `force=true` now kills at once.
 - A tool steps aside only for tools that JetBrains ships (the IDE, its bundled plugins and plugins developed by
   JetBrains), no longer for a third-party plugin's tool that happens to have the same name.
 

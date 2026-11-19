@@ -94,8 +94,9 @@ class RunToolset : CompanionToolset {
             "temporary one is made (the IDE's rules: not shared, the oldest goes; temporary=true). Several " +
             "candidates: AMBIGUOUS lists them, pass type (and configuration with the name) to pick; nothing to run " +
             "there: NOT_FOUND; tests of an abstract class (the IDE would ask which subclass): UNSUPPORTED. Then like " +
-            "start. stop - process or configuration; like the IDE's Stop, waits for the exit; force kills after " +
-            "the timeout. restart - stop, then start with the same executor; returns the new handle. status - one " +
+            "start. stop - process or configuration; like the IDE's Stop: graceful stop, then a kill when it is " +
+            "still alive after timeoutSeconds; outcome says ended, killed, or why it is still alive; force kills " +
+            "at once. restart - stop, then start with the same executor; returns the new handle. status - one " +
             "process. output - captured console (ANSI removed, bounded): last lines, or the lines after since (poll " +
             "with nextCursor); pattern filters. wait_ready - until pattern (default: common server start " +
             "messages), failPattern, port, or the end of the process, at most timeoutSeconds; tells which " +
@@ -129,9 +130,10 @@ private object RunParameterTexts {
     const val PATTERN = "output: keep matching lines. wait_ready: ready pattern. Java regex, found anywhere in a line."
     const val FAIL_PATTERN = "wait_ready: a matching line ends the wait as failed."
     const val PORT = "wait_ready: ready when 127.0.0.1:port accepts a TCP connection."
-    const val TIMEOUT = "stop, restart: wait for the exit, default 10, max 120. wait_ready: default 60, max 300. " +
+    const val TIMEOUT = "stop, restart: grace period before a kill, default 10, max 120. " +
+        "wait_ready: default 60, max 300. " +
         "tests: wait for the end of the test run, default 0 (answer at once), max 300."
-    const val FORCE = "stop, restart: kill if still alive after timeoutSeconds."
+    const val FORCE = "stop, restart: kill at once, without the graceful stop."
     const val RESTART_ON_FAILURE = "hotswap: restart instead when the change cannot be reloaded (asks the user first)."
     const val FILTER = "tests: which tests to list: failed (default; assertions or exceptions), passed, ignored, all."
     const val LIMIT = "tests: page size, 1-1000, default 20."

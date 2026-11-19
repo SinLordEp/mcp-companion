@@ -9,6 +9,7 @@ import com.github.sinlordep.mcpcompanion.testing.launchConfirmation
 import com.intellij.execution.BeforeRunTaskProvider
 import com.intellij.execution.ExecutionListener
 import com.intellij.execution.ExecutionManager
+import com.intellij.execution.KillableProcess
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.runners.ExecutionEnvironment
@@ -45,7 +46,8 @@ class RunToolsetTest : BasePlatformTestCase() {
         try {
             val tracker = ProcessTracker.getInstance(project)
             runBlocking { tracker.processes() }.mapNotNull { tracker.handlerOf(it) }.forEach {
-                it.destroyProcess()
+                // A kill: a process that inherited an ignored SIGINT would survive destroyProcess.
+                if (it is KillableProcess && it.canKillProcess()) it.killProcess() else it.destroyProcess()
                 it.waitFor(WAIT_MILLIS)
             }
             scripts.removeAll()
