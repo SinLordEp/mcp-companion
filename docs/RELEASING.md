@@ -26,8 +26,9 @@ Sources (read 2026-11-17):
   version: `1.2.0` goes to the default (stable) channel, `1.2.0-beta.1` to `beta`.
 - `verifyPlugin` checks IntelliJ IDEA 2026.3 and, once JetBrains publishes one, the newest EAP of the next major
   version (none existed on 2026-11-17).
-- CI: `.github/workflows/build.yml` (build, `check`, `verifyPlugin`, release draft on `main`) and `release.yml`
-  (on a published GitHub release: patch the changelog, sign and publish, attach the ZIP, open a changelog PR).
+- CI: `.github/workflows/build.yml` (build, `check`, `verifyPlugin`) and `release.yml` (on a published GitHub
+  release: patch the changelog, sign and publish, attach the ZIP, open a changelog PR; needs the secrets of section 3
+  and is not used by the manual process of section 6).
 
 ## 1. Decisions and accounts (Owner)
 
@@ -116,11 +117,9 @@ plugin that already exists on Marketplace.
 6. Optional but recommended: Media screenshots on the plugin page (at least 1200 × 760, default IDE theme, no personal
    data).
 
-GitHub release for 0.1.0: the Build workflow on `main` creates a draft release `0.1.0`. Publishing that draft starts
-the Release workflow, whose `publishPlugin` would upload `0.1.0` a second time, which Marketplace refuses ("won't
-accept multiple artifacts with the same version"). For 0.1.0 either publish the GitHub release and expect that step to
-fail (the ZIP upload to the release and the changelog PR then do not run either), or skip the GitHub release, run
-`./gradlew patchChangelog` locally and commit the patched `CHANGELOG.md`. From 0.1.1 on, use the workflow (section 6).
+No GitHub release for a version that is already on Marketplace: publishing one starts the Release workflow, whose
+`publishPlugin` would upload the version a second time, which Marketplace refuses ("won't accept multiple artifacts
+with the same version").
 
 ## 5. After the first upload (fill in)
 
@@ -140,10 +139,19 @@ fail (the ZIP upload to the release and the changelog PR then do not run either)
    Fixed, Removed, Deprecated, Security).
 2. Raise `version` in `gradle.properties` (Marketplace never accepts the same version twice). A pre-release such as
    `0.2.0-beta.1` goes to the `beta` channel.
-3. Merge to `main`. The Build workflow builds, tests, verifies and replaces the draft GitHub release.
-4. Review the draft (tag = version, notes = `[Unreleased]`) and publish it. The Release workflow patches the
-   changelog, signs, verifies and publishes to Marketplace, attaches the ZIPs to the release and opens a changelog PR.
-5. Merge the changelog PR.
+3. Merge to `main`; the Build workflow builds, tests and verifies.
+4. On `main`, sign and check the signature (section 3 for the variables):
+   `./gradlew signPlugin verifyPluginSignature`. The change notes of the built plugin are the `[Unreleased]` entries.
+5. On the plugin's Marketplace page, **Upload Update** with `build/distributions/mcp-companion-<version>-signed.zip`
+   (channel Stable, not hidden). Updates are reviewed by hand, usually within two working days.
+6. Tag the signed commit with the bare version (`git tag -a 1.2.0 -m "MCP Companion 1.2.0"`) and push the tag; the
+   compare links in `CHANGELOG.md` rely on these tags.
+7. Run `./gradlew patchChangelog` (it moves `[Unreleased]` into the version's section) and merge that change with a
+   pull request.
+
+The Build workflow used to prepare a draft GitHub release for the Release workflow to publish from; it no longer
+does, because releases are signed on the maintainer's machine and the repository holds no signing secrets. The
+Release workflow remains for a later automated process: it runs when a GitHub release is published by hand.
 
 A new major IDE version: run `verifyPlugin` (the next EAP is checked automatically once it exists) and the tests
 against it; if APIs changed, release a new version and raise `since-build` (`supportedMajorBuild` in

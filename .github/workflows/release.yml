@@ -1,4 +1,5 @@
-# GitHub Actions Workflow created for handling the release process based on the draft release prepared with the Build workflow.
+# GitHub Actions Workflow for an automated release: it runs when a GitHub release is published (created by hand; the
+# Build workflow no longer prepares a draft). Releases are normally made by hand, see docs/RELEASING.md.
 # Running the publishPlugin task requires all the following secrets to be provided: PUBLISH_TOKEN, PRIVATE_KEY, PRIVATE_KEY_PASSWORD, CERTIFICATE_CHAIN.
 # See https://plugins.jetbrains.com/docs/intellij/plugin-signing.html for more information.
 

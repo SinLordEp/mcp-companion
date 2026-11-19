@@ -246,9 +246,8 @@ before every start and replaces the fixture copies, so edits of an earlier run a
 ## Release process
 
 Releases follow `docs/RELEASING.md`: the version in `gradle.properties`, user-facing entries under `[Unreleased]` in
-`CHANGELOG.md` (the plugin's change notes are generated from it), the Build workflow's release draft, and the Release
-workflow, which signs the plugin and publishes it to JetBrains Marketplace when the draft is published. The first
-upload to Marketplace is manual.
+`CHANGELOG.md` (the plugin's change notes are generated from it), signing on the maintainer's machine, the upload on
+JetBrains Marketplace, a version tag and the changelog section of the version.
 
 ## License
 
