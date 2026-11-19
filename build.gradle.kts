@@ -45,6 +45,9 @@ dependencies {
         // Optional at runtime (META-INF/mcp-companion-vcs.xml); its content module intellij.platform.vcs.impl holds
         // CodeSmellDetector, the batch code analysis of mc_diagnostics.
         bundledPlugin("com.intellij.platform.vcs")
+        // Optional at runtime (META-INF/mcp-companion-structural-search.xml); its content module
+        // intellij.platform.structuralSearch holds the matcher of mc_structural_search.
+        bundledPlugin("com.intellij.structuralSearch")
         testFramework(TestFrameworkType.Platform)
         testBundledPlugins("com.intellij.modules.ultimate")
         pluginVerifier()

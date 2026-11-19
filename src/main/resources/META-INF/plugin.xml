@@ -7,8 +7,8 @@
     <!-- The one source of the description (the build does not take it from README.md). Marketplace shows the first
          sentence on the plugin card: keep it a plain English summary. The change notes come from CHANGELOG.md. -->
     <description><![CDATA[
-<p>Adds code navigation, refactoring, quick fix, run control, module, diagnostics, build, file outline and history
-tools for AI agents to the IDE's built-in MCP Server.</p>
+<p>Adds code navigation, structural search, refactoring, quick fix, run control, module, diagnostics, build, file
+outline and history tools for AI agents to the IDE's built-in MCP Server.</p>
 
 <p>MCP Companion complements the bundled <i>MCP Server</i> plugin, which must be enabled. Its tools appear next to the
 built-in ones for every MCP client connected to the IDE, and their names start with <code>mc_</code>. It does not
@@ -21,6 +21,9 @@ tool steps aside by itself (checked at IDE start and when plugins are installed,
     filter and paging.</li>
   <li><code>mc_find_implementations</code>: implementations, inheritors and overriding methods, or the supertypes and
     super methods.</li>
+  <li><code>mc_structural_search</code>: find code by its structure, not its text, with the IDE's Structural
+    Search: templates with variables such as <code>$Instance$.equals($Arg$)</code> and constraints on them, or
+    the IDE's built-in templates; read only.</li>
   <li><code>mc_type_hierarchy</code>: supertypes and subtypes of a class, with depth and size limits (JVM
     languages).</li>
   <li><code>mc_safe_delete</code>: <code>preview</code> lists what still uses a declaration; <code>apply</code> deletes
@@ -95,6 +98,9 @@ plugin version follows; IDEs of earlier major versions keep the last plugin vers
     <!-- The platform's VCS support (alias of its content module intellij.platform.vcs.impl): CodeSmellDetector, the
          batch code analysis of mc_diagnostics. -->
     <depends optional="true" config-file="mcp-companion-vcs.xml">com.intellij.modules.vcs</depends>
+    <!-- The IDE's Structural Search (its content module intellij.platform.structuralSearch), for
+         mc_structural_search. -->
+    <depends optional="true" config-file="mcp-companion-structural-search.xml">com.intellij.structuralSearch</depends>
 
     <resource-bundle>messages.McpCompanionBundle</resource-bundle>
 
@@ -190,5 +196,7 @@ plugin version follows; IDEs of earlier major versions keep the last plugin vers
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.structure.FileStructureToolset"/>
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.localhistory.LocalHistoryToolset"/>
         <!-- mc_vcs_history is registered in mcp-companion-vcs.xml: it needs the platform's VCS support. -->
+        <!-- mc_structural_search is registered in mcp-companion-structural-search.xml: it needs Structural
+             Search. -->
     </extensions>
 </idea-plugin>

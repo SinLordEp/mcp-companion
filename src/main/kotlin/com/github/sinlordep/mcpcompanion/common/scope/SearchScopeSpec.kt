@@ -18,26 +18,34 @@ sealed interface SearchScopeSpec {
     /** Everything under a directory, recursively. [path] is project-relative or absolute. */
     data class Directory(val path: String) : SearchScopeSpec
 
+    /** One file. [path] is project-relative or absolute. */
+    data class File(val path: String) : SearchScopeSpec
+
     companion object {
         /** Client syntax, also used in tool descriptions. */
         const val SYNTAX: String =
-            "'project' (default; all content roots), 'project_and_libraries', 'module:<name>' or 'dir:<path>'"
+            "'project' (default; all content roots), 'project_and_libraries', 'module:<name>', 'dir:<path>' or " +
+                "'file:<path>'"
 
-        private const val MODULE_PREFIX = "module:"
-        private const val DIRECTORY_PREFIX = "dir:"
+        /** The scopes written `<prefix>:<argument>`, by prefix. */
+        private val WITH_ARGUMENT: Map<String, (String) -> SearchScopeSpec> = mapOf(
+            "module" to ::Module,
+            "dir" to ::Directory,
+            "file" to ::File,
+        )
 
         /** Parses the client syntax; null or blank means [Project]. */
         fun parse(text: String?): ToolResult<SearchScopeSpec> {
             val value = text?.trim().orEmpty()
             val argument = value.substringAfter(':', "").trim()
+            val withArgument = WITH_ARGUMENT[value.substringBefore(':')]
+                ?.takeIf { ':' in value && argument.isNotEmpty() }
             return when {
                 value.isEmpty() || value == "project" -> ToolResult.success(Project)
 
                 value == "project_and_libraries" -> ToolResult.success(ProjectAndLibraries)
 
-                value.startsWith(MODULE_PREFIX) && argument.isNotEmpty() -> ToolResult.success(Module(argument))
-
-                value.startsWith(DIRECTORY_PREFIX) && argument.isNotEmpty() -> ToolResult.success(Directory(argument))
+                withArgument != null -> ToolResult.success(withArgument(argument))
 
                 else -> ToolResult.failure(
                     ErrorCode.INVALID_ARGUMENT,

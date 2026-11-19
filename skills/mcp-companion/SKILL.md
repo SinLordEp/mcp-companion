@@ -1,6 +1,6 @@
 ---
 name: mcp-companion
-description: Use when working in a project that is open in a JetBrains IDE whose MCP server exposes tools named mc_ (the MCP Companion plugin), to find usages, implementations and type hierarchies, check edits without a full build, build one module, run the application, tests or a single test method (with or without a run configuration), apply the IDE's quick fixes, sync Gradle or Maven after build file changes, move classes, change method signatures and delete declarations safely, outline large files, label and restore the Local History, and read commit history, blame and diffs.
+description: Use when working in a project that is open in a JetBrains IDE whose MCP server exposes tools named mc_ (the MCP Companion plugin), to find usages, implementations and type hierarchies, search code by its structure, check edits without a full build, build one module, run the application, tests or a single test method (with or without a run configuration), apply the IDE's quick fixes, sync Gradle or Maven after build file changes, move classes, change method signatures and delete declarations safely, outline large files, label and restore the Local History, and read commit history, blame and diffs.
 ---
 
 # Working with the IDE's MCP tools (MCP Companion)
@@ -9,7 +9,7 @@ The JetBrains IDE that has this project open serves MCP tools whose names start 
 
 ## Prefer the IDE over the shell
 
-- References, implementations, supertypes and subtypes: `mc_find_usages`, `mc_find_implementations`, `mc_type_hierarchy` instead of grep. Give the symbol by path, line and column or by qualified name (`com.example.Foo#member`). They do not search comments or plain text; use text search for those.
+- References, implementations, supertypes and subtypes: `mc_find_usages`, `mc_find_implementations`, `mc_type_hierarchy` instead of grep. Give the symbol by path, line and column or by qualified name (`com.example.Foo#member`). They do not search comments or plain text; use text search for those. For code of a shape, use `mc_structural_search` instead of a regular expression: `pattern="$Instance$.equals($Arg$)"` finds every `equals` call however it is formatted; `constraints` narrow a variable by text, type or count; `action=templates` lists the IDE's ready-made templates.
 - Checking edits: `mc_diagnostics` instead of a full build.
 - Compiling: `mc_build` for one module instead of building everything; `build_project` only when the whole project must build.
 - Running the application or tests: `mc_run` instead of a shell command: `start` for an existing run configuration, `start_at` for a test method, test class, test directory or main function without one (like the IDE's Run gutter icon; it may create a temporary run configuration, never a saved one).

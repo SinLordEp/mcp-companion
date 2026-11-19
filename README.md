@@ -16,8 +16,8 @@ tools steps aside by itself when the IDE ships an official tool with the same ca
 - The bundled *MCP Server* plugin, enabled. MCP clients connect to the IDE through it.
 - Optional parts load only where the IDE has them: Java (type hierarchy, super declarations, hot swap, JVM module
   facts, `mc_build`, `mc_move`, `mc_change_signature`, Java's "Import class" in `mc_quick_fix`), Gradle and other external systems, Maven, the test runner
-  (`mc_run tests`) and the platform's VCS support (`mc_diagnostics`, whose batch analysis lives there, and
-  `mc_vcs_history`).
+  (`mc_run tests`), the platform's VCS support (`mc_diagnostics`, whose batch analysis lives there, and
+  `mc_vcs_history`) and Structural Search (`mc_structural_search`).
 
 Only the latest major IDE version is supported (`since-build` 263, no `until-build`). When a new major version needs
 changes, a new plugin version raises `since-build`; IDEs of earlier versions keep the last plugin version that supports
@@ -64,6 +64,7 @@ All names start with `mc_`. Each tool is its own toolset, so an official replace
 | `mc_build` | `build` one module with the modules it depends on (`includeDependents`: also the modules that depend on it), through the IDE's build path, so Gradle and Maven delegation applies; returns the outcome, the modules included, the duration and the errors (and with `includeWarnings` the warnings) with file, line and column; after `timeoutSeconds` the build goes on and `status` reports it. One build at a time; refused in an untrusted project. |
 | `mc_file_structure` | Read-only. The outline of one file from the IDE's Structure view, without reading or opening it: classes, methods, constructors, fields, nested types (and XML tags, JSON keys, Markdown headers, ... in other languages; library classes too), each with a tree id, depth, name, kind, signature, modifiers (JVM languages) and lines; `maxDepth`, `kinds`, paging. |
 | `mc_local_history` | The IDE's Local History through its public API: `label` puts a named label before a risky change, `labels` lists the labels the tool put, `diff` and `preview` compare a file or directory with its state at a label or a time (unified diffs), `revert` restores a file (one undoable command) or reverts a directory to a label (the IDE's own revert). The history's list of change sets is internal to the platform and not offered. |
+| `mc_structural_search` | Read-only. The IDE's Structural Search without its dialog: `search` finds code by its syntax tree from a template with `$Name$` variables (e.g. `$Instance$.equals($Arg$)`) in the language of `fileType` (Java by default; Kotlin, XML, ... as installed), with constraints per variable (text regex, expression type, count, target); or runs a built-in or saved template by name. Each match with path, line, column, end line, line text, enclosing declaration, text and the variables' values; `scope` project, module, directory or file; paged in a stable order. `templates` lists the IDE's templates. The IDE's compile message for a bad template. No replace. |
 | `mc_vcs_history` | Read-only, through the IDE's VCS integration (Git and others): `log` of a file or directory (or the commits that last changed some lines), `blame` as line segments with their commits, `diff` of one file between revisions or against the working copy; bounded and paged. |
 
 Symbols are given by path, line and column or by fully qualified name (`com.example.Foo#member`). Paths in results use
@@ -162,6 +163,12 @@ A summary; details in the `docs/notes-*.md` files named in brackets.
   Create class, Change field type, Safe delete) are listed as needing the user. Fixes a language computes only when
   Alt+Enter is pressed are missing except Java's "Import class" and the platform's unresolved-reference fixes.
   External annotators are not run. Messages and fix names come in the IDE's language (`notes-step9`).
+- `mc_structural_search` reports the match as the IDE finds it (a declaration template matches the whole
+  declaration); texts are cut at 400 characters, variables at 20 values of 200 characters; at most 10000 matches
+  per search; template names are in the IDE's language; compiled library classes without sources gave no matches.
+  Spring and HTTP Client tools were examined and not built: both need the IDE's paid Ultimate features, which a
+  development sandbox without a subscription does not load, and the Spring endpoint list is already an official
+  tool there (`notes-step11`).
 - Tested on Linux only (IntelliJ IDEA 2026.3); not run on Windows or macOS, and not in other IntelliJ-based IDEs.
 
 ## Development
@@ -191,7 +198,8 @@ copy of a fixture project under `build/` open. Options:
   configurations `Beacon` (prints `READY`, listens on 127.0.0.1:64411), `Crash` (exit code 3), `Prompting` (refused by
   `mc_run`), JUnit configurations `AllTests`, `SlowTest`, `BadJvmTest`, and modules `cyclea`/`cycleb` that depend on
   each other; for `start_at` an abstract test class and a test class with a `main` (`testfix`), a Kotlin `main`
-  (`kotlinfix`, with the Kotlin standard library of the sandbox IDE), and for `mc_quick_fix` the module `quickfix`. Its JDK is the sandbox IDE's own runtime, defined in the sandbox's JDK table; JUnit 4 is copied from the
+  (`kotlinfix`, with the Kotlin standard library of the sandbox IDE), for `mc_quick_fix` the module `quickfix`, and
+  for `mc_structural_search` `src/search/Accounts.java` (equals calls, an empty catch block, println calls). Its JDK is the sandbox IDE's own runtime, defined in the sandbox's JDK table; JUnit 4 is copied from the
   sandbox IDE. `-PmcpE2eVcs=git` makes the copy a Git repository with three commits of `src/history/Ledger.java` by
   the fictitious "Test Author" (for `mc_vcs_history`); the user's Git configuration is not read.
 - `-PmcpE2eFixture=gradle`: `src/mcpE2eFixtureGradle` (root, `app`, `lib` with JUnit tests, and the included build

@@ -33,9 +33,16 @@
 - `mc_vcs_history`: through the IDE's VCS integration, read only: `log` of a file or directory (or the commits that
   last changed some lines), `blame` as line segments with their commits, `diff` of one file between two revisions or
   against the working copy, with size limits and paging.
+- `mc_structural_search`: the IDE's Structural Search, read only: finds code by its syntax tree from a template
+  with `$Name$` variables (`$Instance$.equals($Arg$)`, empty catch blocks, methods of a shape) in Java, Kotlin or
+  any other language with Structural Search support, with constraints per variable (text, type, count, target),
+  or runs one of the IDE's built-in or saved templates by name (`templates` lists them). Matches with location,
+  text and variable values, in project, module, directory or file scope, paged; the IDE's message for a template
+  it cannot compile.
 
 ### Changed
 
+- The `scope` of `mc_find_usages` and `mc_find_implementations` also takes `file:<path>`.
 - Exposed Tools shows each MCP Companion tool under its group title without a group description that repeated the
   tool's own; the MCP Companion settings page lists toolsets by their short names.
 

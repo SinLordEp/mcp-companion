@@ -67,7 +67,8 @@ class CommonInputsTest {
         assertEquals(SearchScopeSpec.ProjectAndLibraries, SearchScopeSpec.parse("project_and_libraries").value())
         assertEquals(SearchScopeSpec.Module("core"), SearchScopeSpec.parse("module: core").value())
         assertEquals(SearchScopeSpec.Directory("src/a b"), SearchScopeSpec.parse("dir:src/a b").value())
-        for (bad in listOf("all", "module:", "dir: ", "everything", "Project")) {
+        assertEquals(SearchScopeSpec.File("src/A.java"), SearchScopeSpec.parse("file: src/A.java").value())
+        for (bad in listOf("all", "module:", "dir: ", "file:", "everything", "Project")) {
             assertEquals(bad, ErrorCode.INVALID_ARGUMENT, SearchScopeSpec.parse(bad).code())
         }
     }

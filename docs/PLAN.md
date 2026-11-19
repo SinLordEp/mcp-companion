@@ -96,6 +96,7 @@
 | `mc_file_structure` | — | 只读。文件的大纲（IDE 结构视图）：类、方法、字段、构造器、嵌套类型（其他语言为 XML 标签、JSON 键、Markdown 标题等），每项带树形 id、深度、名称、种类、签名、修饰（JVM 语言）和行号；可限深度、按种类过滤、分页；不打开编辑器 | `LanguageStructureViewBuilder`、`TreeBasedStructureViewBuilder.createStructureViewModel(null)`、UAST |
 | `mc_local_history` | `label`、`labels`、`diff`、`preview`、`revert` | IDE 本地历史，只用公开接口：打标签、列出本工具打的标签、文件或目录与标签或时间点的差异、恢复（文件为一个可撤销命令，目录用 IDE 自己的恢复到标签）。修订列表在平台内部实现里，不提供 | `LocalHistory.putSystemLabel`、`isLabelValid`、`getByteContent`、`revertToLabel`、`Label.getByteContent` |
 | `mc_vcs_history` | `log`、`blame`、`diff` | 只读。经 IDE 的 VCS 抽象：文件或目录的提交历史（或某些行最后一次修改的提交）、逐行追溯、单个文件两个修订之间或对工作区的差异；有上限和分页 | `VcsHistoryProvider.reportAppendableHistory`、`AnnotationProvider.annotate`、`VcsFileRevision.loadContent` |
+| `mc_structural_search` | `search`、`templates` | 只读。IDE 的结构化搜索：按语法结构（带 `$变量$` 的模板）而不是文本找代码，变量可加文本正则、表达式类型、数量、目标约束；也可按名字运行 IDE 内置或用户保存的模板（`templates` 列出）。范围为项目、项目加库、模块、目录或文件；匹配带路径、行列、结束行、该行文本、所在声明、匹配文本和变量的值，排序后分页，最多 10000 个；模板编译失败返回 IDE 的信息。不做替换 | `Matcher.validate`、`Matcher.findMatches`、`MatchOptions`、`MatchVariableConstraint`、`StructuralSearchUtil.getSuitableFileTypes`、`ConfigurationManager.getAllConfigurations` |
 | `mc_build` | `build`、`status` | 只构建一个模块及其依赖（可加上依赖它的模块），走 IDE 自己的构建路径，委托给 Gradle、Maven 的项目同样适用；返回结果、包含的模块、耗时、带文件和行列号的错误（JPS 来自编译器消息，Gradle/Maven 来自构建工具控制台输出的解析）；超时后构建继续，`status` 查看结果；同一项目同时只允许一次构建，第二个请求被拒绝；不受信任的项目拒绝；不弹对话框，调试会话不会被问"是否重新加载类" | `ProjectTaskManager.createModulesBuildTask`、`CompilerTopics`、`ExecutionManager.EXECUTION_TOPIC`、`HotSwapUI` 否决监听 |
 
 符号定位方式：统一接受"文件路径 + 行号 + 列号"或"全限定名"两种。
@@ -125,6 +126,7 @@ src/main/kotlin/com/github/sinlordep/mcpcompanion/
   structure/       文件大纲（mc_file_structure）
   localhistory/    本地历史（mc_local_history）
   vcshistory/      VCS 历史、追溯、差异（mc_vcs_history）
+  structuralsearch/ 结构化搜索（mc_structural_search），平台实现在 ssr/（可选依赖结构化搜索插件）
   yield/           官方工具对照表和检测
   settings/        设置状态和设置页
   common/          符号定位、分页、结果模型、错误模型；共用的模块图（modulegraph）、构建网关（build）、重构执行（refactoring）、可撤销的改动命令（edits）和无编辑器分析时暂停外部注解器（analysis）
@@ -213,6 +215,7 @@ MCP 适配层 (toolsets/)        只做参数解析、调用用例、把结果�
 | 8（已完成，待审查） | `mc_move`、`mc_change_signature`：走 IDE 真重构的移动类和修改签名，版本 0.3.0 | 第 0 步核实：官方 263 只有 `rename_refactoring`；Java 用公开的 `JavaRefactoringFactory`、`Refactoring.findUsages/doRefactoring`、`MoveClassesOrPackagesProcessor.detectConflicts`、`ChangeSignatureProcessorBase.findUsages`、各语言 `ChangeSignatureUsageProcessor.findConflicts`、`BaseRefactoringProcessor.executeEx`，不走会弹窗的 `run()`/`preprocessUsages`，冲突在执行前返回；Kotlin 的 K2 重构处理器在 `visibility="internal"` 的内容模块里，所以 Kotlin 声明返回 `UNSUPPORTED`，Kotlin 里对 Java 声明的引用照常更新。公共的预览/应用/冲突/改动文件记录放在 `common/refactoring`，两个工具只提供各自的网关和语言扩展点（`classMove`、`signatureChange`）。Verifier 无新增警告；沙箱实测见 `docs/notes-step8.md` |
 | 9（已完成，待审查） | `mc_run start_at`（不需要运行配置，按代码位置运行或调试）、`mc_quick_fix`（列出并应用 IDE 的快速修复），版本仍为 0.3.0 | 第 0 步核实：官方 `execute_run_configuration`、`xdebug_start_debugger_session` 能按 `filePath`+`line` 建临时配置运行，但不返回句柄，不能等待、读测试结果、停止，不接受目录或全限定名，因此 `start_at` 不重复；官方 `get_file_problems`、`lint_files` 只报问题不带修复，没有应用修复的工具。运行用公开的 `ConfigurationContext(PsiElement).getConfigurationsFromContext()`，跳过会弹窗的 `onFirstRun` 和选择弹窗；快速修复用 `MainPassesRunner`（`impl` 包、未标注）得到带修复的 `HighlightInfo`，只执行 `ModCommand` 形式的修复。JPS、Gradle（委托测试）、Maven（IDE 运行与委托 Maven）沙箱实测，中英文确认对话框和设置页截图。共用的可撤销命令下沉到 `common/edits`，外部注解器暂停下沉到 `common/analysis`。细节和限制见 `docs/notes-step9.md` |
 | 10（已完成，待审查） | `mc_file_structure`（文件大纲）、`mc_local_history`（本地历史标签、差异、恢复）、`mc_vcs_history`（提交历史、追溯、差异）；修复 `mc_run stop` 对忽略 SIGINT 的进程（宽限期后强杀）和构建内存（`org.gradle.jvmargs`），版本仍为 0.3.0 | 第 0 步核实：官方 263 没有文件大纲、本地历史或提交历史/追溯/差异工具（只有 `get_symbol_info`、`search_symbol`、`generate_psi_tree`、`git_status`、`get_repositories` 和变更列表工具）。大纲用公开的结构视图模型，语言无关，JVM 的种类和修饰走 UAST 扩展点；本地历史只用公开的 `LocalHistory`/`Label`：修订列表在可选产品模块 `intellij.platform.lvcs.impl` 里（入口 `LocalHistoryImpl` 为 `@Internal`，不在插件类路径上），所以不做；VCS 用平台 VCS 抽象，不用 `DiffProvider.createFileContent`（Git 的实现对未知修订弹模态错误框）。差异渲染共用 `common/diff`，后台可取消执行共用 `common/progress`。沙箱实测（临时 Git 仓库副本、虚构作者）、中英文设置页和撤销提示截图。细节和限制见 `docs/notes-step10.md` |
+| 11（已完成，待审查） | `mc_structural_search`（结构化搜索）；Spring 视图和 HTTP Client 核实后未做，版本仍为 0.3.0 | 第 0 步核实：官方 263 只有按文本、正则、符号名、文件名的搜索，没有按语法结构的搜索；结构化搜索用公开的 `intellij.platform.structuralSearch`（可见性 public，用到的成员都未标注），模板编译用 `Matcher.validate`（失败返回 IDE 的信息，`NoMatchFoundException` 视为没有匹配），搜索在自己的进度指示器下运行，可取消，不弹窗。`common/scope` 加了 `file:<path>`。Spring 与 HTTP Client 都属于 IDE 的付费 Ultimate 功能：没有订阅的沙箱 IDE（IntelliJ Platform Gradle Plugin 在没有 `subscriptionKey` 时禁用 `com.intellij.modules.ultimate`）里 Spring 模型和 HTTP Client 都不工作，无法在沙箱里实测，因此不做；另外有订阅时官方已有 `spring_web_endpoints` 等端点工具，HTTP Client 的执行接口是 `@Internal`/`@Experimental`，`start_at` 指向 `.http` 请求需要许可证。沙箱实测、细节和限制见 `docs/notes-step11.md` |
 
 每一步一个分支、一个 PR。
 

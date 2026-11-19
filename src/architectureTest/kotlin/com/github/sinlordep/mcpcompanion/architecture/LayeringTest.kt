@@ -32,6 +32,7 @@ class LayeringTest {
         "structure",
         "localhistory",
         "vcshistory",
+        "structuralsearch",
     )
 
     /**
@@ -47,12 +48,12 @@ class LayeringTest {
      * Sub-package names that hold platform gateways: `psi` for code analysis, `ide` for other IDE services, and one
      * per optional plugin: `java` (Java plugin), `externalsystem` (the platform's optional external-system support:
      * Gradle and others), `maven` (Maven plugin), `smrunner` (the platform's test runner plugin), `vcs` (the platform's
-     * VCS support, which holds the batch code analysis).
+     * VCS support, which holds the batch code analysis), `ssr` (the Structural Search plugin).
      */
-    private val gatewaySegments = setOf("psi", "ide", "java", "externalsystem", "maven", "smrunner", "vcs")
+    private val gatewaySegments = setOf("psi", "ide", "java", "externalsystem", "maven", "smrunner", "vcs", "ssr")
 
     /** Gateway segments that need an optional plugin; the neutral `ide` gateways must not depend on them. */
-    private val optionalSegments = listOf("java", "externalsystem", "maven", "smrunner", "vcs")
+    private val optionalSegments = listOf("java", "externalsystem", "maven", "smrunner", "vcs", "ssr")
 
     /**
      * APIs of the optional test runner plugin (`com.intellij.platform.testRunner`: test trees, test consoles, test
