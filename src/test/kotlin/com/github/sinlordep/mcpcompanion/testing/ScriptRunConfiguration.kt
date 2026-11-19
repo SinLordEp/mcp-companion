@@ -29,9 +29,9 @@ import javax.swing.JPanel
  * A run configuration for platform tests: runs a single-file Java program ([source]) with the test JVM's own `java`,
  * through the platform's default Run runner. No Java plugin machinery, no build.
  */
-class ScriptConfigurationType :
+class ScriptConfigurationType(id: String = ID) :
     SimpleConfigurationType(
-        ID,
+        id,
         "MCP test script",
         null,
         NotNullLazyValue.createValue {
@@ -86,10 +86,18 @@ class ScriptConfiguration(project: Project, factory: ConfigurationFactory) :
         }
 }
 
-/** Registers [ScriptConfigurationType] and creates script configurations in [project]. */
-class ScriptConfigurations(private val project: Project, parent: Disposable) {
+/**
+ * Registers [ScriptConfigurationType] and creates script configurations in [project]. A test that relies on the
+ * run manager finding its configurations by type passes a [typeId] of its own: the light project's run manager
+ * outlives a test and keeps the type instance it first saw for an id.
+ */
+class ScriptConfigurations(
+    private val project: Project,
+    parent: Disposable,
+    typeId: String = ScriptConfigurationType.ID,
+) {
 
-    private val type = ScriptConfigurationType()
+    val type = ScriptConfigurationType(typeId)
 
     init {
         ConfigurationType.CONFIGURATION_TYPE_EP.point.registerExtension(type, parent)
@@ -102,10 +110,7 @@ class ScriptConfigurations(private val project: Project, parent: Disposable) {
         vararg arguments: String,
         parallel: Boolean = false,
     ): RunnerAndConfigurationSettings {
-        val file = File.createTempFile("McpScript", ".java").apply {
-            deleteOnExit()
-            writeText(program)
-        }
+        val file = programFile(program)
         val settings = RunManager.getInstance(project).createConfiguration(name, type)
         (settings.configuration as ScriptConfiguration).apply {
             source = file
@@ -116,9 +121,17 @@ class ScriptConfigurations(private val project: Project, parent: Disposable) {
         return settings
     }
 
+    /** A real file with [program], for configurations that run it. */
+    fun programFile(program: String): File = File.createTempFile("McpScript", ".java").apply {
+        deleteOnExit()
+        writeText(program)
+    }
+
     fun removeAll() {
         val manager = RunManager.getInstance(project)
-        manager.allSettings.filter { it.type === type }.forEach(manager::removeConfiguration)
+        // By configuration class, not type instance: temporary configurations made from code in an earlier test of the
+        // shared light project have the type instance of that test.
+        manager.allSettings.filter { it.configuration is ScriptConfiguration }.forEach(manager::removeConfiguration)
     }
 
     companion object {

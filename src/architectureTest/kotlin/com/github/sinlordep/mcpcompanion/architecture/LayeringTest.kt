@@ -28,14 +28,14 @@ class LayeringTest {
         "sync",
         "build",
         "diagnostics",
+        "quickfix",
     )
 
     /**
      * Features built in the three layers of section 5.1: use cases at the root (and in sub-packages such as
      * `run.output`), gateways in the [gatewaySegments] sub-packages.
      */
-    private val layeredFeatures =
-        listOf("navigation", "safedelete", "move", "changesignature", "run", "modules", "sync", "build", "diagnostics")
+    private val layeredFeatures = listOf("navigation") + featurePackages.filterNot { it == "status" || "." in it }
 
     /** Layered features whose use cases sit at the feature root and whose gateways are `ide` plus optional segments. */
     private val gatewayFeatures = listOf("run", "modules", "sync", "build", "diagnostics")

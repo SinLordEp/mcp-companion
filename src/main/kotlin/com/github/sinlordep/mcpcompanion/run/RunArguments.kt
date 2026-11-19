@@ -4,7 +4,7 @@ import com.github.sinlordep.mcpcompanion.common.actions.ToolArguments
 import com.github.sinlordep.mcpcompanion.run.tests.TestFilter
 
 /** The actions of `mc_run`. */
-enum class RunAction { PROCESSES, START, STOP, RESTART, STATUS, OUTPUT, WAIT_READY, HOTSWAP, TESTS }
+enum class RunAction { PROCESSES, START, START_AT, STOP, RESTART, STATUS, OUTPUT, WAIT_READY, HOTSWAP, TESTS }
 
 /** The optional arguments of `mc_run`; each action accepts a subset (see the handlers' `parameters`). */
 enum class RunParameter(val label: String) {
@@ -24,6 +24,10 @@ enum class RunParameter(val label: String) {
     LIMIT("limit"),
     OFFSET("offset"),
     STACK_LINES("stackLines"),
+    PATH("path"),
+    LINE("line"),
+    COLUMN("column"),
+    QUALIFIED_NAME("qualifiedName"),
 }
 
 /** Raw client arguments of one `mc_run` call, not yet validated. Null means "not given". */
@@ -44,6 +48,10 @@ data class RunArguments(
     val limit: Int? = null,
     val offset: Int? = null,
     val stackLines: Int? = null,
+    val path: String? = null,
+    val line: Int? = null,
+    val column: Int? = null,
+    val qualifiedName: String? = null,
 ) : ToolArguments<RunParameter> {
     /** The parameters the client gave. */
     override fun given(): Set<RunParameter> = buildSet {
@@ -64,6 +72,10 @@ data class RunArguments(
             RunParameter.LIMIT to limit,
             RunParameter.OFFSET to offset,
             RunParameter.STACK_LINES to stackLines,
+            RunParameter.PATH to path,
+            RunParameter.LINE to line,
+            RunParameter.COLUMN to column,
+            RunParameter.QUALIFIED_NAME to qualifiedName,
         )
         values.forEach { (parameter, value) -> if (value != null) add(parameter) }
     }

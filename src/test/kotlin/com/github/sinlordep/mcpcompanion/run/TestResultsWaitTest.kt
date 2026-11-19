@@ -41,6 +41,7 @@ class TestResultsWaitTest {
         tests,
         { false },
         FakeConsent(),
+        FakeCodeRuns(),
         clock,
         Mutex(),
     )

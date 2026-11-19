@@ -22,6 +22,7 @@ internal object ProcessDescriptions {
         typeName = settings.type.displayName,
         folder = settings.folderName,
         allowsParallelRuns = settings.configuration.isAllowRunningInParallel,
+        temporary = settings.isTemporary,
     )
 
     fun executorKind(executorId: String): ExecutorKind = when (executorId) {

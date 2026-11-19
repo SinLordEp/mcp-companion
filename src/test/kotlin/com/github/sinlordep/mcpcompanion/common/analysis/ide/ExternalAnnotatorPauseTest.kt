@@ -1,4 +1,4 @@
-package com.github.sinlordep.mcpcompanion.diagnostics.ide
+package com.github.sinlordep.mcpcompanion.common.analysis.ide
 
 import com.intellij.testFramework.LightVirtualFile
 import kotlinx.coroutines.runBlocking

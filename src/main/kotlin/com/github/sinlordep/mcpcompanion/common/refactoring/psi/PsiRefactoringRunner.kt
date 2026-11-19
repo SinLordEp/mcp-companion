@@ -1,5 +1,6 @@
 package com.github.sinlordep.mcpcompanion.common.refactoring.psi
 
+import com.github.sinlordep.mcpcompanion.common.edits.psi.UndoableCommand
 import com.github.sinlordep.mcpcompanion.common.paths.psi.ProjectFiles
 import com.github.sinlordep.mcpcompanion.common.refactoring.AffectedFile
 import com.github.sinlordep.mcpcompanion.common.refactoring.RefactoringAnalysis
@@ -15,7 +16,6 @@ import com.github.sinlordep.mcpcompanion.common.symbols.SymbolHandle
 import com.github.sinlordep.mcpcompanion.common.symbols.psi.psiElement
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.application.smartReadAction
-import com.intellij.openapi.command.CommandProcessor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.util.text.StringUtil
@@ -96,7 +96,9 @@ class PsiRefactoringRunner(
             prepared.declarationFiles.any { !it.isValid }
         if (stale) return@withContext ToolResult.success(RefactoringAttempt.Stale)
         try {
-            val changed = ChangedFilesRecorder(project).recording { inGlobalCommand(prepared) }
+            // One command of our own, marked global: one Edit | Undo reverts the whole refactoring from anywhere;
+            // the processor's own command nests into it.
+            val changed = UndoableCommand(project).run(prepared.commandName) { prepared.perform(prepared.usages) }
             ToolResult.success(RefactoringAttempt.Applied(changed.map(files::pathOf).distinct().sorted()))
         } catch (e: IncorrectOperationException) {
             ToolResult.failure(
@@ -105,24 +107,6 @@ class PsiRefactoringRunner(
                 "Undo the last command in the IDE to restore any partial change.",
             )
         }
-    }
-
-    /**
-     * Runs the refactoring inside a command of our own that is marked global, so that one Edit | Undo reverts all of
-     * it from anywhere in the IDE. The processor's own command nests into it; on its own the processor marks its
-     * command global only when no editor has the focus, which an MCP call cannot know.
-     */
-    private fun inGlobalCommand(prepared: PreparedRefactoring) {
-        val commands = CommandProcessor.getInstance()
-        commands.executeCommand(
-            project,
-            {
-                commands.markCurrentCommandAsGlobal(project)
-                prepared.perform(prepared.usages)
-            },
-            prepared.commandName,
-            null,
-        )
     }
 
     /** Files with the number of usages in each; declaration files without usages count 0. */

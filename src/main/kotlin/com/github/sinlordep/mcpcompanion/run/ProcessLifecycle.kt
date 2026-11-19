@@ -35,8 +35,11 @@ class ProcessLifecycle(
      * question is asked under the lock, so concurrent launches are asked one after the other and a later one sees the
      * process of an earlier one.
      */
-    suspend fun start(configuration: ConfigurationRef, executor: ExecutorKind): ToolResult<TrackedProcess> =
-        launch(LaunchRequest(configuration, executor, LaunchPurpose.START))
+    suspend fun start(
+        configuration: ConfigurationRef,
+        executor: ExecutorKind,
+        origin: LaunchOrigin? = null,
+    ): ToolResult<TrackedProcess> = launch(LaunchRequest(configuration, executor, LaunchPurpose.START, origin = origin))
 
     /**
      * What the IDE's Stop does, then waits up to [timeout] for the end; with [force], kills a process that is still

@@ -84,6 +84,8 @@ data class ProcessOutput(
     val reason: String? = null,
     val configuration: String? = null,
     val type: String? = null,
+    /** True when the configuration is one of the IDE's temporary ones (start_at made it); absent otherwise. */
+    val temporary: Boolean? = null,
     val startedAt: String,
     val endedAt: String? = null,
     val pid: Long? = null,
@@ -126,6 +128,7 @@ data class ProcessOutput(
                 reason = (state as? ProcessState.NotStarted)?.reason,
                 configuration = snapshot.configuration?.name,
                 type = snapshot.configuration?.typeId,
+                temporary = snapshot.configuration?.temporary?.takeIf { it },
                 startedAt = snapshot.startedAt.toString(),
                 endedAt = snapshot.endedAt?.toString(),
                 pid = snapshot.pid,

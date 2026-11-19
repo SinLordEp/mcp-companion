@@ -30,6 +30,7 @@ class LaunchConsentTest {
         FakeTestResults(),
         { false },
         consent,
+        FakeCodeRuns(),
         clock,
         Mutex(),
     )

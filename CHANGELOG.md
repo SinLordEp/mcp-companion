@@ -15,6 +15,16 @@
   in Java and Kotlin and overriding methods are updated. Same `preview` and `apply` as `mc_move`; a method that
   overrides another is a conflict (change the topmost one).
 
+- `mc_run start_at`: run or debug code without a run configuration, like the IDE's Run gutter icon: a test method,
+  test class, test directory or main function, by path and line or by qualified name. The IDE's own producers
+  decide (JUnit, TestNG, Gradle test tasks when tests run with Gradle, Maven, Application, Kotlin); a matching
+  configuration is reused, otherwise a temporary one is made. Several candidates are listed instead of a popup;
+  the process gets a handle like `start` (output, `wait_ready`, `tests`, `stop`), and the IDE asks first unless
+  brave mode is on.
+- `mc_quick_fix`: the IDE's quick fixes for the problems of a file, without opening it. `list` gives each problem
+  with its fixes and stable ids, and says which ones need the user (dialogs, templates, editor-only fixes);
+  `apply` applies one as an undoable command and returns the changed files; an id from before an edit is refused.
+
 ### Changed
 
 - Exposed Tools shows each MCP Companion tool under its group title without a group description that repeated the

@@ -56,6 +56,10 @@ internal class LaunchConsentPanel(request: LaunchRequest, executorName: String) 
         indent {
             row(McpCompanionBundle.message("consent.type")) { label(request.configuration.typeName) }
             row(McpCompanionBundle.message("consent.executor")) { label(executorName) }
+            request.origin?.let { origin ->
+                row(McpCompanionBundle.message("consent.code")) { label(origin.location) }
+                if (origin.temporary) row { label(McpCompanionBundle.message("consent.temporary")) }
+            }
             if (request.stopsRunning) row { label(McpCompanionBundle.message("consent.stops.running")) }
         }
         row {

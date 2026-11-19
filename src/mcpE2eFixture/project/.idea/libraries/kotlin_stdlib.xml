@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <!-- The Kotlin standard library of the sandbox IDE's Kotlin plugin; runIdeForMcpE2e copies it into lib/. -->
+  <library name="kotlin-stdlib">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/kotlin-stdlib.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

@@ -1,6 +1,6 @@
 ---
 name: mcp-companion
-description: Use when working in a project that is open in a JetBrains IDE whose MCP server exposes tools named mc_ (the MCP Companion plugin), to find usages, implementations and type hierarchies, check edits without a full build, build one module, run the application or tests through run configurations, sync Gradle or Maven after build file changes, move classes, change method signatures and delete declarations safely.
+description: Use when working in a project that is open in a JetBrains IDE whose MCP server exposes tools named mc_ (the MCP Companion plugin), to find usages, implementations and type hierarchies, check edits without a full build, build one module, run the application, tests or a single test method (with or without a run configuration), apply the IDE's quick fixes, sync Gradle or Maven after build file changes, move classes, change method signatures and delete declarations safely.
 ---
 
 # Working with the IDE's MCP tools (MCP Companion)
@@ -12,15 +12,15 @@ The JetBrains IDE that has this project open serves MCP tools whose names start 
 - References, implementations, supertypes and subtypes: `mc_find_usages`, `mc_find_implementations`, `mc_type_hierarchy` instead of grep. Give the symbol by path, line and column or by qualified name (`com.example.Foo#member`). They do not search comments or plain text; use text search for those.
 - Checking edits: `mc_diagnostics` instead of a full build.
 - Compiling: `mc_build` for one module instead of building everything; `build_project` only when the whole project must build.
-- Running the application or tests: `mc_run` with an existing run configuration instead of a shell command. It never creates or edits run configurations.
+- Running the application or tests: `mc_run` instead of a shell command: `start` for an existing run configuration, `start_at` for a test method, test class, test directory or main function without one (like the IDE's Run gutter icon; it may create a temporary run configuration, never a saved one).
 - Module names, content roots and dependencies: `mc_modules`.
 
 ## After editing code
 
-1. `mc_diagnostics` with the edited `module` (or `files`): seconds, builds nothing. Fix what it reports.
+1. `mc_diagnostics` with the edited `module` (or `files`): seconds, builds nothing. Fix what it reports: when the IDE has a fix for a problem (missing import, unhandled exception, missing method, wrong type, ...), prefer `mc_quick_fix` (`list` with the file and line, then `apply` with one fix id) to editing by hand, then check again.
 2. `mc_build` on the affected module only when you need a real compile: errors only the compiler finds (e.g. "code too large"), annotation processors, code generated during the build, build script or dependency problems, or class files to run.
 3. A debug session of the application runs: `mc_run hotswap` (it builds the changes itself; `restartOnFailure` restarts when the JVM refuses them). Otherwise `mc_run restart`. After `start` or `restart`, `mc_run wait_ready` before you use the application.
-4. Tests: `mc_run start` a test configuration, then `mc_run tests` with `timeoutSeconds` for the verdict, counts and failed tests with message and location, instead of reading console output.
+4. Tests: `mc_run start_at` the test class or method you changed (`path` and `line`, or `qualifiedName`; `AMBIGUOUS` lists candidates, pick one with `type`), or `mc_run start` a test configuration; then `mc_run tests` with `timeoutSeconds` for the verdict, counts and failed tests with message and location, instead of reading console output.
 
 ## After changing build files
 
@@ -44,5 +44,5 @@ A project can contain modules whose content roots lie outside the project direct
 
 ## Consent and missing tools
 
-- `mc_run start`, `restart` and a `hotswap` that restarts may ask the user in the IDE first. `DENIED` means the user declined or did not answer: do not retry in a loop; tell the user.
+- `mc_run start`, `start_at`, `restart` and a `hotswap` that restarts may ask the user in the IDE first. `DENIED` means the user declined or did not answer: do not retry in a loop; tell the user.
 - If an `mc_` tool is missing, the user switched it off on the MCP Server's tool page, or an official tool with the same capability exists and the MCP Companion tool stepped aside. `mc_status` lists each toolset as `available` or `yielded`, with the official tools that replace it.

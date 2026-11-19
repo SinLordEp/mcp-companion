@@ -46,7 +46,8 @@ sealed interface ProcessState {
 
 /**
  * An existing run configuration. [key] is the IDE's unique id (type and name); a name alone may be ambiguous across
- * configuration types.
+ * configuration types. [temporary]: one of the IDE's temporary configurations (made by a run from the code), which it
+ * drops when newer ones replace it.
  */
 data class ConfigurationRef(
     val key: String,
@@ -55,6 +56,7 @@ data class ConfigurationRef(
     val typeName: String,
     val folder: String?,
     val allowsParallelRuns: Boolean,
+    val temporary: Boolean = false,
 )
 
 /** Immutable view of a tracked process at one moment. */

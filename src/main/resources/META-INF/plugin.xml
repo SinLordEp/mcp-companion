@@ -7,8 +7,8 @@
     <!-- The one source of the description (the build does not take it from README.md). Marketplace shows the first
          sentence on the plugin card: keep it a plain English summary. The change notes come from CHANGELOG.md. -->
     <description><![CDATA[
-<p>Adds code navigation, refactoring, run configuration control, module, diagnostics and build tools for AI agents to
-the IDE's built-in MCP Server.</p>
+<p>Adds code navigation, refactoring, quick fix, run control, module, diagnostics and build tools for AI agents to the
+IDE's built-in MCP Server.</p>
 
 <p>MCP Companion complements the bundled <i>MCP Server</i> plugin, which must be enabled. Its tools appear next to the
 built-in ones for every MCP client connected to the IDE, and their names start with <code>mc_</code>. It does not
@@ -30,7 +30,8 @@ tool steps aside by itself (checked at IDE start and when plugins are installed,
   <li><code>mc_change_signature</code>: add, remove, reorder, rename or retype a Java method's parameters, or change
     its return type or visibility, updating every call and overriding method; preview first, applied only without
     conflicts.</li>
-  <li><code>mc_run</code>: start, stop and restart existing run configurations (run or debug), read their console
+  <li><code>mc_run</code>: start, stop and restart existing run configurations (run or debug), or run a test method,
+    test class, test directory or main function directly from the code like the Run gutter icon, read the console
     output, wait until they are ready, hot-swap changed classes into a JVM debug session, and read test results
     (counts, failed tests with message and stack trace), also while the tests are running.</li>
   <li><code>mc_modules</code>: modules with their content roots and folders, the dependency graph with scopes (also as
@@ -39,20 +40,24 @@ tool steps aside by itself (checked at IDE start and when plugins are installed,
     IDE's own analysis without building, with line and column and totals per module.</li>
   <li><code>mc_build</code>: build one module with what it depends on, instead of the whole project, and get the
     errors with file, line and column, also when the build is delegated to Gradle or Maven.</li>
+  <li><code>mc_quick_fix</code>: list the IDE's quick fixes for the problems of a file (add an import, add throws,
+    make a class abstract, ...) and apply one as an undoable command, without opening the file; fixes that would
+    ask for input are refused.</li>
   <li><code>mc_sync</code>: re-import Gradle and Maven projects after build file changes and report the result.</li>
   <li><code>mc_status</code>: plugin version, IDE build and the state of each MCP Companion tool.</li>
 </ul>
 
 <h3>Safety</h3>
 <ul>
-  <li>Before <code>mc_run</code> starts or restarts a process, the IDE asks you to allow or deny it, as the built-in
+  <li>Before <code>mc_run</code> starts or restarts a process (also from code), the IDE asks you to allow or deny it, as the built-in
     <code>execute_run_configuration</code> does. Whether the IDE asks is the MCP Server's brave mode, which is off by
     default.</li>
-  <li><code>mc_run</code> only runs run configurations that exist in the project, never arbitrary commands.</li>
+  <li><code>mc_run</code> only runs run configurations of the project or the code of the project (as the IDE's
+    temporary configurations), never arbitrary commands.</li>
   <li><code>mc_safe_delete</code> refuses to delete a declaration that is still used or that lies outside the
     project.</li>
   <li><code>mc_move</code> and <code>mc_change_signature</code> refuse to change code while the IDE reports
-    conflicts; every change is one undoable command.</li>
+    conflicts; every change is one undoable command, as is each fix <code>mc_quick_fix</code> applies.</li>
   <li><code>mc_run</code>, <code>mc_sync</code> and <code>mc_build</code> refuse to run anything in a project that
     is not trusted.</li>
 </ul>
@@ -105,6 +110,9 @@ plugin version follows; IDEs of earlier major versions keep the last plugin vers
         <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.hotSwapSupport"
                         interface="com.github.sinlordep.mcpcompanion.run.ide.HotSwapSupport"
                         dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.codeRunGuard"
+                        interface="com.github.sinlordep.mcpcompanion.run.ide.CodeRunGuard"
+                        dynamic="true"/>
         <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.testResultsSupport"
                         interface="com.github.sinlordep.mcpcompanion.run.ide.TestResultsSupport"
                         dynamic="true"/>
@@ -126,6 +134,9 @@ plugin version follows; IDEs of earlier major versions keep the last plugin vers
         <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.classMove"
                         interface="com.github.sinlordep.mcpcompanion.move.psi.ClassMoveSupport"
                         dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.deferredFixes"
+                        interface="com.github.sinlordep.mcpcompanion.quickfix.psi.DeferredFixProvider"
+                        dynamic="true"/>
         <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.signatureChange"
                         interface="com.github.sinlordep.mcpcompanion.changesignature.psi.SignatureChangeSupport"
                         dynamic="true"/>
@@ -138,10 +149,10 @@ plugin version follows; IDEs of earlier major versions keep the last plugin vers
                                  bundle="messages.McpCompanionBundle"
                                  key="settings.display.name"
                                  dynamic="true"/>
-        <!-- mc_diagnostics: no external annotators for the files it analyses, while it analyses them
+        <!-- mc_diagnostics, mc_quick_fix: no external annotators for the files they analyse, while they analyse them
              (see ExternalAnnotatorPause). -->
         <daemon.externalAnnotatorsFilter
-                implementation="com.github.sinlordep.mcpcompanion.diagnostics.ide.PausedExternalAnnotatorsFilter"/>
+                implementation="com.github.sinlordep.mcpcompanion.common.analysis.ide.PausedExternalAnnotatorsFilter"/>
     </extensions>
 
     <!-- mc_run: every start in the project, also those the user makes in the IDE, feeds the process tracker. -->
@@ -165,5 +176,6 @@ plugin version follows; IDEs of earlier major versions keep the last plugin vers
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.sync.SyncToolset"/>
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.diagnostics.DiagnosticsToolset"/>
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.build.BuildToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.quickfix.QuickFixToolset"/>
     </extensions>
 </idea-plugin>

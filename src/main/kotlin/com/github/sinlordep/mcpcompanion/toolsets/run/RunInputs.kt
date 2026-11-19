@@ -15,6 +15,9 @@ enum class RunActionInput(val action: RunAction) {
     @SerialName("start")
     START(RunAction.START),
 
+    @SerialName("start_at")
+    START_AT(RunAction.START_AT),
+
     @SerialName("stop")
     STOP(RunAction.STOP),
 

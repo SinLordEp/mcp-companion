@@ -1,4 +1,4 @@
-package com.github.sinlordep.mcpcompanion.common.refactoring.psi
+package com.github.sinlordep.mcpcompanion.common.edits.psi
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
@@ -9,8 +9,9 @@ import com.intellij.psi.PsiTreeChangeAdapter
 import com.intellij.psi.PsiTreeChangeEvent
 
 /**
- * Which files a refactoring actually changed: every file whose PSI changed, was added or was moved while [recording]
- * ran. Also covers changes the IDE makes along with the refactoring (e.g. imports optimised by a refactoring helper).
+ * Which files a code change (a refactoring, a quick fix) actually changed: every file whose PSI changed, was added or
+ * was moved while [recording] ran. Also covers changes the IDE makes along with it (e.g. imports optimised by a
+ * refactoring helper).
  * Directories are not files and are left out. Call on the EDT.
  */
 class ChangedFilesRecorder(private val project: Project) {
@@ -18,7 +19,7 @@ class ChangedFilesRecorder(private val project: Project) {
     /** Runs [action] and returns the changed files that still exist, in the order of their first change. */
     fun recording(action: () -> Unit): List<VirtualFile> {
         val changed = LinkedHashSet<VirtualFile>()
-        val lifetime = Disposer.newDisposable("mc refactoring changes")
+        val lifetime = Disposer.newDisposable("mc code changes")
         try {
             PsiManager.getInstance(project).addPsiTreeChangeListener(Listener(changed), lifetime)
             action()

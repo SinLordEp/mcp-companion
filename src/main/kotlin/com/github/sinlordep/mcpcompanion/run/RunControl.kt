@@ -35,6 +35,7 @@ class RunControl(handlers: List<RunActionHandler>) {
             tests: TestResultsGateway,
             ports: PortProbe,
             consent: LaunchConsent,
+            codeRuns: CodeRunGateway,
             clock: Clock,
             startLock: Mutex,
         ): RunControl {
@@ -45,6 +46,7 @@ class RunControl(handlers: List<RunActionHandler>) {
                 listOf(
                     ListProcesses(catalog, summaries),
                     StartProcess(ConfigurationResolver(execution), lifecycle),
+                    StartAtCode(codeRuns, lifecycle),
                     StopProcess(processes, lifecycle),
                     RestartProcess(processes, lifecycle),
                     ProcessStatus(processes, summaries),

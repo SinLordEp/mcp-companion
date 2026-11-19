@@ -100,6 +100,9 @@ abstract class PrepareMcpE2eSandbox : DefaultTask() {
         replaceWithCopy(layout.jpsSiblingSource, layout.jpsSibling)
         layout.jpsFixture.resolve("README.md").writeText("Throwaway project opened by runIdeForMcpE2e.\n")
         junit.forEach { (name, jar) -> jar.copyTo(layout.jpsFixture.resolve("lib/$name"), overwrite = true) }
+        // The Kotlin standard library of the sandbox IDE's Kotlin plugin, for the kotlinfix module (mc_run start_at).
+        platformDirectory.get().asFile.resolve("plugins/Kotlin/kotlinc/lib/kotlin-stdlib.jar")
+            .copyTo(layout.jpsFixture.resolve("lib/kotlin-stdlib.jar"), overwrite = true)
     }
 
     private fun prepareGradleFixture(layout: McpE2eLayout, junit: Map<String, File>) {

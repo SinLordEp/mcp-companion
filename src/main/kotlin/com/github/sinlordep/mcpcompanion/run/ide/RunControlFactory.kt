@@ -1,6 +1,8 @@
 package com.github.sinlordep.mcpcompanion.run.ide
 
 import com.github.sinlordep.mcpcompanion.common.consent.ide.BraveModeSetting
+import com.github.sinlordep.mcpcompanion.common.paths.psi.ProjectFiles
+import com.github.sinlordep.mcpcompanion.common.symbols.psi.symbolLocatorsFor
 import com.github.sinlordep.mcpcompanion.common.time.SystemClock
 import com.github.sinlordep.mcpcompanion.run.PortProbe
 import com.github.sinlordep.mcpcompanion.run.RunControl
@@ -16,6 +18,7 @@ import java.net.Socket
 fun runControlFor(project: Project): RunControl {
     val tracker = ProcessTracker.getInstance(project)
     val supports = { HotSwapSupport.EP.extensionList }
+    val files = ProjectFiles.of(project)
     return RunControl.create(
         catalog = tracker,
         execution = IdeExecutionGateway(project, tracker, LaunchChecks(project, supports)),
@@ -23,6 +26,9 @@ fun runControlFor(project: Project): RunControl {
         tests = IdeTestResultsGateway { TestResultsSupport.EP.extensionList },
         ports = LoopbackPortProbe,
         consent = IdeLaunchConsent(project, BraveModeSetting()),
+        codeRuns = IdeCodeRunGateway(project, files, symbolLocatorsFor(project, files)) {
+            CodeRunGuard.EP.extensionList
+        },
         clock = SystemClock,
         startLock = tracker.startLock,
     )

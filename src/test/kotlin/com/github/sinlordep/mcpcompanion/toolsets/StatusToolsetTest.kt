@@ -53,6 +53,7 @@ class StatusToolsetTest : BasePlatformTestCase() {
                 "sync",
                 "diagnostics",
                 "build",
+                "quick_fix",
             ),
             output.toolsets.map { it.id },
         )
