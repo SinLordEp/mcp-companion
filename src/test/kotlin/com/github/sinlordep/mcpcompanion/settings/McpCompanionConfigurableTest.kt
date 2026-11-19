@@ -55,6 +55,8 @@ class McpCompanionConfigurableTest : BasePlatformTestCase() {
                 "Find Implementations",
                 "Type Hierarchy",
                 "Safe Delete",
+                "Move Class",
+                "Change Signature",
                 "Run Control",
                 "Modules",
                 "Build Sync",

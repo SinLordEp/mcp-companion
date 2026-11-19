@@ -46,6 +46,8 @@ class StatusToolsetTest : BasePlatformTestCase() {
                 "find_implementations",
                 "type_hierarchy",
                 "safe_delete",
+                "move",
+                "change_signature",
                 "run",
                 "modules",
                 "sync",

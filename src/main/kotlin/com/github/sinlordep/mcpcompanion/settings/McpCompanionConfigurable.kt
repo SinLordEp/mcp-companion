@@ -81,6 +81,6 @@ class McpCompanionConfigurable(
 
     companion object {
         const val ID: String = "com.github.sinlordep.mcpcompanion.settings"
-        private const val MAX_VISIBLE_ROWS = 12
+        private const val MAX_VISIBLE_ROWS = 20
     }
 }

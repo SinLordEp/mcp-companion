@@ -7,6 +7,9 @@
                 implementation="com.github.sinlordep.mcpcompanion.common.source.java.JvmLocalDeclarationDetector"/>
         <safeDeleteSupport
                 implementation="com.github.sinlordep.mcpcompanion.safedelete.java.JvmSafeDeleteSupport"/>
+        <classMove implementation="com.github.sinlordep.mcpcompanion.move.java.JavaClassMoveSupport"/>
+        <signatureChange
+                implementation="com.github.sinlordep.mcpcompanion.changesignature.java.JavaSignatureChangeSupport"/>
         <superDeclarations
                 implementation="com.github.sinlordep.mcpcompanion.navigation.implementations.java.JvmSuperDeclarationProvider"/>
         <typeHierarchy
