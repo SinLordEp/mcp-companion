@@ -11,3 +11,5 @@
 /buildSrc/build/
 /src/mcpE2eFixture*/**/build/
 .claude
+# Heap dumps of a JVM that ran out of memory.
+*.hprof
