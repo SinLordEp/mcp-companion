@@ -3,6 +3,7 @@ import mcpcompanion.e2e.McpE2eJvmArguments
 import mcpcompanion.e2e.McpE2eLayout
 import mcpcompanion.e2e.McpE2eOpenedProject
 import mcpcompanion.e2e.PrepareMcpE2eSandbox
+import mcpcompanion.e2e.SandboxSubscription
 import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 import org.jetbrains.intellij.platform.gradle.models.ProductRelease
@@ -91,6 +92,12 @@ intellijPlatform {
         // A pre-release version such as 1.2.0-beta.1 goes to the Marketplace channel "beta"; 1.2.0 goes to "default".
         channels = listOf(version.toString().substringAfter('-', "").substringBefore('.').ifEmpty { "default" })
     }
+    // Optional licence for every sandbox the plugin prepares (prepareSandbox, the test sandboxes, runIdeForMcpE2e's):
+    // the developer's own idea.key, named by an absolute path in ~/.gradle/gradle.properties. Without it the sandboxes
+    // run without IntelliJ IDEA's paid features (Spring, HTTP Client), as on CI. See buildSrc SandboxSubscription.
+    subscriptionKey = layout.file(
+        providers.gradleProperty(SandboxSubscription.PROPERTY).map { SandboxSubscription.keyFile(it) },
+    )
 }
 
 // verifyPluginSignature reads signPlugin's output but does not depend on it (IntelliJ Platform Gradle Plugin 2.20.1).

@@ -193,6 +193,11 @@ downloads IntelliJ IDEA 2026.3.
 - `./gradlew buildPlugin` writes the plugin ZIP to `build/distributions/`.
 - Architecture and design rules: `docs/PLAN.md` section 5.1 (layers: MCP adapters in `toolsets/`, use cases, platform
   gateways; enforced by `src/architectureTest`). Platform findings: `docs/spike-step0.md` and `docs/notes-*.md`.
+- Optional sandbox licence: IntelliJ IDEA's paid features (Spring, HTTP Client) work in the sandbox IDEs only with a
+  licence. With a subscription, put `mcpCompanion.sandboxSubscriptionKey=<absolute path of your idea.key>` into your
+  own `~/.gradle/gradle.properties`; every sandbox (`runIde`, the tests, `runIdeForMcpE2e`) then gets a copy under
+  the ignored `.intellijPlatform/`. The key file never goes into the repository; without the property (as on CI) the
+  build and the tests run the same, only without those features.
 
 ### End-to-end sandbox
 
