@@ -1,23 +1,26 @@
 package com.github.sinlordep.mcpcompanion.contract
 
 import com.github.sinlordep.mcpcompanion.yield.reflectMcpToolNames
+import com.intellij.lang.java.JavaLanguage
 import com.intellij.mcpserver.McpToolset
 import com.intellij.refactoring.changeSignature.ChangeSignatureUsageProcessor
+import com.intellij.refactoring.memberPullUp.PullUpHelper
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 
 /**
- * What `mc_move` and `mc_change_signature` rely on (docs/notes-step8.md). If one of these fails after an IDE update,
- * redo that check before changing the expectation.
+ * What `mc_move`, `mc_change_signature`, `mc_pull_up` and `mc_extract_method` rely on (docs/notes-step8.md,
+ * docs/notes-step12.md). If one of these fails after an IDE update, redo that check before changing the expectation.
  */
 class RefactoringsContractTest : BasePlatformTestCase() {
 
     /**
-     * The official refactoring tools: only rename. A new name here may duplicate `mc_move` or `mc_change_signature`:
-     * check it, and add a catalog entry if it replaces a whole tool. `move_changes_to_changelist` is about VCS change
-     * lists.
+     * The official refactoring tools: only rename. A new name here may duplicate `mc_move`, `mc_change_signature`,
+     * `mc_pull_up` or `mc_extract_method`: check it, and add a catalog entry if it replaces a whole tool.
+     * `move_changes_to_changelist` is about VCS change lists.
      */
     fun testTheOfficialRefactoringToolsAreTheAnalysedOnes() {
-        val related = Regex("refactor|(^|_)move|signature|parameter|rename")
+        val related =
+            Regex("refactor|(^|_)move|signature|parameter|rename|(^|_)(inline|extract|pull|push|members?)(_|$)")
         val names = McpToolset.EP.extensionList
             .filterNot { it.javaClass.name.startsWith("com.github.sinlordep.mcpcompanion") }
             .flatMap { reflectMcpToolNames(it.javaClass) }
@@ -40,6 +43,17 @@ class RefactoringsContractTest : BasePlatformTestCase() {
             ),
             processors.filter { it.startsWith("com.intellij.refactoring.changeSignature.Java") || "kotlin" in it }
                 .toSet(),
+        )
+    }
+
+    /**
+     * `mc_pull_up` updates references to moved static members with Java's pull-up helper only; another language's
+     * reference is a conflict, because Kotlin's helper handles Kotlin classes only (it fails on a Java target class).
+     */
+    fun testThePullUpHelperOfJavaIsTheCheckedOne() {
+        assertEquals(
+            "com.intellij.refactoring.memberPullUp.JavaPullUpHelperFactory",
+            PullUpHelper.INSTANCE.forLanguage(JavaLanguage.INSTANCE)?.javaClass?.name,
         )
     }
 }

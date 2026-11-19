@@ -14,7 +14,11 @@
   calls, remove, reorder, rename, retype), its return type or visibility with the IDE's Change Signature; call sites
   in Java and Kotlin and overriding methods are updated. Same `preview` and `apply` as `mc_move`; a method that
   overrides another is a conflict (change the topmost one).
-
+- `mc_pull_up`: pull a field, method or nested class of a Java class up into its superclass or an interface with the
+  IDE's Pull Members Up, with more members of the class along (`withMembers`) and optionally as an abstract method
+  (`makeAbstract`); references to moved static members are requalified. Same `preview` and `apply` as `mc_move`:
+  conflicts (moved code using members left behind, the target already having the member, other subclasses lacking an
+  abstract method, Kotlin references to a moved static member) are reported before anything changes.
 - `mc_run start_at`: run or debug code without a run configuration, like the IDE's Run gutter icon: a test method,
   test class, test directory or main function, by path and line or by qualified name. The IDE's own producers
   decide (JUnit, TestNG, Gradle test tasks when tests run with Gradle, Maven, Application, Kotlin); a matching

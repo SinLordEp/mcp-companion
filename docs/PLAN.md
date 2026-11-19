@@ -88,6 +88,7 @@
 | `mc_safe_delete` | `preview`、`apply` | 先报告还有哪些引用，没有才删除 | `SafeDeleteProcessor` |
 | `mc_move` | `preview`、`apply` | 把顶层 Java 类移到另一个包（可选另一个源码根目录），更新 Java 和 Kotlin 里的全部引用；冲突先返回，有冲突不执行 | `JavaRefactoringFactory`、`MoveClassesOrPackagesProcessor` |
 | `mc_change_signature` | `preview`、`apply` | 改 Java 方法或构造器的参数、返回类型、可见性，更新全部调用处和重写方法；重写了别的方法的方法算冲突（改最顶层的） | `ChangeSignatureProcessor`、`ChangeSignatureUsageProcessor` |
+| `mc_pull_up` | `preview`、`apply` | 把 Java 类的字段、方法或嵌套类上移到父类或接口（`targetClass`，默认父类），`withMembers` 一起移动同类的其他成员，`makeAbstract` 让方法在目标里成为抽象方法、方法体留在子类；对被移动静态成员的 Java 引用改成目标类限定；冲突（用到留下的成员、目标已有同名成员、其他子类缺实现、Kotlin 对被移动静态成员的引用）先返回，有冲突不执行；不做下推，不替换与被移动方法重复的代码 | `PullUpProcessor.moveMembersToBase/moveFieldInitializations`、`PullUpConflictsUtil.checkConflicts`、`PullUpHelper`（Java 的 `updateUsage`）、`MemberInfo` |
 | `mc_run` | `processes`、`start`、`start_at`、`stop`、`restart`、`status`、`output`、`wait_ready`、`hotswap`、`tests` | Run Configuration 全生命周期。`start_at`：不需要事先存在运行配置，按位置（`path`+`line` 或 `qualifiedName`，也可以是目录）运行或调试测试方法、测试类、目录下的测试或 main，相当于行号旁的运行图标；由 IDE 的 `RunConfigurationProducer` 决定（JUnit、Gradle 测试任务、Maven、Application、Kotlin），已有匹配配置就复用，否则建 IDE 的临时配置；多个候选返回 `AMBIGUOUS` 并列出，不弹窗；抽象类里的测试（IDE 会问运行哪个子类）返回 `UNSUPPORTED`。`output` 支持末尾 N 行、正则过滤和游标。热替换走 IDE 自己的构建路径（`ProjectTaskManager`），所以委托给 Gradle、Maven 的项目也能用。`tests`：测试运行的结论、计数和失败的测试（位置、消息、期望/实际值、截断的堆栈），运行中也能读（标为部分结果），可等待结束；`processes`、`status` 对测试运行附带摘要。Maven 运行在 263 没有结构化结果，`tests` 说明原因并指向 `output`。`start`、`restart` 和会重启的 `hotswap` 先在 IDE 里请用户确认（允许/拒绝），和官方 `execute_run_configuration` 一样由 MCP Server 的 Brave 模式决定是否询问；拒绝或 120 秒内未答返回 `DENIED` | `ExecutionListener`、`ProgramRunner`、`ProcessHandler`、`ProjectTaskManager`、`HotSwapManager`、`SMTRunnerEventsListener.TEST_STATUS`、`SMTestProxy` |
 | `mc_modules` | `list`、`graph`、`cycles` | 只读。模块及其内容根目录和文件夹（项目目录之外的根会标出）、带作用域的依赖图（JSON，或 `format=mermaid` 输出 Mermaid 流程图，有边数和节点数上限）、循环依赖。按模块构建不放在这里，而是单独的 `mc_build`（构建会改输出目录，而 `mc_modules` 标为只读） | `ModuleManager`、`ModuleRootManager` |
 | `mc_sync` | `status`、`sync` | 重新导入 Gradle（及其他 external system）和 Maven 项目，等待并返回结果；同一项目不会同时跑两次同步；Maven 只能整体同步 | `ExternalSystemUtil.refreshProject`、`MavenProjectsManager`、`MavenSyncListener` |
@@ -114,9 +115,11 @@
 ```
 src/main/kotlin/com/github/sinlordep/mcpcompanion/
   toolsets/        每个工具组一个 McpToolset 类
-  navigation/      引用、实现、层级、安全删除的实现
+  navigation/      引用、实现、层级的实现
+  safedelete/      安全删除（mc_safe_delete）
   move/            移动类（mc_move）
   changesignature/ 修改签名（mc_change_signature）
+  pullup/          上移成员（mc_pull_up）
   run/             运行控制、输出缓冲、就绪检测、热替换
   modules/         模块列表、依赖图（JSON、Mermaid）、环检测
   sync/            Maven、Gradle 重新导入
@@ -134,7 +137,10 @@ src/main/resources/META-INF/
   plugin.xml       核心
   mcp-companion-java.xml    依赖 Java 插件的部分（可选依赖）
   mcp-companion-maven.xml   依赖 Maven 插件的部分（可选依赖）
-  mcp-companion-gradle.xml  依赖 Gradle 插件的部分（可选依赖）
+  mcp-companion-external-system.xml  依赖平台 external system 支持（Gradle 等）的部分（可选依赖）
+  mcp-companion-test-runner.xml      依赖测试运行器插件的部分（可选依赖）
+  mcp-companion-vcs.xml              依赖平台 VCS 支持的部分（可选依赖）
+  mcp-companion-structural-search.xml 依赖结构化搜索插件的部分（可选依赖）
 src/test/          单元测试和 fixture 项目
 ```
 

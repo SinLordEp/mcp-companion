@@ -4,6 +4,7 @@ import com.github.sinlordep.mcpcompanion.testing.RefactoringFixture
 import com.github.sinlordep.mcpcompanion.testing.ToolCalls
 import com.github.sinlordep.mcpcompanion.toolsets.refactoring.RefactoringActionInput
 import com.github.sinlordep.mcpcompanion.toolsets.refactoring.RefactoringOutput
+import com.github.sinlordep.mcpcompanion.toolsets.refactoring.VisibilityInput
 import com.intellij.mcpserver.McpToolCallResultContent
 import com.intellij.mcpserver.McpToolset
 import com.intellij.openapi.command.undo.UndoManager

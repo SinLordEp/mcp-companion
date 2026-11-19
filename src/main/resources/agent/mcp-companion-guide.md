@@ -29,7 +29,7 @@ Call `mc_sync sync` (Gradle, Maven) before `mc_diagnostics` or `mc_build`; until
 
 ## Refactoring
 
-- Moving a class to another package or source root: `mc_move`. Changing a method's parameters, return type or visibility: `mc_change_signature`. Renaming: the built-in `rename_refactoring`. They update every reference in Java and Kotlin; do not move files or edit imports and call sites by hand.
+- Moving a class to another package or source root: `mc_move`. Changing a method's parameters, return type or visibility: `mc_change_signature`. Renaming: the built-in `rename_refactoring`. They update every reference in Java and Kotlin; do not move files or edit imports and call sites by hand. Moving a field, method or nested class of a Java class into its superclass or an interface: `mc_pull_up` (`withMembers` for members it needs, `makeAbstract` to keep the body in the subclass). It works on Java only; check the result with `mc_diagnostics`.
 - Deleting a declaration: `mc_safe_delete`, or check `mc_find_usages` first.
 - Call each with `action=preview` (the default) first and read the conflicts and affected files; then `action=apply`, which changes the code only when nothing conflicts, as one undoable command. `CONFLICT` means nothing changed: change the code or the request first.
 

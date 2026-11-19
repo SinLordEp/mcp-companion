@@ -61,7 +61,54 @@ object RefactoringFixture {
 
             fun buy(i: Item) = i.price(1, "kg")
 
-            class Thing
+            class Thing {
+                fun size(a: Int): Int {
+                    val b = a + 1
+                    return b * 2
+                }
+            }
+        """.trimIndent(),
+        // mc_pull_up
+        "pull/Animal.java" to """
+            package pull;
+            public class Animal {
+                protected int legs;
+            }
+        """.trimIndent(),
+        "pull/Pet.java" to """
+            package pull;
+            public interface Pet {
+            }
+        """.trimIndent(),
+        "pull/Dog.java" to """
+            package pull;
+            public class Dog extends Animal implements Pet {
+                public static final int MAX = 3;
+                private int age;
+                public int bark() { return 1; }
+                public int older() { return age + 1; }
+                public int bark(int times) { return times; }
+                public static final int MIN = 1;
+            }
+        """.trimIndent(),
+        "pull/Cat.java" to """
+            package pull;
+            public class Cat extends Animal {
+            }
+        """.trimIndent(),
+        "app/Kennel.java" to """
+            package app;
+            import pull.Dog;
+            public class Kennel {
+                int walk(Dog d) { return d.bark() + Dog.MAX + Dog.MIN; }
+            }
+        """.trimIndent(),
+        "kt/Walker.kt" to """
+            package kt
+
+            import pull.Dog
+
+            fun walk(d: Dog) = d.bark() + Dog.MAX
         """.trimIndent(),
     )
 

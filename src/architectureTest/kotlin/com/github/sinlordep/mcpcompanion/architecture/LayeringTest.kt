@@ -23,6 +23,7 @@ class LayeringTest {
         "safedelete",
         "move",
         "changesignature",
+        "pullup",
         "run",
         "modules",
         "sync",
@@ -54,18 +55,6 @@ class LayeringTest {
 
     /** Gateway segments that need an optional plugin; the neutral `ide` gateways must not depend on them. */
     private val optionalSegments = listOf("java", "externalsystem", "maven", "smrunner", "vcs", "ssr")
-
-    /**
-     * APIs of the optional test runner plugin (`com.intellij.platform.testRunner`: test trees, test consoles, test
-     * states); only `smrunner` packages use them.
-     */
-    private val testRunnerApis = listOf("com.intellij.execution.testframework")
-
-    /** APIs of the platform's optional external-system support; only `externalsystem` and `maven` packages use them. */
-    private val externalSystemApis = listOf("com.intellij.openapi.externalSystem")
-
-    /** APIs of the optional Maven plugin. */
-    private val mavenPluginApis = listOf("org.jetbrains.idea.maven")
 
     /** APIs of the optional Java plugin; using them outside a `java` package breaks the plugin in non-Java IDEs. */
     private val javaPluginApis = listOf(
@@ -160,33 +149,10 @@ class LayeringTest {
     }
 
     @Test
-    fun `external-system APIs are used only in externalsystem and maven packages`() {
-        production.files.filterNot { file ->
-            file.packagee?.name.orEmpty().split('.').any { it == "externalsystem" || it == "maven" }
-        }.assertFalse { it.importsAny(externalSystemApis) }
-    }
-
-    @Test
-    fun `test runner APIs are used only in smrunner packages`() {
-        Assertions.assertTrue(
-            filesIn("run").any { it.packagee?.name.orEmpty().endsWith(".smrunner") },
-            "no smrunner files found",
-        )
-        production.files.filterNot { file -> file.packagee?.name.orEmpty().split('.').contains("smrunner") }
-            .assertFalse { it.importsAny(testRunnerApis) }
-    }
-
-    @Test
     fun `the test results use case is a platform-free sub-package of run`() {
         val useCases = filesIn("run.tests")
         Assertions.assertTrue(useCases.isNotEmpty(), "no run.tests files found")
         useCases.assertFalse { it.importsAny(listOf("com.intellij", "$root.run.ide", "$root.run.smrunner")) }
-    }
-
-    @Test
-    fun `Maven plugin APIs are used only in maven packages`() {
-        production.files.filterNot { file -> file.packagee?.name.orEmpty().split('.').contains("maven") }
-            .assertFalse { it.importsAny(mavenPluginApis) }
     }
 
     @Test

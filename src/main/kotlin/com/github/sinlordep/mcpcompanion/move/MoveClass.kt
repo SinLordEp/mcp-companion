@@ -5,9 +5,12 @@ import com.github.sinlordep.mcpcompanion.common.refactoring.RefactoringActions
 import com.github.sinlordep.mcpcompanion.common.refactoring.RefactoringGateway
 import com.github.sinlordep.mcpcompanion.common.refactoring.RefactoringOutcome
 import com.github.sinlordep.mcpcompanion.common.refactoring.RefactoringRequest
+import com.github.sinlordep.mcpcompanion.common.refactoring.SymbolTargets
 import com.github.sinlordep.mcpcompanion.common.result.ErrorCode
 import com.github.sinlordep.mcpcompanion.common.result.ToolResult
+import com.github.sinlordep.mcpcompanion.common.symbols.LocatedSymbol
 import com.github.sinlordep.mcpcompanion.common.symbols.SymbolLocators
+import com.github.sinlordep.mcpcompanion.common.symbols.SymbolQuery
 
 /**
  * Where `mc_move` puts a class: [targetPackage] (a qualified package name, created when missing) in [sourceRoot] (a
@@ -42,12 +45,12 @@ data class ClassDestination private constructor(val targetPackage: String, val s
 }
 
 /** Use case of `mc_move`: the shared preview and apply actions with the class-move gateway. */
-class MoveClass(locators: SymbolLocators, gateway: RefactoringGateway<ClassDestination>) {
+class MoveClass(locators: SymbolLocators, gateway: RefactoringGateway<LocatedSymbol, ClassDestination>) {
 
-    private val actions = RefactoringActions(locators, gateway, verb = "moved")
+    private val actions = RefactoringActions(SymbolTargets(locators), gateway, verb = "moved")
 
     suspend fun execute(
         action: RefactoringAction,
-        request: RefactoringRequest<ClassDestination>,
-    ): ToolResult<RefactoringOutcome> = actions.execute(action, request)
+        request: RefactoringRequest<SymbolQuery, ClassDestination>,
+    ): ToolResult<RefactoringOutcome<LocatedSymbol>> = actions.execute(action, request)
 }

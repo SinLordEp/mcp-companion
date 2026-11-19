@@ -1,5 +1,6 @@
 package com.github.sinlordep.mcpcompanion.changesignature
 
+import com.github.sinlordep.mcpcompanion.common.refactoring.Visibility
 import com.github.sinlordep.mcpcompanion.common.result.ErrorCode
 import com.github.sinlordep.mcpcompanion.move.ClassDestination
 import com.github.sinlordep.mcpcompanion.testing.FakeSymbols.code

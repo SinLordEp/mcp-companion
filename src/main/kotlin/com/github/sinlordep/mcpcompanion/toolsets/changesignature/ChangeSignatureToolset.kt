@@ -11,6 +11,7 @@ import com.github.sinlordep.mcpcompanion.toolsets.CompanionToolset
 import com.github.sinlordep.mcpcompanion.toolsets.refactoring.RefactoringActionInput
 import com.github.sinlordep.mcpcompanion.toolsets.refactoring.RefactoringOutput
 import com.github.sinlordep.mcpcompanion.toolsets.refactoring.RefactoringParameters
+import com.github.sinlordep.mcpcompanion.toolsets.refactoring.VisibilityInput
 import com.github.sinlordep.mcpcompanion.toolsets.symbols.ToolParameters
 import com.github.sinlordep.mcpcompanion.toolsets.toMcpOutput
 import com.intellij.mcpserver.annotations.McpDescription
@@ -60,7 +61,7 @@ class ChangeSignatureToolset : CompanionToolset {
                     .flatMap { change -> PageRequest.of(limit, offset).map { RefactoringRequest(symbol, change, it) } }
             }
             .flatMap { changeSignatureFor(project).execute(action.action, it) }
-            .map(RefactoringOutput::from)
+            .map(RefactoringOutput::ofSymbol)
             .toMcpOutput()
     }
 

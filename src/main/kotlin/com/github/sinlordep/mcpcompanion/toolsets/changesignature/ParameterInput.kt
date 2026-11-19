@@ -2,8 +2,6 @@ package com.github.sinlordep.mcpcompanion.toolsets.changesignature
 
 import com.github.sinlordep.mcpcompanion.changesignature.ParameterChange
 import com.github.sinlordep.mcpcompanion.changesignature.ParameterRef
-import com.github.sinlordep.mcpcompanion.changesignature.Visibility
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -23,20 +21,4 @@ data class ParameterInput(
         from = from?.trim()?.takeIf { it.isNotEmpty() }?.let(ParameterRef::parse),
         defaultValue = defaultValue,
     )
-}
-
-/** MCP input values of `visibility`. */
-@Serializable
-enum class VisibilityInput(val visibility: Visibility) {
-    @SerialName("public")
-    PUBLIC(Visibility.PUBLIC),
-
-    @SerialName("protected")
-    PROTECTED(Visibility.PROTECTED),
-
-    @SerialName("package_private")
-    PACKAGE_PRIVATE(Visibility.PACKAGE_PRIVATE),
-
-    @SerialName("private")
-    PRIVATE(Visibility.PRIVATE),
 }

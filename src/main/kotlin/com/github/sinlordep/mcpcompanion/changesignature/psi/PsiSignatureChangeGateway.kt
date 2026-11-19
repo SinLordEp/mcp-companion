@@ -18,7 +18,7 @@ import com.github.sinlordep.mcpcompanion.common.symbols.LocatedSymbol
 class PsiSignatureChangeGateway(
     private val runner: PsiRefactoringRunner,
     private val supports: () -> List<SignatureChangeSupport> = { SignatureChangeSupport.EP.extensionList },
-) : RefactoringGateway<SignatureChange> {
+) : RefactoringGateway<LocatedSymbol, SignatureChange> {
 
     override suspend fun analyse(target: LocatedSymbol, details: SignatureChange): ToolResult<RefactoringAnalysis> =
         runner.analyse {

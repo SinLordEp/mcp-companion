@@ -10,6 +10,7 @@
         <classMove implementation="com.github.sinlordep.mcpcompanion.move.java.JavaClassMoveSupport"/>
         <signatureChange
                 implementation="com.github.sinlordep.mcpcompanion.changesignature.java.JavaSignatureChangeSupport"/>
+        <pullUp implementation="com.github.sinlordep.mcpcompanion.pullup.java.JavaPullUpSupport"/>
         <superDeclarations
                 implementation="com.github.sinlordep.mcpcompanion.navigation.implementations.java.JvmSuperDeclarationProvider"/>
         <typeHierarchy

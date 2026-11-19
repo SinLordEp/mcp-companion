@@ -4,6 +4,8 @@ import com.github.sinlordep.mcpcompanion.common.refactoring.AffectedFile
 import com.github.sinlordep.mcpcompanion.common.refactoring.RefactoringAction
 import com.github.sinlordep.mcpcompanion.common.refactoring.RefactoringConflict
 import com.github.sinlordep.mcpcompanion.common.refactoring.RefactoringOutcome
+import com.github.sinlordep.mcpcompanion.common.source.SourceRange
+import com.github.sinlordep.mcpcompanion.common.symbols.LocatedSymbol
 import com.github.sinlordep.mcpcompanion.toolsets.symbols.SymbolOutput
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -19,14 +21,18 @@ enum class RefactoringActionInput(val action: RefactoringAction) {
 }
 
 /**
- * MCP output model of the refactoring tools (`mc_move`, `mc_change_signature`). After `preview`, [applied] is false,
- * [files] is one page of all [fileCount] affected files and [conflicts] lists up to 50 of [conflictCount]. After a
- * successful `apply`, [applied] is true, [changedFiles] lists the files the IDE changed (paths as they are now) and
- * there are no conflicts.
+ * MCP output model of the refactoring tools (`mc_move`, `mc_change_signature`, `mc_pull_up`, `mc_extract_method`).
+ * The target is [symbol] for tools that refactor a declaration and [range] for those that refactor code given by its
+ * positions; [summary] says what the refactoring creates when the request does not say it all (the extracted
+ * method's signature). After `preview`, [applied] is false, [files] is one page of all [fileCount] affected files and
+ * [conflicts] lists up to 50 of [conflictCount]. After a successful `apply`, [applied] is true, [changedFiles] lists
+ * the files the IDE changed (paths as they are now) and there are no conflicts.
  */
 @Serializable
 data class RefactoringOutput(
-    val symbol: SymbolOutput,
+    val symbol: SymbolOutput? = null,
+    val range: SourceRangeOutput? = null,
+    val summary: String? = null,
     val canApply: Boolean,
     val applied: Boolean,
     val fileCount: Int,
@@ -39,9 +45,23 @@ data class RefactoringOutput(
     val nextOffset: Int? = null,
 ) {
     companion object {
-        fun from(outcome: RefactoringOutcome): RefactoringOutput = when (outcome) {
+        /** The output of a tool that refactors a declaration. */
+        fun ofSymbol(outcome: RefactoringOutcome<LocatedSymbol>): RefactoringOutput =
+            of(outcome, symbol = SymbolOutput.from(outcome.target))
+
+        /** The output of a tool that refactors code given by its positions. */
+        fun ofRange(outcome: RefactoringOutcome<SourceRange>): RefactoringOutput =
+            of(outcome, range = SourceRangeOutput.from(outcome.target))
+
+        private fun of(
+            outcome: RefactoringOutcome<*>,
+            symbol: SymbolOutput? = null,
+            range: SourceRangeOutput? = null,
+        ): RefactoringOutput = when (outcome) {
             is RefactoringOutcome.Previewed -> RefactoringOutput(
-                symbol = SymbolOutput.from(outcome.target),
+                symbol = symbol,
+                range = range,
+                summary = outcome.summary,
                 canApply = outcome.conflictCount == 0,
                 applied = false,
                 fileCount = outcome.fileCount,
@@ -55,7 +75,9 @@ data class RefactoringOutput(
             )
 
             is RefactoringOutcome.Applied -> RefactoringOutput(
-                symbol = SymbolOutput.from(outcome.target),
+                symbol = symbol,
+                range = range,
+                summary = outcome.summary,
                 canApply = true,
                 applied = true,
                 fileCount = outcome.changedFiles.size,
@@ -67,6 +89,21 @@ data class RefactoringOutput(
                 hasMore = false,
             )
         }
+    }
+}
+
+/** The code a refactoring was asked to change, as the client gave it; [endColumn] is absent for "to the line end". */
+@Serializable
+data class SourceRangeOutput(
+    val path: String,
+    val startLine: Int,
+    val startColumn: Int,
+    val endLine: Int,
+    val endColumn: Int? = null,
+) {
+    companion object {
+        fun from(range: SourceRange) =
+            SourceRangeOutput(range.path, range.startLine, range.startColumn, range.endLine, range.endColumn)
     }
 }
 

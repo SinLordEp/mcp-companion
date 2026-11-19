@@ -48,6 +48,7 @@ class StatusToolsetTest : BasePlatformTestCase() {
                 "safe_delete",
                 "move",
                 "change_signature",
+                "pull_up",
                 "run",
                 "modules",
                 "sync",

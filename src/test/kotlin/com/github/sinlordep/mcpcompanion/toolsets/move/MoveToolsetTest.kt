@@ -58,7 +58,7 @@ class MoveToolsetTest : BasePlatformTestCase() {
         assertTrue(output.canApply)
         assertFalse(output.applied)
         assertEquals(0, output.conflictCount)
-        assertEquals("model.Item", output.symbol.qualifiedName)
+        assertEquals("model.Item", output.symbol?.qualifiedName)
         assertEquals(
             listOf("app/Shop.java", "kt/Client.kt", "model/Item.java"),
             output.files.map { it.path },

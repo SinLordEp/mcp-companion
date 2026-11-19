@@ -1,10 +1,8 @@
 package com.github.sinlordep.mcpcompanion.changesignature
 
+import com.github.sinlordep.mcpcompanion.common.refactoring.Visibility
 import com.github.sinlordep.mcpcompanion.common.result.ErrorCode
 import com.github.sinlordep.mcpcompanion.common.result.ToolResult
-
-/** Visibility a method can be given. */
-enum class Visibility { PUBLIC, PROTECTED, PACKAGE_PRIVATE, PRIVATE }
 
 /** Which parameter of the current signature a new parameter continues: by 0-based position or by name. */
 sealed interface ParameterRef {

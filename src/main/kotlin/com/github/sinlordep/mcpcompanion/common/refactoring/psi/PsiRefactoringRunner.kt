@@ -22,6 +22,8 @@ import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiFile
+import com.intellij.psi.PsiManager
 import com.intellij.psi.util.PsiModificationTracker
 import com.intellij.util.IncorrectOperationException
 import kotlinx.coroutines.Dispatchers
@@ -68,6 +70,29 @@ class PsiRefactoringRunner(
     }
 
     /**
+     * The source file a client names, as a writable project file the IDE can parse, or the failure to report. Call
+     * inside a read action.
+     */
+    fun writableFile(clientPath: String): ToolResult<PsiFile> {
+        val file = files.find(clientPath)?.takeUnless { it.isDirectory }
+            ?: return ToolResult.failure(
+                ErrorCode.NOT_FOUND,
+                "File not found: $clientPath",
+                "Pass a path relative to the project root (.. allowed) or an absolute path.",
+            )
+        if (!ProjectFileIndex.getInstance(project).isInContent(file) || !file.isWritable) {
+            return ToolResult.failure(
+                ErrorCode.INVALID_ARGUMENT,
+                "$clientPath is not a writable file of the project; only project sources can be refactored.",
+                "Pass a file of the project's own sources.",
+            )
+        }
+        val psiFile = PsiManager.getInstance(project).findFile(file)
+            ?: return ToolResult.failure(ErrorCode.UNSUPPORTED, "$clientPath is not a source file the IDE can parse.")
+        return ToolResult.success(psiFile)
+    }
+
+    /**
      * Sets the refactoring up with [prepare] inside a smart read action (it waits for indexing and is restarted when
      * a write action interrupts it) and describes what it would do.
      */
@@ -82,6 +107,7 @@ class PsiRefactoringRunner(
                     referenceCount = prepared.usages.size,
                     conflicts = conflictsOf(prepared) + readOnly(affected.keys),
                     plan = PsiRefactoringPlan(prepared, PsiModificationTracker.getInstance(project).modificationCount),
+                    summary = prepared.summary,
                 )
             }
         }

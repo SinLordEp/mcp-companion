@@ -5,9 +5,9 @@
 [![Version](https://img.shields.io/jetbrains/plugin/v/36214.svg)](https://plugins.jetbrains.com/plugin/36214)
 [![Downloads](https://img.shields.io/jetbrains/plugin/d/36214.svg)](https://plugins.jetbrains.com/plugin/36214)
 
-MCP Companion is an IntelliJ Platform plugin that adds code navigation, refactoring (move class, change signature,
-safe delete), run configuration control, module, diagnostics and build tools for AI agents to the MCP Server that is
-bundled with JetBrains IDEs. It complements the bundled server: it never duplicates a built-in tool, and each of its
+MCP Companion is an IntelliJ Platform plugin that adds code navigation, structural search, refactoring (move class,
+change signature, pull members up, safe delete), quick fix, run configuration control, module,
+diagnostics, build, file outline and history tools for AI agents to the MCP Server that is bundled with JetBrains IDEs. It complements the bundled server: it never duplicates a built-in tool, and each of its
 tools steps aside by itself when the IDE ships an official tool with the same capability.
 
 ## Requirements
@@ -15,7 +15,7 @@ tools steps aside by itself when the IDE ships an official tool with the same ca
 - An IntelliJ-based IDE of the latest major version, currently 2026.3 (build 263). Tested with IntelliJ IDEA 2026.3.
 - The bundled *MCP Server* plugin, enabled. MCP clients connect to the IDE through it.
 - Optional parts load only where the IDE has them: Java (type hierarchy, super declarations, hot swap, JVM module
-  facts, `mc_build`, `mc_move`, `mc_change_signature`, Java's "Import class" in `mc_quick_fix`), Gradle and other external systems, Maven, the test runner
+  facts, `mc_build`, `mc_move`, `mc_change_signature`, `mc_pull_up`, Java's "Import class" in `mc_quick_fix`), Gradle and other external systems, Maven, the test runner
   (`mc_run tests`), the platform's VCS support (`mc_diagnostics`, whose batch analysis lives there, and
   `mc_vcs_history`) and Structural Search (`mc_structural_search`).
 
@@ -56,6 +56,7 @@ All names start with `mc_`. Each tool is its own toolset, so an official replace
 | `mc_safe_delete` | `preview` lists what blocks deleting a declaration; `apply` deletes it only when nothing does, as one undoable command, without ever opening a dialog (fixed rules for accessors, overriding methods and parameters). |
 | `mc_move` | Move a top-level Java class to another package (created when missing), optionally into another source root, with the IDE's Move refactoring: package and import statements and references in Java and Kotlin code are updated. `preview` (default) reports the affected files (paged), the number of references and the IDE's conflicts; `apply` moves only without conflicts, as one undoable command, and returns the changed files. No dialog. |
 | `mc_change_signature` | Change a Java method's or constructor's parameters (add with a default value for existing calls, remove, reorder, rename, retype), return type or visibility with the IDE's Change Signature: call sites in Java and Kotlin and overriding methods are updated. Same `preview`/`apply` flow as `mc_move`. A method that overrides another is a conflict (change the topmost one); renaming is the built-in `rename_refactoring`. |
+| `mc_pull_up` | Pull a field, method or nested class of a Java class up into a superclass or interface with the IDE's Pull Members Up (`targetClass`, default the superclass); `withMembers` moves more members of the class along, `makeAbstract` keeps a method's body in the subclass and declares it abstract in the target (an interface otherwise gets a default method). References to moved static members are requalified in Java. Same `preview`/`apply` flow as `mc_move`; conflicts (moved code using members left behind, the target already having the member, other subclasses lacking an abstract method, a Kotlin reference to a moved static member) come before anything changes. |
 | `mc_run` | Existing run configurations: `start` (run or debug, returns a handle at once), `start_at` (run or debug code without a configuration, like the Run gutter icon: a test method, test class, test directory or main function by `path`+`line` or `qualifiedName`; the IDE's producers decide, e.g. JUnit, Gradle test tasks, Application, Kotlin; a new configuration is a temporary one; several candidates are listed instead of a popup), `stop`, `restart`, `status`, `processes` (also those started in the IDE), `output` (bounded console capture: tail, regex filter, cursor), `wait_ready` (output pattern, failure pattern, port, end of process), `hotswap` (JVM debug sessions: build the way the project builds, also with Gradle delegation, and reload changed classes, with compile errors or the JVM's reason when it refuses), `tests` (results of a test run, also while it runs: verdict, counts, failed tests with location, message, expected/actual and a bounded stack trace; filter, paging, optional wait). |
 | `mc_modules` | Read-only module model: `list` (modules with build system, SDK, language level, content roots and their folders; roots outside the project directory are marked `outsideProjectDir`), `graph` (declared dependencies with scope and exported flag, whole project or a walk from one module with depth; library edges with Maven coordinates on request; `format=mermaid` returns one Mermaid flowchart instead of paged edges), `cycles` (groups of mutually dependent modules with one shortest cycle each). |
 | `mc_sync` | Re-import Gradle (and other external-system) and Maven projects after build file changes: `status` (linked projects, whether the IDE wants a reload, running syncs, the latest result) and `sync` (waits for the end with a timeout; the build tool's message on failure). |
@@ -109,8 +110,8 @@ The skill's body is the same text; a test keeps the two equal and checks that th
   (`start_at`, as a temporary configuration: never saved or shared), never arbitrary commands; it is marked as a
   destructive tool for MCP clients.
 - `mc_safe_delete` previews first and refuses targets that are still used or that lie outside the project content.
-  `mc_move` and `mc_change_signature` preview by default, refuse to apply while the IDE reports conflicts, change only
-  writable project files, and run as one undoable command (Edit | Undo reverts all of it). `mc_quick_fix` applies
+  `mc_move`, `mc_change_signature` and `mc_pull_up` preview by default, refuse to apply while the IDE reports
+  conflicts, change only writable project files, and run as one undoable command (Edit | Undo reverts all of it). `mc_quick_fix` applies
   one fix per call, only to writable project files, only after computing its change, as one undoable command.
 - `mc_run`, `mc_sync` and `mc_build` refuse untrusted projects (safe mode). No tool opens a dialog other than the
   start confirmation. A build started by `mc_build` never makes the IDE offer to reload classes into a running debug
@@ -149,6 +150,9 @@ A summary; details in the `docs/notes-*.md` files named in brackets.
   Comments, strings and non-code files are not searched. `mc_move` moves top-level classes, not nested classes,
   members or packages. `mc_change_signature` does not adapt callers to a new return type, as the IDE's own refactoring
   does not (`notes-step8`).
+- `mc_pull_up` is Java only, like `mc_move`. It does not push members down and does not replace code that duplicates
+  a moved method (the IDE asks about each duplicate in a dialog); a Kotlin reference to a moved static member is a
+  conflict.
 - `mc_build`: positions of builds delegated to Gradle and Maven are read from the build tool's console (javac, kotlinc,
   Maven compiler lines); other failures come as the build tool's reason without position. A Maven-delegated build of
   one module does not build the modules it depends on in the same Maven run, so it fails with "Could not resolve
@@ -199,7 +203,8 @@ copy of a fixture project under `build/` open. Options:
   `mc_run`), JUnit configurations `AllTests`, `SlowTest`, `BadJvmTest`, and modules `cyclea`/`cycleb` that depend on
   each other; for `start_at` an abstract test class and a test class with a `main` (`testfix`), a Kotlin `main`
   (`kotlinfix`, with the Kotlin standard library of the sandbox IDE), for `mc_quick_fix` the module `quickfix`, and
-  for `mc_structural_search` `src/search/Accounts.java` (equals calls, an empty catch block, println calls). Its JDK is the sandbox IDE's own runtime, defined in the sandbox's JDK table; JUnit 4 is copied from the
+  for `mc_structural_search` `src/search/Accounts.java` (equals calls, an empty catch block, println calls), for
+  `mc_pull_up` `src/hier` and `src/garage` (a class hierarchy used from Java and Kotlin). Its JDK is the sandbox IDE's own runtime, defined in the sandbox's JDK table; JUnit 4 is copied from the
   sandbox IDE. `-PmcpE2eVcs=git` makes the copy a Git repository with three commits of `src/history/Ledger.java` by
   the fictitious "Test Author" (for `mc_vcs_history`); the user's Git configuration is not read.
 - `-PmcpE2eFixture=gradle`: `src/mcpE2eFixtureGradle` (root, `app`, `lib` with JUnit tests, and the included build

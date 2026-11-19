@@ -54,7 +54,7 @@ class MoveToolset : CompanionToolset {
                 }
             }
             .flatMap { moveClassFor(project).execute(action.action, it) }
-            .map(RefactoringOutput::from)
+            .map(RefactoringOutput::ofSymbol)
             .toMcpOutput()
     }
 

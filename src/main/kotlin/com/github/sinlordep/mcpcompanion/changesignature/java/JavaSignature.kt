@@ -3,14 +3,13 @@ package com.github.sinlordep.mcpcompanion.changesignature.java
 import com.github.sinlordep.mcpcompanion.changesignature.ParameterChange
 import com.github.sinlordep.mcpcompanion.changesignature.ParameterRef
 import com.github.sinlordep.mcpcompanion.changesignature.SignatureChange
-import com.github.sinlordep.mcpcompanion.changesignature.Visibility
+import com.github.sinlordep.mcpcompanion.common.refactoring.java.javaModifier
 import com.github.sinlordep.mcpcompanion.common.result.ErrorCode
 import com.github.sinlordep.mcpcompanion.common.result.ToolResult
 import com.intellij.psi.JavaPsiFacade
 import com.intellij.psi.PsiArrayType
 import com.intellij.psi.PsiClassType
 import com.intellij.psi.PsiMethod
-import com.intellij.psi.PsiModifier
 import com.intellij.psi.PsiNameHelper
 import com.intellij.psi.PsiType
 import com.intellij.psi.PsiWildcardType
@@ -48,7 +47,7 @@ class JavaSignature(private val method: PsiMethod) {
         kept.firstOrNull { index -> kept.count { it == index } > 1 }
             ?.let { throw Invalid("The current parameter at $it is used twice.") }
         val returnType = change.returnType?.let(::returnType) ?: method.returnType
-        val visibility = change.visibility?.let(::modifier) ?: VisibilityUtil.getVisibilityModifier(method.modifierList)
+        val visibility = change.visibility?.javaModifier ?: VisibilityUtil.getVisibilityModifier(method.modifierList)
         ToolResult.success(
             Resolved(
                 parameters.toTypedArray(),
@@ -134,13 +133,4 @@ class JavaSignature(private val method: PsiMethod) {
             } &&
             returnType == method.returnType &&
             visibility == VisibilityUtil.getVisibilityModifier(method.modifierList)
-
-    private companion object {
-        fun modifier(visibility: Visibility): String = when (visibility) {
-            Visibility.PUBLIC -> PsiModifier.PUBLIC
-            Visibility.PROTECTED -> PsiModifier.PROTECTED
-            Visibility.PACKAGE_PRIVATE -> PsiModifier.PACKAGE_LOCAL
-            Visibility.PRIVATE -> PsiModifier.PRIVATE
-        }
-    }
 }

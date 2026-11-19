@@ -26,7 +26,7 @@ class PsiClassMoveGateway(
     private val files: ProjectFiles,
     private val runner: PsiRefactoringRunner,
     private val supports: () -> List<ClassMoveSupport> = { ClassMoveSupport.EP.extensionList },
-) : RefactoringGateway<ClassDestination> {
+) : RefactoringGateway<LocatedSymbol, ClassDestination> {
 
     override suspend fun analyse(target: LocatedSymbol, details: ClassDestination): ToolResult<RefactoringAnalysis> =
         runner.analyse {

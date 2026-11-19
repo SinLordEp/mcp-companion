@@ -7,15 +7,15 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
 /**
- * Layers of the refactoring tools (docs/notes-step8.md): use cases at the feature root on the shared
- * `common.refactoring` actions, a language-neutral gateway in `psi`, the language supports in `java` (one segment per
- * optional language plugin).
+ * Layers of the refactoring tools (docs/notes-step8.md, docs/notes-step12.md): use cases at the feature root on the
+ * shared `common.refactoring` actions, a language-neutral gateway in `psi`, the language supports in `java` (one
+ * segment per optional language plugin).
  */
 class RefactoringLayersTest {
 
     private val root = "com.github.sinlordep.mcpcompanion"
 
-    private val refactoringFeatures = listOf("move", "changesignature")
+    private val refactoringFeatures = listOf("move", "changesignature", "pullup")
 
     private val languageSegments = listOf("java")
 
@@ -29,11 +29,17 @@ class RefactoringLayersTest {
         "com.intellij.psi.PsiClass",
         "com.intellij.psi.PsiMethod",
         "com.intellij.psi.PsiNameHelper",
+        "com.intellij.psi.PsiMember",
         "com.intellij.psi.PsiModifier",
+        "com.intellij.psi.PsiJavaFile",
         "com.intellij.refactoring.JavaRefactoringFactory",
+        "com.intellij.refactoring.JavaRefactoringSettings",
         "com.intellij.refactoring.move.moveClassesOrPackages",
         "com.intellij.refactoring.changeSignature.ChangeSignatureProcessor",
         "com.intellij.refactoring.changeSignature.ParameterInfoImpl",
+        "com.intellij.refactoring.memberPullUp",
+        "com.intellij.refactoring.util.classMembers",
+        "com.intellij.refactoring.util.ConflictsUtil",
         "com.intellij.util.VisibilityUtil",
     )
 
@@ -81,7 +87,7 @@ class RefactoringLayersTest {
 
     @Test
     fun `the shared refactoring runner is language-neutral`() {
-        val shared = filesIn("common.refactoring")
+        val shared = filesIn("common.refactoring").filterNot { it.packagee?.name == "$root.common.refactoring.java" }
         Assertions.assertTrue(shared.isNotEmpty(), "no common.refactoring files found")
         shared.assertFalse { it.importsAny(javaRefactoringApis) }
     }

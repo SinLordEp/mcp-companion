@@ -33,6 +33,9 @@ tool steps aside by itself (checked at IDE start and when plugins are installed,
   <li><code>mc_change_signature</code>: add, remove, reorder, rename or retype a Java method's parameters, or change
     its return type or visibility, updating every call and overriding method; preview first, applied only without
     conflicts.</li>
+  <li><code>mc_pull_up</code>: move a field, method or nested class of a Java class up into its superclass or an
+    interface with the IDE's Pull Members Up, optionally as an abstract method; conflicts such as members left behind
+    are reported first, and nothing changes while there are any.</li>
   <li><code>mc_run</code>: start, stop and restart existing run configurations (run or debug), or run a test method,
     test class, test directory or main function directly from the code like the Run gutter icon, read the console
     output, wait until they are ready, hot-swap changed classes into a JVM debug session, and read test results
@@ -65,9 +68,9 @@ tool steps aside by itself (checked at IDE start and when plugins are installed,
     temporary configurations), never arbitrary commands.</li>
   <li><code>mc_safe_delete</code> refuses to delete a declaration that is still used or that lies outside the
     project.</li>
-  <li><code>mc_move</code> and <code>mc_change_signature</code> refuse to change code while the IDE reports
-    conflicts; every change is one undoable command, as is each fix <code>mc_quick_fix</code> applies and each revert
-    of <code>mc_local_history</code>.</li>
+  <li><code>mc_move</code>, <code>mc_change_signature</code> and <code>mc_pull_up</code> refuse to change code
+    while the IDE reports conflicts; every change is one undoable command, as is each fix <code>mc_quick_fix</code>
+    applies and each revert of <code>mc_local_history</code>.</li>
   <li><code>mc_run</code>, <code>mc_sync</code> and <code>mc_build</code> refuse to run anything in a project that
     is not trusted.</li>
 </ul>
@@ -156,6 +159,9 @@ plugin version follows; IDEs of earlier major versions keep the last plugin vers
         <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.signatureChange"
                         interface="com.github.sinlordep.mcpcompanion.changesignature.psi.SignatureChangeSupport"
                         dynamic="true"/>
+        <extensionPoint qualifiedName="com.github.sinlordep.mcpcompanion.pullUp"
+                        interface="com.github.sinlordep.mcpcompanion.pullup.psi.PullUpSupport"
+                        dynamic="true"/>
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
@@ -187,6 +193,7 @@ plugin version follows; IDEs of earlier major versions keep the last plugin vers
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.safedelete.SafeDeleteToolset"/>
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.move.MoveToolset"/>
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.changesignature.ChangeSignatureToolset"/>
+        <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.pullup.PullUpToolset"/>
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.run.RunToolset"/>
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.modules.ModulesToolset"/>
         <mcpToolset implementation="com.github.sinlordep.mcpcompanion.toolsets.sync.SyncToolset"/>
