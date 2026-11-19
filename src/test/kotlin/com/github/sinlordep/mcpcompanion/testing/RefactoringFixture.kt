@@ -110,6 +110,29 @@ object RefactoringFixture {
 
             fun walk(d: Dog) = d.bark() + Dog.MAX
         """.trimIndent(),
+        // mc_extract_method
+        "ext/Calc.java" to """
+            package ext;
+            public class Calc {
+                int total(int a, int b) {
+                    int sum = a + b;
+                    int doubled = sum * 2;
+                    return doubled + 1;
+                }
+                int exits(int x) {
+                    for (int i = 0; i < x; i++) {
+                        if (i == 3) return i;
+                        if (i == 5) break;
+                    }
+                    return -1;
+                }
+                static int twice(int v) {
+                    int w = v * 2;
+                    return w;
+                }
+                int helper(int v) { return v; }
+            }
+        """.trimIndent(),
     )
 
     fun addTo(fixture: CodeInsightTestFixture) {

@@ -2,6 +2,7 @@ package com.github.sinlordep.mcpcompanion.common.refactoring
 
 import com.github.sinlordep.mcpcompanion.common.result.ErrorCode
 import com.github.sinlordep.mcpcompanion.common.source.SourceRange
+import com.github.sinlordep.mcpcompanion.extractmethod.MethodExtraction
 import com.github.sinlordep.mcpcompanion.pullup.MemberPullUp
 import com.github.sinlordep.mcpcompanion.testing.FakeSymbols.code
 import com.github.sinlordep.mcpcompanion.testing.FakeSymbols.value
@@ -12,7 +13,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Client input of `mc_pull_up`, and code ranges as refactoring targets. */
+/** Client input of `mc_pull_up` and `mc_extract_method`, and code ranges as refactoring targets. */
 class RefactoringDetailsTest {
 
     @Test
@@ -51,5 +52,15 @@ class RefactoringDetailsTest {
         assertTrue(MemberPullUp.of("com.example.Base", null, true).value().makeAbstract)
         assertEquals(ErrorCode.INVALID_ARGUMENT, MemberPullUp.of(null, listOf(""), null).code())
         assertEquals(ErrorCode.INVALID_ARGUMENT, MemberPullUp.of(null, listOf("a b"), null).code())
+    }
+
+    @Test
+    fun `an extracted method needs a name`() {
+        val extraction = MethodExtraction.of(" total ", Visibility.PUBLIC, true).value()
+        assertEquals("total", extraction.methodName)
+        assertEquals(Visibility.PUBLIC, extraction.visibility)
+        assertEquals(true, extraction.makeStatic)
+        assertEquals(ErrorCode.INVALID_ARGUMENT, MethodExtraction.of(" ", null, null).code())
+        assertEquals(ErrorCode.INVALID_ARGUMENT, MethodExtraction.of(null, null, null).code())
     }
 }

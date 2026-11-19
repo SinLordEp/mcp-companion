@@ -58,6 +58,7 @@ class McpCompanionConfigurableTest : BasePlatformTestCase() {
                 "Move Class",
                 "Change Signature",
                 "Pull Members Up",
+                "Extract Method",
                 "Run Control",
                 "Modules",
                 "Build Sync",

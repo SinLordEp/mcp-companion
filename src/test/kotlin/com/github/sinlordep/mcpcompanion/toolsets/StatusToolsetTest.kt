@@ -49,6 +49,7 @@ class StatusToolsetTest : BasePlatformTestCase() {
                 "move",
                 "change_signature",
                 "pull_up",
+                "extract_method",
                 "run",
                 "modules",
                 "sync",

@@ -1,6 +1,6 @@
 ---
 name: mcp-companion
-description: Use when working in a project that is open in a JetBrains IDE whose MCP server exposes tools named mc_ (the MCP Companion plugin), to find usages, implementations and type hierarchies, search code by its structure, check edits without a full build, build one module, run the application, tests or a single test method (with or without a run configuration), apply the IDE's quick fixes, sync Gradle or Maven after build file changes, move classes, change method signatures, pull members up and delete declarations safely, outline large files, label and restore the Local History, and read commit history, blame and diffs.
+description: Use when working in a project that is open in a JetBrains IDE whose MCP server exposes tools named mc_ (the MCP Companion plugin), to find usages, implementations and type hierarchies, search code by its structure, check edits without a full build, build one module, run the application, tests or a single test method (with or without a run configuration), apply the IDE's quick fixes, sync Gradle or Maven after build file changes, move classes, change method signatures, pull members up, extract methods and delete declarations safely, outline large files, label and restore the Local History, and read commit history, blame and diffs.
 ---
 
 # Working with the IDE's MCP tools (MCP Companion)
@@ -34,7 +34,7 @@ Call `mc_sync sync` (Gradle, Maven) before `mc_diagnostics` or `mc_build`; until
 
 ## Refactoring
 
-- Moving a class to another package or source root: `mc_move`. Changing a method's parameters, return type or visibility: `mc_change_signature`. Renaming: the built-in `rename_refactoring`. They update every reference in Java and Kotlin; do not move files or edit imports and call sites by hand. Moving a field, method or nested class of a Java class into its superclass or an interface: `mc_pull_up` (`withMembers` for members it needs, `makeAbstract` to keep the body in the subclass). It works on Java only; check the result with `mc_diagnostics`.
+- Moving a class to another package or source root: `mc_move`. Changing a method's parameters, return type or visibility: `mc_change_signature`. Renaming: the built-in `rename_refactoring`. They update every reference in Java and Kotlin; do not move files or edit imports and call sites by hand. Moving a field, method or nested class of a Java class into its superclass or an interface: `mc_pull_up` (`withMembers` for members it needs, `makeAbstract` to keep the body in the subclass). Turning Java statements or an expression into a new method: `mc_extract_method` with the file, `startLine` and `endLine` (columns for part of a line) and `methodName`; the IDE infers parameters and return value, and `summary` shows the signature. Both work on Java only; check the result with `mc_diagnostics`.
 - Deleting a declaration: `mc_safe_delete`, or check `mc_find_usages` first.
 - Call each with `action=preview` (the default) first and read the conflicts and affected files; then `action=apply`, which changes the code only when nothing conflicts, as one undoable command. `CONFLICT` means nothing changed: change the code or the request first.
 

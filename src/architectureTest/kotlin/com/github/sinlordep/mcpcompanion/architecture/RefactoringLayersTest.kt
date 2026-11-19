@@ -15,7 +15,7 @@ class RefactoringLayersTest {
 
     private val root = "com.github.sinlordep.mcpcompanion"
 
-    private val refactoringFeatures = listOf("move", "changesignature", "pullup")
+    private val refactoringFeatures = listOf("move", "changesignature", "pullup", "extractmethod")
 
     private val languageSegments = listOf("java")
 
@@ -39,6 +39,7 @@ class RefactoringLayersTest {
         "com.intellij.refactoring.changeSignature.ParameterInfoImpl",
         "com.intellij.refactoring.memberPullUp",
         "com.intellij.refactoring.util.classMembers",
+        "com.intellij.refactoring.extractMethod",
         "com.intellij.refactoring.util.ConflictsUtil",
         "com.intellij.util.VisibilityUtil",
     )

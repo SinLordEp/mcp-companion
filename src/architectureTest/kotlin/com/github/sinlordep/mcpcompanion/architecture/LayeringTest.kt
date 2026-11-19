@@ -24,6 +24,7 @@ class LayeringTest {
         "move",
         "changesignature",
         "pullup",
+        "extractmethod",
         "run",
         "modules",
         "sync",

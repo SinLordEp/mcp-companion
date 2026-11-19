@@ -19,6 +19,10 @@
   (`makeAbstract`); references to moved static members are requalified. Same `preview` and `apply` as `mc_move`:
   conflicts (moved code using members left behind, the target already having the member, other subclasses lacking an
   abstract method, Kotlin references to a moved static member) are reported before anything changes.
+- `mc_extract_method`: extract consecutive Java statements or one expression, given by lines and columns, into a new
+  method with the IDE's Extract Method, without an editor, template or dialog; the IDE infers parameters, return value
+  and exceptions, and `summary` shows the new signature. Code with several exits and a method of that signature in
+  the class are conflicts. Same `preview` and `apply`.
 - `mc_run start_at`: run or debug code without a run configuration, like the IDE's Run gutter icon: a test method,
   test class, test directory or main function, by path and line or by qualified name. The IDE's own producers
   decide (JUnit, TestNG, Gradle test tasks when tests run with Gradle, Maven, Application, Kotlin); a matching
