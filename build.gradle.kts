@@ -124,7 +124,7 @@ changelog {
     // patchChangelog starts a new [Unreleased] section without empty group headings.
     groups.empty()
     repositoryUrl = providers.gradleProperty("pluginRepositoryUrl")
-    // Release tags are the bare version (0.1.0), as the release draft in .github/workflows/build.yml creates them.
+    // Release tags are the bare version (0.1.0); see docs/RELEASING.md.
     versionPrefix = ""
 }
 
