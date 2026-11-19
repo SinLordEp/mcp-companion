@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-19
+
 ### Added
 
 - `mc_spring_beans` (IntelliJ IDEA with the Spring plugin, a paid feature; the tool is not there without it): `list`
@@ -13,7 +15,6 @@
   setters, constructor and `@Bean` method parameters, with the injection points that have several candidates or none,
   and which beans receive it. While the IDE indexes, or when a module has no Spring context, the answer says so
   instead of returning an empty list. Read-only.
-
 - `mc_move`: move a top-level Java class to another package (created when missing), optionally into another source
   root, with the IDE's Move refactoring; package and import statements and references in Java and Kotlin are
   updated. `preview` (default) reports the affected files, the number of references and the conflicts the IDE finds;
@@ -126,6 +127,7 @@
 - Settings | Tools | MCP Companion: the state of every tool, a link to the MCP Server's tool page where tools are
   switched on and off, and the brave mode setting. English and Simplified Chinese.
 
-[Unreleased]: https://github.com/SinLordEp/mcp-companion/compare/0.2.0...HEAD
+[Unreleased]: https://github.com/SinLordEp/mcp-companion/compare/0.3.0...HEAD
+[0.3.0]: https://github.com/SinLordEp/mcp-companion/compare/0.2.0...0.3.0
 [0.2.0]: https://github.com/SinLordEp/mcp-companion/compare/0.1.0...0.2.0
 [0.1.0]: https://github.com/SinLordEp/mcp-companion/commits/0.1.0
