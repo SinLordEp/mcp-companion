@@ -30,6 +30,9 @@ import com.intellij.openapi.vfs.VirtualFile
  * - what an editor would only show or offer afterwards (move the caret, highlight, start an in-place rename, Tab
  *   targets, an optional template): skipped by the IDE's batch execution, which this tool uses.
  *
+ * A fix without any text change or deletion is refused as well: it only shows something (e.g. "Find cause" of a data
+ * flow warning navigates to the code that explains it), and applying it would report success without a change.
+ *
  * Every other step needs the user or is not a code change, so the fix is refused with the reason: a choice (handled by
  * the caller, which lists the options as fixes of their own), a live template to fill in, a dialog for options or
  * conflicts, an error message, a clipboard or browser action, a new or moved file. Steps of a kind this list does not
@@ -42,7 +45,9 @@ internal class ModCommandChecks(private val files: ProjectFiles) {
     /** Why [command] cannot be applied without the user; null when it can. Call in a read action. */
     fun refusal(command: ModCommand): String? {
         if (command.isEmpty) return "it changes nothing here"
-        return command.unpack().firstNotNullOfOrNull(::stepRefusal)
+        val steps = command.unpack()
+        return steps.firstNotNullOfOrNull(::stepRefusal)
+            ?: NO_CODE_CHANGE.takeIf { steps.none { it is ModUpdateFileText || it is ModDeleteFile } }
     }
 
     /** The text changes and deletions of [command]: the files it changes. */
@@ -86,6 +91,10 @@ internal class ModCommandChecks(private val files: ProjectFiles) {
         is ModCreateFile, is ModMoveFile -> "it creates or moves files, which this tool does not do"
 
         else -> "it does something this tool cannot check (${step.javaClass.simpleName})"
+    }
+
+    private companion object {
+        const val NO_CODE_CHANGE = "it changes no code; it only navigates or shows something in the editor"
     }
 
     private fun fileRefusal(file: VirtualFile): String? = when {
