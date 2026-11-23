@@ -24,8 +24,8 @@ Sources (read 2026-11-17):
 - Signing and publishing read only environment variables: `CERTIFICATE_CHAIN`, `PRIVATE_KEY`, `PRIVATE_KEY_PASSWORD`,
   `PUBLISH_TOKEN`. `publishPlugin` signs, verifies the signature, then uploads. The Marketplace channel follows the
   version: `1.2.0` goes to the default (stable) channel, `1.2.0-beta.1` to `beta`.
-- `verifyPlugin` checks IntelliJ IDEA 2026.3 and, once JetBrains publishes one, the newest EAP of the next major
-  version (none existed on 2026-11-17).
+- `verifyPlugin` checks IntelliJ IDEA 2026.3, the newest 2026.3.x build of any channel (release, RC or EAP) and, once
+  JetBrains publishes one, the newest EAP of the next major version (none existed on 2026-11-17).
 - CI: `.github/workflows/build.yml` (build, `check`, `verifyPlugin`) and `release.yml` (on a published GitHub
   release: patch the changelog, sign and publish, attach the ZIP, open a changelog PR; needs the secrets of section 3
   and is not used by the manual process of section 6).
