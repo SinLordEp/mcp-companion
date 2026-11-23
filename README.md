@@ -195,8 +195,9 @@ downloads IntelliJ IDEA 2026.3.
 
 - `./gradlew check` runs the tests, detekt, ktlint and the Konsist architecture rules (`src/architectureTest`).
   `buildSrc` has its own tests, which run whenever `buildSrc` is rebuilt.
-- `./gradlew verifyPlugin` runs the IntelliJ Plugin Verifier against IntelliJ IDEA 2026.3 and, once JetBrains publishes
-  one, the newest EAP of the next major version.
+- `./gradlew verifyPlugin` runs the IntelliJ Plugin Verifier against IntelliJ IDEA 2026.3 (the build the plugin is
+  compiled against), the newest 2026.3.x build of any channel and, once JetBrains publishes one, the newest EAP of the
+  next major version.
 - `./gradlew buildPlugin` writes the plugin ZIP to `build/distributions/`.
 - Architecture and design rules: `docs/PLAN.md` section 5.1 (layers: MCP adapters in `toolsets/`, use cases, platform
   gateways; enforced by `src/architectureTest`). Platform findings: `docs/spike-step0.md` and `docs/notes-*.md`.

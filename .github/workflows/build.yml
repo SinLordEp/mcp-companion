@@ -2,7 +2,8 @@
 # - Build the plugin ZIP with the 'buildPlugin' task and upload it as a workflow artifact.
 # - Run the 'check' task (tests, architecture tests, detekt, ktlint; buildSrc tests run when buildSrc is built) and
 #   upload test reports on failure.
-# - Run the 'verifyPlugin' task (IntelliJ IDEA 2026.3 and, once published, the newest EAP of the next major version)
+# - Run the 'verifyPlugin' task (IntelliJ IDEA 2026.3, its newest 2026.3.x build and, once published, the newest EAP
+#   of the next major version)
 #   and upload Plugin Verifier reports.
 #
 # The workflow is triggered on pushes to the 'main' branch and on pull_request events.

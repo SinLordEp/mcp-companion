@@ -82,6 +82,18 @@ intellijPlatform {
         ides {
             // The IDE the plugin is built against (IntelliJ IDEA 2026.3).
             current()
+            // The newest build of the supported major version in any channel (a later 2026.3.x release, RC or EAP):
+            // JetBrains Marketplace verifies every published version against each new IDE build, so CI does it first.
+            latest {
+                types = listOf(IntelliJPlatformType.IntellijIdea)
+                channels = listOf(
+                    ProductRelease.Channel.RELEASE,
+                    ProductRelease.Channel.RC,
+                    ProductRelease.Channel.EAP,
+                )
+                sinceBuild = "$supportedMajorBuild"
+                untilBuild = "$supportedMajorBuild.*"
+            }
             // The newest EAP of the next major version, once JetBrains publishes one; without one nothing is added.
             latest {
                 types = listOf(IntelliJPlatformType.IntellijIdea)
