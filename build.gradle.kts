@@ -35,7 +35,7 @@ val springFixtureLibrary: Configuration by configurations.creating {
 
 dependencies {
     testImplementation("junit:junit:4.13.2")
-    springFixtureLibrary("org.springframework.boot:spring-boot-autoconfigure:3.5.5")
+    springFixtureLibrary("org.springframework.boot:spring-boot-autoconfigure:4.2.0")
 
     // kotlin-stdlib and kotlinx-serialization(-json) are provided by the platform at runtime and are not bundled:
     // kotlin.stdlib.default.dependency=false in gradle.properties, and no kotlinx-serialization library dependency here.
